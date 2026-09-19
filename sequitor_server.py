@@ -21,6 +21,7 @@ from urllib.parse import parse_qs, urlsplit
 from claimtrace.baseten import CrossEncoder, HostedLLM
 from claimtrace.resolve import resolve
 from claimtrace.xapi import XClient, now_safe
+from sequitor_baseten_chain import BasetenChainClient
 
 ROOT = Path(__file__).resolve().parent
 CACHE_FILE = ROOT / "work" / "sequitor-cache.json"
@@ -94,13 +95,20 @@ class StreamHub:
                                          "seed": seed})
                 if mode == "recorded":
                     recorded = read_json(CAPTURE_FILE, sample_demo())
-                    job.emit("run.ready", {**recorded, "kind": "saved", "posts": [],
-                                           "savedPeriods": {}, "streamSource": "recorded"})
+                    job.emit("run.ready", pending_activity(recorded, "recorded"))
                     posts = sorted(recorded.get("posts", []),
                                    key=lambda post: -(post.get("likes") or 0))
-                    for index in range(0, len(posts), 12):
-                        job.emit("posts.upsert", {"posts": posts[index:index + 12]})
-                        time.sleep(0.045)
+                    buckets = recorded.get("buckets", [])
+                    first = max(10, len(buckets))
+                    for index in range(first):
+                        if index < len(buckets):
+                            job.emit("buckets.upsert", {"bucket": buckets[index]})
+                        if index < min(10, len(posts)):
+                            job.emit("posts.upsert", {"posts": [posts[index]]})
+                        time.sleep(0.16)
+                    for index in range(10, len(posts), 10):
+                        job.emit("posts.upsert", {"posts": posts[index:index + 10]})
+                        time.sleep(0.09)
                     job.emit("run.completed", {"model": recorded.get("model"),
                                                "rankingCoverage": recorded.get("rankingCoverage"),
                                                "xSpend": recorded.get("xSpend", 0)})
@@ -151,6 +159,24 @@ def today_utc() -> str:
     return datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
 
 
+def pending_activity(run: dict, source: str) -> dict:
+    """Keep chart slots stable while their measured counts arrive as events."""
+    buckets = run.get("buckets", [])
+    return {**run, "kind": "saved" if source == "recorded" else run.get("kind", "live"),
+            "posts": [], "savedPeriods": {}, "streamSource": source,
+            "activityScaleMax": max((bucket.get("count", 0) for bucket in buckets), default=1),
+            "buckets": [{**bucket, "count": 0, "pending": True} for bucket in buckets]}
+
+
+def emit_activity(emit, run: dict, source: str, pause: float = 0.08) -> None:
+    if not emit:
+        return
+    emit("run.ready", pending_activity(run, source))
+    for bucket in run.get("buckets", []):
+        emit("buckets.upsert", {"bucket": bucket})
+        time.sleep(pause)
+
+
 def emit_post_batches(emit, posts: list[dict], size: int = 10, pause: float = 0.025) -> None:
     """Pace a returned X page briefly so the browser can paint between updates."""
     if not emit:
@@ -159,6 +185,16 @@ def emit_post_batches(emit, posts: list[dict], size: int = 10, pause: float = 0.
         emit("posts.upsert", {"posts": posts[index:index + size]})
         if index + size < len(posts):
             time.sleep(pause)
+
+
+def emit_progressive_posts(emit, posts: list[dict]) -> None:
+    """Let the first screen populate one post at a time, then fill the remainder."""
+    if not emit:
+        return
+    for post in posts[:10]:
+        emit("posts.upsert", {"posts": [post]})
+        time.sleep(0.11)
+    emit_post_batches(emit, posts[10:], size=10, pause=0.06)
 
 
 def day_bounds(day: str) -> tuple[datetime, datetime]:
@@ -323,10 +359,18 @@ class Sequitor:
         return {"volumePhrase": primary, "discoveryPhrase": secondary,
                 "whyDiscovery": plan["why_discovery"][:200], "model": data.get("model")}
 
-    def classify(self, seed_text: str, posts: list[dict]) -> dict:
+    def classify(self, seed_text: str, posts: list[dict], emit=None) -> dict:
         key = os.environ.get("BASETEN_API_KEY")
         if not key or not posts:
             return {"status": "unavailable", "model": None}
+        chain_url = os.environ.get("SEQUITOR_BASETEN_CHAIN_URL", "").strip()
+        if chain_url:
+            try:
+                return BasetenChainClient(key, chain_url).classify(seed_text, posts, emit=emit)
+            except Exception as exc:
+                if emit:
+                    emit("stage", {"name": "Baseten Chain unavailable; using hosted curation",
+                                   "reason": type(exc).__name__})
         if not self._cross_encoder_unavailable:
             try:
                 scorer = CrossEncoder(key)
@@ -377,8 +421,9 @@ class Sequitor:
                 emit("stage", {"name": "Loading cached posts", "source": "cache"})
                 ordered = sorted(cached_period["posts"], key=lambda post: -(post.get("likes") or 0))
                 emit_post_batches(emit, ordered, size=16, pause=0.035)
-            if cached_period.get("model", {}).get("status") == "unavailable":
-                cached_period["model"] = self.classify(run["seedPost"]["text"], cached_period["posts"])
+            status = cached_period.get("model", {}).get("status")
+            if status == "unavailable" or (os.environ.get("SEQUITOR_BASETEN_CHAIN_URL") and status != "baseten chain"):
+                cached_period["model"] = self.classify(run["seedPost"]["text"], cached_period["posts"], emit=emit)
                 run["posts"] = cached_period["posts"]
                 run["model"] = {"openai": run["searchPlan"].get("model"), "baseten": cached_period["model"]}
                 self.save()
@@ -402,7 +447,7 @@ class Sequitor:
             primary, partial = self.search(run["query"], day,
                                            limit=70 if day == run["selectedDay"] else 40)
         if emit and primary:
-            emit_post_batches(emit, sorted(primary, key=lambda post: -(post.get("likes") or 0)))
+            emit_progressive_posts(emit, sorted(primary, key=lambda post: -(post.get("likes") or 0)))
         # One bounded secondary search creates a real branch outside the chart's
         # literal phrase scope. It is explicitly labelled as broader discovery.
         secondary, extra_partial = [], False
@@ -445,7 +490,7 @@ class Sequitor:
         if emit:
             emit_post_batches(emit, posts, size=24, pause=0)
             emit("stage", {"name": "Curating retrieved posts with Baseten"})
-        model = self.classify(run["seedPost"]["text"], posts)
+        model = self.classify(run["seedPost"]["text"], posts, emit=emit)
         if emit:
             updates = [post for post in posts if post.get("basetenPick") or post.get("sameClaimScore") is not None]
             emit_post_batches(emit, updates, size=12, pause=0)
@@ -487,10 +532,15 @@ class Sequitor:
                     cached["searchPlan"]["revisionError"] = type(exc).__name__
                     self.save()
             if emit:
-                emit("run.ready", {**cached, "posts": [], "savedPeriods": {},
-                                   "streamSource": "cache"})
+                emit_activity(emit, cached, "cache")
                 ordered = sorted(cached["posts"], key=lambda post: -(post.get("likes") or 0))
-                emit_post_batches(emit, ordered, size=16, pause=0.035)
+                emit_progressive_posts(emit, ordered)
+            current_model = cached.get("model", {}).get("baseten")
+            current_status = current_model.get("status") if isinstance(current_model, dict) else current_model
+            if os.environ.get("SEQUITOR_BASETEN_CHAIN_URL") and current_status != "baseten chain":
+                model = self.classify(cached["seedPost"]["text"], cached["posts"], emit=emit)
+                cached["model"] = {**cached.get("model", {}), "baseten": model}
+                self.save()
             return cached
         if not self.x:
             raise RuntimeError("X bearer token unavailable")
@@ -508,6 +558,7 @@ class Sequitor:
                          "publishedAt": original.created_at.isoformat().replace("+00:00", "Z"),
                          "author": "@" + original.handle, "handle": original.handle,
                          "authorId": original.author_id, "likes": original.likes,
+                         "avatar": original.avatar or None,
                          "url": f"https://x.com/{original.handle}/status/{original.tweet_id}",
                          "scope": "seed", "captureTime": today_utc(), "textIsExcerpt": False,
                          "quotedPostId": None, "parentId": None}
@@ -552,7 +603,7 @@ class Sequitor:
         self.cache["runs"][cache_key] = run
         self.save()
         if emit:
-            emit("run.ready", {**run, "streamSource": "live"})
+            emit_activity(emit, run, "live")
             if seed_post and seed_post["publishedAt"][:10] == selected:
                 emit("posts.upsert", {"posts": [seed_post]})
         result = self.period(cache_key, selected, emit=emit)
@@ -670,6 +721,7 @@ class Handler(BaseHTTPRequestHandler):
                                  "publishedAt": found.created_at.isoformat().replace("+00:00", "Z"),
                                  "author": "@" + found.handle, "handle": found.handle,
                                  "authorId": found.author_id, "likes": found.likes,
+                                 "avatar": found.avatar or None,
                                  "url": f"https://x.com/{found.handle}/status/{found.tweet_id}",
                                  "scope": "referenced post", "captureTime": today_utc()})
                 return

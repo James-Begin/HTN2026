@@ -41,6 +41,7 @@ class Resolved:
     author_id: str = ""
     created_at: datetime = None
     likes: int = 0
+    avatar: str = ""
     media: list = field(default_factory=list)
     tombstone: str = ""
 
@@ -115,5 +116,6 @@ def resolve(tweet_id_or_url: str, timeout: int = 10) -> Resolved:
         author_id=str(user.get("id_str") or user.get("id") or ""),
         created_at=created or embedded_time,
         likes=d.get("favorite_count") or 0,
+        avatar=user.get("profile_image_url_https") or "",
         media=[m.get("media_url_https") for m in (d.get("mediaDetails") or [])],
     )
