@@ -26,13 +26,15 @@ from claimtrace.xapi import XClient, now_safe
 from sequitor_baseten_chain import BasetenChainClient
 
 ROOT = Path(__file__).resolve().parent
-CACHE_FILE = ROOT / "work" / "sequitor-cache.json"
+DATA_DIR = Path(os.environ.get("SEQUITOR_DATA_DIR") or os.environ.get("RAILWAY_VOLUME_MOUNT_PATH") or ROOT / "work")
+CACHE_FILE = DATA_DIR / "sequitor-cache.json"
 CAPTURE_FILE = ROOT / "demo" / "recordings" / "sequitor-live.json"
+DARIO_HUMOR_FILE = ROOT / "demo" / "recordings" / "dario-humor.json"
 SNAPSHOT_FILE = ROOT / "demo" / "recordings" / "pace-the-frontier" / "snapshot.json"
-EVENT_DIR = ROOT / "work" / "sequitor-streams"
+EVENT_DIR = DATA_DIR / "sequitor-streams"
 DEFAULT_SEED = "https://x.com/DarioAmodei/status/2098773920774074715"
-MAX_POSTS = 600  # Approximately $3.00 in X post charges, below the $10 test credit.
-MAX_COUNTS = 20  # Approximately $0.20 more at the repository's measured price.
+MAX_POSTS = 600  # $3.00 at the default cap.
+MAX_COUNTS = 20  # $0.20 at the default cap.
 
 
 class StoppedRun(Exception):
@@ -96,7 +98,7 @@ class StreamHub:
                 job.emit("run.started", {"source": "recorded" if mode == "recorded" else "live",
                                          "seed": seed})
                 if mode == "recorded":
-                    recorded = read_json(CAPTURE_FILE, sample_demo())
+                    recorded = recorded_demo()
                     job.emit("run.ready", pending_activity(recorded, "recorded"))
                     posts = sorted(recorded.get("posts", []),
                                    key=lambda post: -(post.get("likes") or 0))
@@ -143,6 +145,11 @@ def load_local_env() -> None:
         if "=" in line and not line.lstrip().startswith("#"):
             key, value = line.split("=", 1)
             os.environ.setdefault(key.strip(), value)
+
+
+load_local_env()
+MAX_POSTS = int(os.environ.get("SEQUITOR_X_POST_CAP", MAX_POSTS))
+MAX_COUNTS = int(os.environ.get("SEQUITOR_X_COUNTS_CAP", MAX_COUNTS))
 
 
 def read_json(path: Path, fallback: dict) -> dict:
@@ -223,6 +230,17 @@ def terms(raw: str) -> str:
     return " ".join(words)
 
 
+def context_count_query(plan: dict) -> str:
+    """A distinctive unquoted count query when the literal seed phrase has no hits."""
+    entity = str((plan.get("entities") or [""])[0])
+    anchor = re.findall(r"[\w'-]+", entity, flags=re.UNICODE)[:2]
+    phrase_words = re.findall(r"[\w'-]+", plan.get("volumePhrase") or "", flags=re.UNICODE)
+    stop = {"a", "an", "the", "is", "are", "was", "were", "will", "has", "have", "opening", "opened", "about", "how"}
+    distinctive = [word for word in phrase_words if word.casefold() not in stop
+                   and word.casefold() not in {part.casefold() for part in anchor}]
+    return " ".join((anchor + distinctive[-2:])[:4])
+
+
 def distinct_queries(values: list[str], limit: int = 2) -> list[str]:
     """Keep model-generated discovery bounded and compatible with X implicit AND."""
     queries: list[str] = []
@@ -299,6 +317,25 @@ def sample_demo() -> dict:
         "note": "This is a selected source sample. Its bar heights count saved posts, not X-wide activity.",
         "xSpend": 0,
     }
+
+
+def recorded_demo() -> dict:
+    """Add a separately sourced humor branch without rewriting the old capture."""
+    recorded = read_json(CAPTURE_FILE, sample_demo())
+    supplement = read_json(DARIO_HUMOR_FILE, {"posts": []})
+    posts = supplement.get("posts") or []
+    if not posts:
+        return recorded
+    saved_periods = recorded.setdefault("savedPeriods", {})
+    for post in posts:
+        day = post["publishedAt"][:10]
+        period = saved_periods.get(day)
+        if period:
+            period["posts"] = list({row["id"]: row for row in period.get("posts", []) + [post]}.values())
+        if day == recorded["selectedDay"]:
+            recorded["posts"] = list({row["id"]: row for row in recorded.get("posts", []) + [post]}.values())
+    recorded["note"] = (recorded.get("note") or "") + " Three later targeted humor-search posts are included with their own capture timestamps."
+    return recorded
 
 
 class Sequitor:
@@ -776,18 +813,36 @@ class Sequitor:
                            "count": int(row.get("tweet_count", row.get("post_count", 0))),
                            "coverage": "partial" if row.get("sequitor_partial") else "complete"}
                           for row in buckets_raw], key=lambda row: row["day"])
-        if not buckets:
-            raise RuntimeError("No X activity found for the measured phrase")
+        measured_phrase = plan["volumePhrase"]
+        if not any(bucket["count"] for bucket in buckets):
+            fallback_query = context_count_query(plan)
+            if fallback_query and fallback_query.casefold() != measured_phrase.strip('"').casefold():
+                if emit:
+                    emit("stage", {"name": "The exact phrase has no matches; measuring the grounded context"})
+                fallback_raw = self.count(fallback_query, start, end)
+                buckets = sorted([{"day": row["start"][:10],
+                                   "count": int(row.get("tweet_count", row.get("post_count", 0))),
+                                   "coverage": "partial" if row.get("sequitor_partial") else "complete"}
+                                  for row in fallback_raw], key=lambda row: row["day"])
+                plan["volumeFallback"] = fallback_query
+                if emit:
+                    emit("context.expanded", {"plan": plan})
+        if not any(bucket["count"] for bucket in buckets):
+            raise RuntimeError("No X activity found for the exact phrase or grounded context query")
+        chart_query = plan.get("volumeFallback") or measured_phrase
         peak = max(buckets, key=lambda row: row["count"])
         selected = seed_post["publishedAt"][:10] if seed_post else peak["day"]
         run = {"id": cache_key, "seed": seed, "title": original_text.split("\n")[0][:110],
-               "kind": "live", "capturedAt": today_utc(), "scope": "X counts for one exact phrase",
-               "query": plan["volumePhrase"], "buckets": buckets, "posts": [],
+               "kind": "live", "capturedAt": today_utc(),
+               "scope": "X counts for one context query" if plan.get("volumeFallback") else "X counts for one exact phrase",
+               "query": chart_query, "buckets": buckets, "posts": [],
                "selectedDay": selected, "rankingCoverage": "not collected yet",
                "searchPlan": plan, "seedPost": seed_post or {"id": "seed-text", "text": original_text,
                                                   "publishedAt": selected + "T00:00:00Z", "author": "Seed text"},
                "model": {"openai": plan.get("model"), "baseten": "pending"},
-               "note": "Bars measure the exact phrase only. The feed can include a separately marked related search.",
+               "note": (f"The exact phrase {measured_phrase} had no matches. Bars measure the grounded context query {chart_query}. "
+                        "The feed includes separately marked discovery branches." if plan.get("volumeFallback") else
+                        "Bars measure the exact phrase only. The feed can include separately marked discovery branches."),
                "xSpend": round(self.x.spend, 3)}
         self.cache["runs"][cache_key] = run
         self.save()
@@ -863,7 +918,7 @@ class Handler(BaseHTTPRequestHandler):
                                  "xPostCap": MAX_POSTS, "xCountsCap": MAX_COUNTS})
                 return
             if url.path == "/api/demo" and method == "GET":
-                recorded = read_json(CAPTURE_FILE, sample_demo())
+                recorded = recorded_demo()
                 self._send(200, {**recorded, "kind": "saved"})
                 return
             if url.path == "/api/runs" and method == "POST":
@@ -965,6 +1020,9 @@ class Handler(BaseHTTPRequestHandler):
 
 
 if __name__ == "__main__":
-    port = int(os.environ.get("SEQUITOR_PORT", "8765"))
-    print(f"Sequitor at http://127.0.0.1:{port} (X cap: {MAX_POSTS} posts, {MAX_COUNTS} counts calls)")
-    ThreadingHTTPServer(("127.0.0.1", port), Handler).serve_forever()
+    if os.environ.get("RAILWAY_ENVIRONMENT") and not os.environ.get("RAILWAY_VOLUME_MOUNT_PATH"):
+        raise RuntimeError("Attach a Railway volume before enabling paid live searches")
+    port = int(os.environ.get("PORT") or os.environ.get("SEQUITOR_PORT", "8765"))
+    host = "0.0.0.0" if os.environ.get("PORT") else "127.0.0.1"
+    print(f"Sequitor at http://{host}:{port} (X cap: {MAX_POSTS} posts, {MAX_COUNTS} counts calls)")
+    ThreadingHTTPServer((host, port), Handler).serve_forever()

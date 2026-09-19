@@ -16,7 +16,7 @@ python3 sequitor_server.py
 
 Open <http://127.0.0.1:8765>. The browser loads a recorded real-source run automatically. **Replay the Dario example** streams its recorded posts into the feed; **Explore live** starts a bounded investigation and streams real retrieval batches before model curation finishes. A cached repeat is labelled as cached. Local provider credentials are read from an ignored `.env` file in the project root. See `.env.example` for the variable names. Never put credentials in `web` or in Git.
 
-A [public recorded demo](https://james-begin.github.io/HTN2026/) is also available on GitHub Pages. It includes the measured saved run and browser-side replay, with no provider keys or live API access.
+A [public recorded demo](https://james-begin.github.io/HTN2026/) is also available on GitHub Pages. It includes Dario's saved run, the later targeted “who up pacing they frontier” humor finds, and a separate Anthropic Wet Lab test sample. GitHub Pages has no provider keys or live API access. The [Railway deployment guide](docs/RAILWAY_DEPLOY.md) describes the full live interface.
 
 For frontend development, run `python3 sequitor_server.py` and `cd web && npm run dev` in separate terminals. Vite proxies `/api` to the local server. The production build is served by the Python process, so the demo needs only one URL.
 
@@ -30,7 +30,7 @@ Events include `run.started`, `seed.resolved`, `plan.ready`, `context.expanded`,
 
 ## What the demo measures
 
-- The histogram counts X matches for **one inspectable exact phrase**. It does not count every reply or quote in the broader discussion.
+- The histogram counts X matches for **one inspectable query**. It normally uses an exact seed phrase; when that phrase has zero matches, the server measures and labels a grounded context query. It does not count every reply or quote in the broader discussion.
 - The feed shows up to ten posts **among retrieved candidates** on the selected UTC day, sorted by likes recorded when collected. Search pagination may be incomplete; these are not guaranteed to be the platform's top ten.
 - OpenAI derives a neutral context card and up to two first-pass discovery branches from the seed. After the first retrieval, it can add at most two evidence-grounded branches. Each post retains its retrieval scope.
 - Posts rank by a hybrid of semantic similarity, lexical overlap, direct reply/quote relation, and retrieval scope. When a trained reranker returns `sameClaimScore`, it becomes one extra signal. A match score is never a truth, influence, or copying judgment.
@@ -40,7 +40,7 @@ Events include `run.started`, `seed.resolved`, `plan.ready`, `context.expanded`,
 
 ## Build status
 
-The browser, streamed local API, two-pass OpenAI context planning, X counts/search, hybrid retrieval ranking, chronological Neighborhood, day switching, source context, selected-post X embeds, public recorded demo, and offline backup are implemented. Card timestamps display Eastern local time; the measured chart still uses UTC day buckets until the source counts are accurately rebucketed. Configure `SEQUITOR_BASETEN_EMBED_URL` once an embeddings deployment is ready; configure the existing reranker route when the separate Baseten training run is deployed. See `SEQUITOR_HANDOFF.md` for deadline-critical steps.
+The browser, streamed local API, two-pass OpenAI context planning, X counts/search, hybrid retrieval ranking, chronological Neighborhood, day switching, source context, selected-post X embeds, public recorded demo, and offline backup are implemented. A zero-match phrase now triggers a labelled context-count fallback. The Anthropic Wet Lab test exposed the need for separate announcement, commentary, and humor retrieval branches; see [the branch plan](docs/SEARCH_BRANCH_PLAN.md) and [test report](docs/LIVE_TEST_2026-09-19_ANTHROPIC_WET_LAB.md). Card timestamps display Eastern local time; the measured chart still uses UTC day buckets until the source counts are accurately rebucketed. Configure `SEQUITOR_BASETEN_EMBED_URL` once an embeddings deployment is ready; configure the existing reranker route when the separate Baseten training run is deployed. See `SEQUITOR_HANDOFF.md` for deadline-critical steps.
 
 ---
 

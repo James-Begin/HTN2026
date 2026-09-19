@@ -1,0 +1,57 @@
+{
+  "query": "\"who up pacing they frontier\"",
+  "source": "targeted X archive search; post details resolved from public source",
+  "posts": [
+    {
+      "id": "2098776460127334538",
+      "text": "good morning, who up pacing they frontier",
+      "publishedAt": "2026-09-12T14:11:16Z",
+      "author": "manic_pixie_agi",
+      "handle": "manic_pixie_agi",
+      "authorId": "1600993432679452673",
+      "avatar": "https://pbs.twimg.com/profile_images/2075603666757660672/3zz1kKR9_normal.jpg",
+      "likes": 11,
+      "url": "https://x.com/manic_pixie_agi/status/2098776460127334538",
+      "parentId": null,
+      "quotedPostId": null,
+      "scope": "humor branch",
+      "branch": "humor",
+      "captureTime": "2026-09-19T20:14:28.142167Z",
+      "textIsExcerpt": false
+    },
+    {
+      "id": "2099242456747503716",
+      "text": "who up pacing they frontier",
+      "publishedAt": "2026-09-13T21:02:58Z",
+      "author": "alessio_joseph",
+      "handle": "alessio_joseph",
+      "authorId": "570260898",
+      "avatar": "https://pbs.twimg.com/profile_images/1373082965991813121/pcKguDxJ_normal.jpg",
+      "likes": 77,
+      "url": "https://x.com/alessio_joseph/status/2099242456747503716",
+      "parentId": null,
+      "quotedPostId": null,
+      "scope": "humor branch",
+      "branch": "humor",
+      "captureTime": "2026-09-19T20:14:28.399041Z",
+      "textIsExcerpt": false
+    },
+    {
+      "id": "2099353717376241696",
+      "text": "who up pacing they frontier",
+      "publishedAt": "2026-09-14T04:25:04Z",
+      "author": "PippengerHarlo",
+      "handle": "PippengerHarlo",
+      "authorId": "1267236543338385409",
+      "avatar": "https://pbs.twimg.com/profile_images/1609827658556411904/u3sjWl6j_normal.jpg",
+      "likes": 9,
+      "url": "https://x.com/PippengerHarlo/status/2099353717376241696",
+      "parentId": null,
+      "quotedPostId": null,
+      "scope": "humor branch",
+      "branch": "humor",
+      "captureTime": "2026-09-19T20:14:28.648541Z",
+      "textIsExcerpt": false
+    }
+  ]
+}
