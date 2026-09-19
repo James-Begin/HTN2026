@@ -1,6 +1,6 @@
 # Sequitor: morning handoff
 
-**Updated September 19, 2026.** This repository now contains a working, one-URL local demo, a [public recorded demo](https://james-begin.github.io/HTN2026/), and an offline fallback. The new browser app is Sequitor; the older Claimtrace research code remains in the repository. No Devpost submission has been made.
+**Updated September 19, 2026.** This repository now contains a working, one-URL local demo, a [public recorded demo](https://james-begin.github.io/HTN2026/), and an offline fallback. The new browser app is Sequitor; the older Claimtrace research code remains in the repository. The [Devpost project page](https://devpost.com/software/sequitor) is filled out but **has not been submitted to Hack the North**.
 
 ## What works
 
@@ -30,7 +30,7 @@ The previously documented dedicated Baseten cross-encoder endpoint `q9p28o63` re
 
 ## Deadline-critical work
 
-1. **Before Saturday September 19 at 2:00 PM EDT:** create and actually submit the initial Devpost project; add the final team membership and exact badge ID; select **both OpenAI and Baseten sponsor prizes**. The event rules gathered during planning say these are locked at that time. Verify the live [official rules](https://hackthenorth2026.devpost.com/rules) in your logged-in event view before relying on this handoff. A saved draft is not the initial submission.
+1. **Before Saturday September 19 at 2:00 PM EDT:** open the prepared [Sequitor Devpost page](https://devpost.com/software/sequitor) and actually submit it to Hack the North. The required form fields still need your **exact badge ID**, a **phone number reachable Sunday 1–2 PM EDT** (with country code), and **your current school**. Your Devpost email is already on file, but confirm it is the address reachable during that judging window. Select **both OpenAI and Baseten sponsor prizes** before submission. The event rules gathered during planning say prize selections and the initial submission lock at 2 PM. Verify the live [official rules](https://hackthenorth2026.devpost.com/rules) in your logged-in event view. A published project page is not a hackathon submission.
 2. **Before Sunday September 20 at 8:00 AM EDT:** finish the Devpost page, screenshots/video, and final source link. Test the three-minute live presentation once with the cached default run and once with the offline backup. Bring your own power and local file copy.
 3. Event rules from the planning review say code and design assets for the submission must be created during the hacking window and that a model may not be trained in advance. This repository includes pre-existing research and prototype code. State clearly what Sequitor-specific work was created during the event and check with organizers how to disclose or separate the older work. Do not present the old checkpoint or old benchmarks as new hackathon work.
 
