@@ -203,11 +203,18 @@ class XClient:
         self._guard(mr)
         params = {"query": query, "start_time": iso(start), "end_time": iso(end),
                   "max_results": mr,
-                  "tweet.fields": "created_at,public_metrics,author_id,lang"}
+                  "tweet.fields": "created_at,public_metrics,author_id,lang,referenced_tweets,conversation_id",
+                  "expansions": "author_id",
+                  "user.fields": "name,username,profile_image_url"}
         if token:
             params["next_token"] = token
         d = self._get("tweets/search/all", params)
         rows = d.get("data", [])
+        users = {str(user.get("id")): user for user in d.get("includes", {}).get("users", [])}
+        for row in rows:
+            user = users.get(str(row.get("author_id")))
+            if user:
+                row["sequitor_author"] = user
         self.posts_read += len(rows)
         self.search_calls += 1
         return rows, d.get("meta", {}).get("next_token")

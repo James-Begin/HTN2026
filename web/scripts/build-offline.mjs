@@ -43,6 +43,6 @@ html = html.replace('href="/favicon.svg"', `href="${await dataUrl('/favicon.svg'
 if (/<(?:script|link)\b[^>]*(?:src|href)="(?:\/|https?:)/i.test(html)) {
   throw new Error('Unbundled page resources remain in the offline document')
 }
-const output = resolve(root, 'claimtrace-offline.html')
+const output = resolve(root, 'sequitor-offline.html')
 await writeFile(output, html)
 console.log(`Offline backup written: ${output}`)

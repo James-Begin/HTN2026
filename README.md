@@ -1,4 +1,42 @@
-# claimtrace
+# Sequitor
+
+**Explore how a post becomes a conversation.** Paste an X post URL or topic, see measured activity by UTC day, read popular retrieved posts from a selected day, and open recorded quote/reply context. Sequitor keeps the original posts visible and states how much of the conversation it actually captured.
+
+This is the Hack the North 2026 build. It uses the **OpenAI API** to plan a measured phrase and a broader search from a seed post, **X** for activity and source records, and **Baseten** for model-backed curation of retrieved reactions. The Baseten-hosted curation is running; an older dedicated cross-encoder deployment named in the research notes is unavailable with the supplied demo key, so the current browser demo does not claim to run that fine-tune.
+
+## Run the demo
+
+```bash
+cd web
+npm ci
+npm run build
+cd ..
+python3 sequitor_server.py
+```
+
+Open <http://127.0.0.1:8765>. The browser loads a recorded real-source run automatically; the **Explore live** button runs a new bounded investigation. Local provider credentials are read from an ignored `.env` file in the project root. See `.env.example` for the variable names. Never put credentials in `web` or in Git.
+
+For frontend development, run `python3 sequitor_server.py` and `cd web && npm run dev` in separate terminals. Vite proxies `/api` to the local server. The production build is served by the Python process, so the demo needs only one URL.
+
+To prepare a network-independent copy, run `cd web && npm run build:offline`. The generated `web/dist/sequitor-offline.html` embeds the Sequitor interface and the recorded run. It does not make live provider calls when opened as a local file. External X links still require internet.
+
+## What the demo measures
+
+- The histogram counts X matches for **one inspectable exact phrase**. It does not count every reply or quote in the broader discussion.
+- The feed shows up to ten posts **among retrieved candidates** on the selected UTC day, sorted by likes recorded when collected. Search pagination may be incomplete; these are not guaranteed to be the platform's top ten.
+- A related OpenAI-planned query and explicit conversation replies can add posts outside the histogram's phrase scope. Each post's scope is retained. Baseten picks a few responses worth exploring; model labels do not establish truth, copying, or popularity.
+- `demo/recordings/sequitor-live.json` is a saved real run, including counts, source posts, capture time, model provenance, and cached day results. The earlier seven-post snapshot is retained separately. Neither contains provider keys.
+- The local server caps X at 600 returned posts and 20 counts calls, approximately **$3.20 maximum** under the repository's measured prices. It persists usage counters across restarts in ignored `work/sequitor-cache.json`.
+
+## Build status
+
+The browser, local API, OpenAI planning, X counts/search, Baseten hosted curation, day switching, source context, and offline backup are implemented. The saved run covers the frontier announcement and adjacent days. The remaining release work is a publicly reachable demo or video, Devpost submission, and final presentation rehearsal; see `SEQUITOR_HANDOFF.md`.
+
+---
+
+# Claimtrace research and CLI archive
+
+The following notes document the research pipeline that Sequitor builds on. Some historical deployment statements refer to checkpoints or credentials unavailable in this GitHub checkout; treat the current build status above and the live API health endpoint as authoritative for the demo.
 
 Paste a claim or a tweet URL. Get either its lineage back through the archive, or
 an honest read on whether anyone actually corroborates it.
