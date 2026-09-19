@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "kind": "curated-source-snapshot",
-  "capturedAt": "2026-09-18T19:54:56Z",
+  "capturedAt": "2026-09-19T05:31:00Z",
   "primaryPostId": "2098773920774074715",
   "essayUrl": "https://darioamodei.com/post/we-must-pace-the-frontier",
   "selection": "Author announcement, an earlier phrase match, and selected publicly linked reactions. Purposive selection, not an exhaustive search or random sample.",
@@ -28,7 +28,7 @@
       "capture": {
         "method": "X public syndication embed",
         "endpoint": "https://cdn.syndication.twimg.com/tweet-result?id=2087370436959186977&token=a",
-        "capturedAt": "2026-09-18T19:54:48Z",
+        "capturedAt": "2026-09-19T05:31:00Z",
         "textIsExcerpt": false,
         "sha256": "dea9b5b3b366ece0618a120c2a2593bf40f74aa557f6627cab82390c10baf2c9",
         "rawFile": "raw/2087370436959186977.json",
@@ -49,7 +49,7 @@
       "capture": {
         "method": "X public syndication embed",
         "endpoint": "https://cdn.syndication.twimg.com/tweet-result?id=2098773920774074715&token=a",
-        "capturedAt": "2026-09-18T19:54:49Z",
+        "capturedAt": "2026-09-19T05:31:00Z",
         "textIsExcerpt": true,
         "sha256": "d7d28b3751cec0aa37c0f80d697d73190048cf7f4663ef088116998a73b49287",
         "rawFile": "raw/2098773920774074715.json",
@@ -70,7 +70,7 @@
       "capture": {
         "method": "X public syndication embed",
         "endpoint": "https://cdn.syndication.twimg.com/tweet-result?id=2098789109980332057&token=a",
-        "capturedAt": "2026-09-18T19:54:50Z",
+        "capturedAt": "2026-09-19T05:31:00Z",
         "textIsExcerpt": false,
         "sha256": "66418e85c08ce3eaf62dcc619294d7ae378de014e3b5eca148cd43ada167277f",
         "rawFile": "raw/2098789109980332057.json",
@@ -92,7 +92,7 @@
       "capture": {
         "method": "X public syndication embed",
         "endpoint": "https://cdn.syndication.twimg.com/tweet-result?id=2098811563415150910&token=a",
-        "capturedAt": "2026-09-18T19:54:51Z",
+        "capturedAt": "2026-09-19T05:31:00Z",
         "textIsExcerpt": false,
         "sha256": "4bcef2e87c8f1d3397d6274de7ee869b9bfa57209c85d941c86b90b2e32364c0",
         "rawFile": "raw/2098811563415150910.json",
@@ -114,7 +114,7 @@
       "capture": {
         "method": "X public syndication embed",
         "endpoint": "https://cdn.syndication.twimg.com/tweet-result?id=2098847403134611522&token=a",
-        "capturedAt": "2026-09-18T19:54:53Z",
+        "capturedAt": "2026-09-19T05:31:00Z",
         "textIsExcerpt": true,
         "sha256": "de1cb564eff4ac27a30e0fd3eae2dfae6f5e47e6fa5f323923aba751bef000c6",
         "rawFile": "raw/2098847403134611522.json",
@@ -135,7 +135,7 @@
       "capture": {
         "method": "X public syndication embed",
         "endpoint": "https://cdn.syndication.twimg.com/tweet-result?id=2098909516582490602&token=a",
-        "capturedAt": "2026-09-18T19:54:54Z",
+        "capturedAt": "2026-09-19T05:31:00Z",
         "textIsExcerpt": false,
         "sha256": "a1f0635a9de80067968a912f70cb14268db99cdb331e29f56c6d38bfeb5f2c5c",
         "rawFile": "raw/2098909516582490602.json",
@@ -157,7 +157,7 @@
       "capture": {
         "method": "X public syndication embed",
         "endpoint": "https://cdn.syndication.twimg.com/tweet-result?id=2099145338678378958&token=a",
-        "capturedAt": "2026-09-18T19:54:55Z",
+        "capturedAt": "2026-09-19T05:31:00Z",
         "textIsExcerpt": false,
         "sha256": "22c88ea4ff683c20cc9ace30730c15a0f3f449ac233a6541c48e6e6d8f49b81e",
         "rawFile": "raw/2099145338678378958.json",

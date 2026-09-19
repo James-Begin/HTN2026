@@ -1,6 +1,6 @@
 # Pace the frontier — saved X source snapshot
 
-This is the offline fallback for the frontend's first example. It contains actual public X embed payloads collected on **2026-09-18**, not invented tweet records or a recorded production/model run.
+This is the offline fallback for the frontend's first example. It contains actual public X embed payloads collected on **2026-09-19 at 01:31 EDT**, not invented tweet records or a recorded production/model run.
 
 ## Captured selection
 

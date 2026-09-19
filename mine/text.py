@@ -1,7 +1,7 @@
 """Tokenisation, language detection, and overlap. No dependencies, no model.
 
 Language detection is stopword-based rather than metadata-based because the
-metadata lies. Measured on 4,473 Bluesky posts, 2026-09-14:
+metadata lies. Measured on 4,473 Bluesky posts, 2026-09-19 01:31 EDT:
 
   lemonde.fr   tags every French post `langs: ["en"]`   500 of 500 WRONG
   afp.com      omits langs on 496 of 498, and posts French on a nominally

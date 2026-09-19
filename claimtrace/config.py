@@ -104,7 +104,7 @@ XENC_PAIRS_PER_SEC = 434
 # inherited threshold. Derive from `train/calibrate.py` plus a held-out sample, never
 # inherit from a previous checkpoint.
 #
-# Calibrated 2026-09-17 for `runs/sweep-en/en-m3` (English-only), on 145 combined
+# Calibrated 2026-09-19 01:31 EDT for `runs/sweep-en/en-m3` (English-only), on 145 combined
 # blind-labelled English pairs: the 77-pair in-window holdout plus the 68-pair FRESH
 # temporal holdout (days collected strictly after training data ends, so genuinely
 # unseen). Not yet the deployed checkpoint; re-derive again before or after deploying it.

@@ -47,7 +47,7 @@ The saved frontier snapshot has no model scores: its annotations are explicitly 
 
 ## Saved frontier example and offline backup
 
-The default example now uses `../demo/recordings/pace-the-frontier/snapshot.json`, collected from X's public syndication endpoint on **2026-09-18**. It includes Dario's announcement, earlier wording from roon, and selected reactions from Musk, Altman, Sanders, Hassabis and Hwang. Raw responses and their hashes are retained alongside it. See the [capture README](../demo/recordings/pace-the-frontier/README.md) for exact links, verification, limitations, and deliberate refresh instructions.
+The default example now uses `../demo/recordings/pace-the-frontier/snapshot.json`, collected from X's public syndication endpoint on **2026-09-19 at 01:31 EDT**. It includes Dario's announcement, earlier wording from roon, and selected reactions from Musk, Altman, Sanders, Hassabis and Hwang. Raw responses and their hashes are retained alongside it. See the [capture README](../demo/recordings/pace-the-frontier/README.md) for exact links, verification, limitations, and deliberate refresh instructions.
 
 This is a **saved source snapshot, not a recorded production/model run**. Text, authors, publication times, quote IDs, and likes come from the captured payloads. Long-post excerpts are marked. Replay timing and commentary are authored. Timeline totals count this selected sample only; there are no platform-wide activity measurements.
 

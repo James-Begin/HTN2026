@@ -310,7 +310,7 @@ objective above the subtype.
 
 ## Facts measured against live data
 
-**Bluesky, 2026-09-14.** `searchPosts` returns 403 without auth, blocked at the
+**Bluesky, 2026-09-19 01:31 EDT.** `searchPosts` returns 403 without auth, blocked at the
 BunnyCDN edge rather than by the API, so retrying never helps. `getAuthorFeed` and
 `getProfile` do work keyless and paginate by cursor. So mining is account-driven,
 not query-driven.

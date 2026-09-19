@@ -3,7 +3,7 @@
 Why Bluesky at all: X bills per row returned, so a mined corpus of any size costs
 real money. Bluesky's AppView costs nothing. Same events, same day, free.
 
-Measured constraints on the public AppView, 2026-09-14:
+Measured constraints on the public AppView, 2026-09-19 01:31 EDT:
   * `app.bsky.feed.searchPosts` is 403'd at the CDN edge without auth. The block
     page comes from BunnyCDN, not from Bluesky's API, so it is deliberate and no
     amount of retrying helps. Search is unavailable to us.
