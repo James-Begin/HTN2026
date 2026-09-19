@@ -44,6 +44,7 @@ class Resolved:
     avatar: str = ""
     media: list = field(default_factory=list)
     tombstone: str = ""
+    text_is_excerpt: bool = False
 
     @property
     def existed(self) -> bool:
@@ -118,4 +119,5 @@ def resolve(tweet_id_or_url: str, timeout: int = 10) -> Resolved:
         likes=d.get("favorite_count") or 0,
         avatar=user.get("profile_image_url_https") or "",
         media=[m.get("media_url_https") for m in (d.get("mediaDetails") or [])],
+        text_is_excerpt=bool(d.get("note_tweet")) or d.get("truncated") is True,
     )

@@ -1,253 +1,131 @@
-# Product reset and next steps
+# Sequitor — next steps after the repository sync
 
-## Status and governing direction
+Reviewed September 19, 2026, against `a627017263295a3ff071be59d229e1aacded3b46` (`Polish activity control behavior`).
 
-This plan responds to the latest user feedback and supersedes the earlier instruction to preserve the current editorial design. **This is a planning update, not implementation approval for all phases below.** No application code, source data, credentials, or deployment was changed while preparing it.
+This replaces the earlier product-reset plan, which described much of the now-implemented interface as future work. **This is a plan, not approval to change application code, buy API usage, train/deploy models, or modify credentials.**
 
-Repository: `/Users/james.begin/dev/claimtrace`. The current name, Claimtrace, is a working name pending a branding decision. **Git is now authorized for the user's requested upload to `https://github.com/James-Begin/HTN2026`.** Preserve the existing CLI, captured sources, and portable backup while developing the new experience.
+## Repository state
 
-## The product we should build
+- Repository: `/Users/james.begin/dev/claimtrace`; remote: `git@github.com:James-Begin/HTN2026.git`.
+- The remote initial commit was rewritten from local `00a6078` to `b485eea`; their tree hashes are identical. Local history was preserved as `backup/pre-pull-00a6078` before synchronizing `main` to `origin/main` with `git reset --keep`.
+- Application source is synchronized to the reviewed revision. This plan is the only subsequent working-tree edit; it has not been committed or pushed.
+- Keep **Sequitor** as the browser name. Do not reopen the earlier Offshoot/Wake naming exercise or rename the legacy Python CLI.
 
-**Explore the conversation around a post: when attention grew, which posts became popular, and how people responded, joked, argued, and took it in new directions.**
+## What actually changed
 
-The current demo overemphasizes corroboration, prominent authors, and an explanation written for the reader. That is not the desired product. The user wants to explore Twitter itself, not read an AI-authored report about it.
-
-The core interaction should be:
-
-> Open a post or topic → see its volume over time → select a period → read the most popular related posts → explore their surrounding conversation.
-
-### What changes
-
-- Authentic source records remain necessary; institutional credibility or celebrity status is **not** an inclusion requirement.
-- Include ordinary accounts, jokes, memes, criticism, disagreement, replies, quotes, and tangents connected to the conversation.
-- Same-claim scoring must not gate discovery or popularity. A joke can be highly relevant without restating the original claim.
-- Popularity is not credibility, and semantic similarity is not evidence of copying.
-- Existing source-tracing capabilities remain useful underneath the product, but should not dictate the default experience or its language.
-- Intelligence can help with retrieval, query expansion, or grouping in the background. Generated narrative should not be the product's output.
-
-## Product decisions and proposed defaults
-
-### Volume
-
-The left-hand chart should represent **all matching post activity within the declared conversation scope**, not the few posts displayed in the feed or the current hand-picked snapshot.
-
-“All related posts” is a product goal, not a guarantee that an API exposes every discussion on X. Define a broad scope using the original post, wording variants, relevant links, and discoverable relationships. Measure the accessible matches to that scope and keep its definition inspectable.
-
-Proposed default: volume includes related repost activity when supported. The popular feed presents distinct authored posts, including replies and quotes, rather than repeated native repost copies of the same original. Make this distinction available in the coverage details.
-
-### Time navigation
-
-- Add **Days / Months / Years**, with Days as the default for an unfolding conversation.
-- Use an actual daily histogram rather than a list of selected-source counts.
-- Hover/focus shows the date and matching-post count; click selects that exact interval.
-- A selected month can be explored day by day; retain month/year overview navigation.
-- Start with UTC throughout and display that timezone. Store inclusive start and exclusive end boundaries.
-- Aggregate months and years from compatible daily data; missing intervals are unknown, not zero. Current/incomplete periods retain their coverage state.
-
-### Period selection and popularity
-
-- Selecting a day or month shows **up to the top 10 related posts published in that period**.
-- Proposed ranking: captured likes, descending, with a stable tie-break. Do not introduce an unexplained composite virality score.
-- This means likes observed at collection time on posts published in the period—not likes earned during that period. Historical engagement-by-day is a different dataset.
-- Show fewer than 10 if fewer are available. Do not invent, duplicate, or pad results.
-- Default to the selected period's top posts; provide a simple chronological alternative for following the conversation.
-- Popularity must not use an author allowlist. Ordinary accounts and humorous offshoots compete by the same ranking rule.
-- Retain the original post as accessible context without repeatedly duplicating it or confusing a pinned reference with the selected period's ranked results.
-
-## Proposed minimal interface
-
-**Recommendation: two persistent columns, with an optional context panel.** The previous three-column implementation duplicates the story and contributes to clutter; keeping it is not a requirement now.
-
-```text
-wordmark                         search
-
-volume timeline     post feed
-Days Months Years   selected period    Top / Chronological
-                    X-style posts
-                    ...
-
-                    contextual drawer only when requested
-```
-
-- **Left:** compact volume chart and time navigation.
-- **Main:** one feed of actual posts. Date selection changes its contents rather than merely dimming observations elsewhere.
-- **Optional context:** the quoted/replied-to post, surrounding replies, or source details when opened. Not another permanent column of duplicate posts.
-- On mobile, place a compact chart above the feed and use a sheet for context.
-- Keep period changes stable: preserve the selected date, show factual loading state, reject stale responses, and avoid stealing scroll position as data arrives.
-
-### Remove from the default experience
-
-- Per-post generated/editorial headlines and explanatory paragraphs.
-- The generated summary / “In context” essay and typewriter presentation.
-- Claim-equivalence and credibility-style badges under posts.
-- Marketing prose such as “Every claim has a backstory” and repeated methodological slogans.
-- Large hero illustration, oversized introduction, repeated provenance footnotes, and stage narration.
-- Always-visible methodology/CLI/export controls: move secondary actions into an unobtrusive menu.
-
-**“No AI writing” means no app-authored interpretive prose in the experience. It does not mean modifying or hiding real posts that discuss AI.** Preserve their wording exactly. Short factual labels—dates, counts, loading/error status and coverage—remain appropriate.
-
-Source coverage and snapshot/live identity still matter, but consolidate them into a compact indicator and an on-demand details view. Keep material limitations such as a truncated post visible where necessary.
-
-### Post presentation
-
-Render posts in a restrained, X-like form:
-
-- Actual avatar, author name, handle and publication timestamp.
-- Original text with its paragraph breaks and links.
-- Quoted-post context and attached media when captured and available.
-- Likes, reposts, replies, and other metrics only when actually supplied.
-- Direct source link; no invented verification badge or replacement prose.
-
-Use a local renderer rather than depending on live embedded widgets for the core experience. The offline fallback must still work without X scripts. Capture/cache required avatars and permitted media for the backup; use an honest placeholder when unavailable. Do not pretend this app is affiliated with X.
-
-## Visual and naming direction
-
-### Visual direction
-
-- Neutral near-black background, charcoal surfaces, light text and muted neutral secondary text.
-- Remove the current green/brown palette and mint-heavy accents.
-- Use a consistent sans-serif family; retire the editorial serif headline treatment.
-- Thin separators, restrained controls, simple spacing. Color should mostly come from the posts and their media, not the application's chrome.
-- No decorative cards within cards, gradients, large slogan blocks, or animated narration.
-- Subtle transitions only; retain keyboard access, contrast, responsive behavior and reduced-motion support.
-
-### Names to explore
-
-These are working suggestions, **not checked for domain, trademark, package, or product-name availability**.
-
-| Name | Why it could fit | Design trade-off |
+| Area | Current implementation | Important boundary |
 |---|---|---|
-| **Offshoot** | Captures a post branching into jokes, arguments and new conversations. | Strong fit for exploration; less explicitly about time. |
-| **Wake** | Short, minimal; the trail a post leaves behind. | Memorable but ambiguous without a descriptor. |
-| **Ripple** | Immediately suggests spread and attention. | Needs a particularly careful collision check. |
-| **Relay** | Emphasizes sharing and passing things along. | Less expressive about mutation and offshoots. |
-| **Threadline** | Suggests following a conversation through time. | More descriptive, less minimal. |
-| **Afterpost** | Focuses on what happens after the original post. | Distinctive concept, but the coined word needs a visual trial. |
+| Browser | `web/src/main.tsx` now mounts `Sequitor.tsx`: neutral-dark timeline/feed, original post cards, source/context drawers, optional graph | The older `App.tsx` and normalized investigation reducer are no longer the active browser path. Their tested lifecycle/accessibility behavior does not automatically protect this implementation. |
+| Activity and rankings | UTC daily selection, Popular/Recent/Sequitor sorting, hourly activity, monthly aggregation | Monthly/hourly bars are non-selectable. There is no monthly top-post request or yearly navigation. Recorded hourly bars count captured posts, not measured platform activity. |
+| Retrieval | OpenAI context planning, X counts/search, direct-conversation retrieval, bounded evidence-based expansion, zero-phrase context-count fallback | Counts measure one declared query; candidate retrieval spans additional queries and remains incomplete. |
+| Models | Optional Baseten embedding route, lexical fallback, Chain adapter, cross-encoder and hosted-curation fallbacks | A successful Chain path bypasses the trained cross-encoder. Code and configuration do not prove an endpoint is currently deployed or available. |
+| Streaming | `sequitor_server.py`: background jobs, SSE replay/cursors, cancellation flags, persisted event logs and caches | Cancellation is cooperative; persistence, public admission control, and cache completeness still need work. |
+| Recordings | Larger Dario capture, separately collected humor, Wet Lab example, model-role/wording graph artifact | Do not equate saved candidates with complete rankings or observed propagation. |
+| Packaging | Docker/Railway configuration, documented GitHub Pages demo, single-file `sequitor-offline.html` | Deployment instructions are not evidence of a deployed live service. Offline source cards work, but remote avatar/widget requests are still attempted. |
+| Dependencies | Lockfile download URLs now use public npm | A fresh external `npm ci` was not revalidated during this review; the build used existing installed dependencies. |
 
-**Recommendation:** explore Offshoot and Wake as wordmarks on the same monochrome layout before choosing. Do not rename the repository, packages, CLI commands, or files yet.
+**Recommendation:** retain this foundation. The next work is reliability and retrieval quality, not another redesign or server-framework migration.
 
-## Implementation sequence
+## Immediate operational check
 
-### Phase A — align the product and visual prototype
+`SEQUITOR_HANDOFF.md` says the project page was published but not submitted, and gives an initial submission deadline of September 19 at 2 PM EDT. At this review's clock check, September 19 at 21:35 UTC, that documented deadline had passed. **Actual submission state and the event's current rules are [UNVERIFIED].** Confirm them in the logged-in event view or with organizers; do not assume either that publishing submitted the entry or that the handoff is still current.
 
-1. Agree on the conversation-exploration framing, the default likes ranking, and the two-column layout with optional context.
-2. Produce a minimal visual pass using existing real posts, without implying that the current sample is a volume dataset.
-3. Remove per-post headlines, annotation paragraphs, summaries, and promotional prose from the normal UI.
-4. Show the shortlisted wordmarks in the proposed dark theme. Choose a name before applying a repository-wide brand change.
+Also confirm disclosure of pre-existing Claimtrace work and which Sequitor work was created during the event. Do not represent historical training or benchmarks as new event work.
 
-**Exit:** the feed and timeline feel like a polished product even without a narrative explaining them.
+The handoff's claim that credentials exist locally does not apply to this checkout: no root `.env` was present, and `X_BEARER`, `OPENAI_API_KEY`, and `BASETEN_API_KEY` were absent from the review process environment. No live-provider availability, account balance, or current deployment was verified.
 
-### Phase B — define the data contracts
+## Priority A — stabilize the existing demo without paid calls
 
-Extend the event-driven foundation rather than replace it:
+### Fix reproduced browser regressions
 
-- `ConversationScope`: root/seed references, canonical query or discovery definition, version, requested window, language and post-type policies.
-- `Period`: day/month/year and exact UTC boundaries.
-- `VolumeBucket`: interval, count or null, covered interval, coverage and measurement time.
-- `PeriodPostsResult`: scope/version, exact interval, ranking metric, ordered post IDs, candidate coverage, capture times and any truncation reason.
-- Source metadata: author identity/avatar, full or explicitly truncated text, public metrics, media, conversation ID and typed references.
+- **Invisible feed after a tab round trip.** Open Activity & posts, switch to Neighborhood, then return. The remounted feed remains at `opacity: 0`. The entrance observer only registers initial nodes (`web/src/Sequitor.tsx:317–328`). Attach observation to the actual mounted element, or remove the entrance hiding from essential content. Reduced motion must not be the only working route.
+- **Restore accessible drawers.** Post/data drawers are overlay `<aside>` elements, not modal dialogs. Opening data details leaves focus behind the overlay; Escape does not dismiss it. Restore dialog semantics, focus entry/trapping/return, Escape, and background inertness. The legacy dialog implementation is a useful reference, not a reason to assume the new drawers already comply.
+- **Isolate new searches from the Dario fixture.** `startStreaming` spreads the recorded fallback into a new live run, retaining its seed post, scope, query, capture time, and context plan until replacements arrive (`Sequitor.tsx:470–489`). Start from an empty run-specific state; clear old inspection and activity-loading state. A failed new search must never look like a Dario result.
+- Separate run, period, and hourly request state. Reject stale context responses, clear loading on cancellation/resolution changes, handle malformed stream messages, and distinguish completed, stopped, failed, and reconnecting states. Closing a browser stream alone does not cancel server work.
 
-Keep **volume coverage and ranking coverage separate**. A complete count does not mean we downloaded enough posts to determine the top ten.
+### Correct source and display claims
 
-Period selection after an initial run completes is a new request lifecycle. Add a dedicated period-results state/controller with request IDs, caching, cancellation and stale-response rejection; do not weaken the existing investigation reducer's terminal guards.
+- **Preserve excerpt metadata.** The live Dario seed has exactly the same text as the earlier capture marked truncated, but `textIsExcerpt` is false. Carry the known warning through recording merges, seed resolution, cards, and graph inspection; never reconstruct missing text. The live resolver currently hardcodes false (`sequitor_server.py:808–814`).
+- The default sort is **Sequitor**, while the data drawer always says posts are sorted by captured likes. Make the description follow the active ranking. Recommended product default remains **Popular**, with semantic ordering optional.
+- Treat pasted text as an input marker, not an authored X post with an invented publication time. Graph role labeling alone does not solve synthetic-source presentation.
+- Keep the actual measured query immutable and separate from later search-plan revisions. Reconcile the saved run's query/plan mismatch without relabeling historical counts.
+- Preserve unavailable versus zero and partial-period coverage in hourly/monthly displays. A failed hourly request must not become a measured zero; a partial month must not look fully covered. Keep UTC bucket boundaries explicit rather than silently relabeling them Eastern.
 
-### Phase C — collect broad measured data for the frontier example
+**Acceptance:** both examples and tab round trips remain visible; keyboard-only context inspection works; replay/stop/new-search/day changes cannot mix investigations; excerpt, source type, ranking, query, and missing-data labels agree with the records. Keep fixes local and validate with saved/mocked inputs first.
 
-1. Confirm X search/counts access and agree on a bounded collection budget and window around the launch, with a pre-launch baseline. No credentials were configured during the previous source-snapshot collection; recheck safely before proceeding.
-2. Discover across title/phrase variants, relevant URLs, replies, quotes and branches—not just posts by prominent people.
-3. Locate the user's remembered **“Gemini has been pacing the frontier for years”** joke using wording variants and surrounding conversations. Exact wording, author, URL and engagement are currently unverified. Do not recreate it from memory.
-4. Include humor and criticism in the captured corpus. The remembered joke should remain discoverable even if it does not qualify for a particular period's top ten; do not force it into a falsely ranked list.
-5. Collect daily counts for the agreed scope, with complete pagination and explicit coverage metadata.
-6. Retain raw responses, retrieval queries, timestamps and IDs so the dataset can be audited and replayed.
-7. Obtain fuller post text and media where access permits; otherwise preserve clear excerpt/missing-media states.
+## Priority B — gate live access before attaching public paid credentials
 
-**Important retrieval distinction:** a quote post may say only “Dario is right,” without containing the original phrase. Keyword search alone will miss this class of response. Use supported quote/reply/conversation traversal with a bounded frontier and visited-ID deduplication. Verify operator/endpoint availability before relying on it.
+This is a prerequisite for public live service, not a prerequisite for the recorded demo.
 
-**Scope consistency:** do not add overlapping phrase-query totals together. Prefer one supported union query or provably disjoint partitions. Aggregate counts cannot be deduplicated by post ID after the fact. If relationship discovery adds posts outside the countable scope, either revise and remeasure that scope or explicitly retain separate/incomplete coverage—never quietly add a branch sample to a complete volume total.
+1. **Protect every relevant route.** The server currently has no authentication or per-user authorization on live runs, paid period/hourly GET requests, or job read/cancel routes (`sequitor_server.py:942–1022`). Add operator/session access control, appropriate origin/CSRF protections, bounded admission/concurrency, and event/cache retention. Recorded jobs also consume threads and disk and need limits. Merely hiding the search field is not protection.
+2. **Agree on the real budget.** Code and `.env.example` default to **1,800 post reads and 48 counts calls**, an estimated **$9.48** at the repository's rates. README and the morning handoff still describe **600/20 and $3.20**. The Railway guide already reflects the larger defaults. Confirm the intended cap before changing it; align documentation with effective configuration. These are local X accounting estimates, not account-wide limits or current billing quotes. OpenAI/Baseten need their own bounded usage controls.
+3. **Make the ledger fail closed.** Unreadable/malformed cache currently falls back to an empty ledger (`sequitor_server.py:155–159,342–354`). Verify writable persistent placement, reject corruption, distinguish explicit initialization from lost state, and reserve budget before requests with crash recovery. A volume environment variable alone does not prove durable storage. Do not delete the existing ledger to make a demo run.
+4. **Bound every provider call and queue wait.** Add request timeouts, run deadlines, cancellation checks before dispatch/retries, and queued-job cancellation. X and fallback Baseten calls currently lack explicit network timeouts; a stalled call can hold the shared application lock.
+5. **Make cached lifecycle and replay trustworthy.** Runs are cached before initial retrieval completes, but cache hits do not require a completed retrieval (`sequitor_server.py:772–884`). Persist explicit partial/complete/failed/stopped state, use collision-resistant request identities, and resume or clearly expose partial results. Snapshot event payloads before retaining them so memory replay agrees with disk replay. Keep period/model/ranking versions coherent; propagate Chain partial/error status.
+6. **Use readiness, not API reachability.** The frontend enables live input after `/api/demo` succeeds; `/api/health` only reports credential presence. Expose storage readiness, remaining local budget, and enabled capabilities without secrets. Provider connectivity checks require an explicitly authorized budget if they incur charges.
 
-**Exit:** the chart measures a broad defined conversation, while the corpus includes organic viral offshoots beyond the original executive reactions.
+**Acceptance:** unauthorized requests cause no provider work; queued/stopped jobs cannot dispatch another call; corrupt/missing expected ledgers block paid work; partial cache hits cannot claim completion; replay is deterministic; one operator-controlled service/replica has bounded, inspectable usage. Confirm account-wide usage separately.
 
-### Phase D — implement reliable period rankings
+Do not change shared credentials without explaining impact and obtaining confirmation. The previously chat-exposed Railway credential still requires secure rotation before authorized deployment; never paste it into the plan, source, browser configuration, or logs.
 
-1. Retrieve candidates within the selected day/month boundaries and deduplicate canonical post IDs.
-2. Rank by captured likes; preserve unknown metrics rather than treating them as zero.
-3. Use complete candidate retrieval or another coverage-verifiable method to establish the requested ranking. Check paid access, pagination and budget behavior before scaling collection.
-4. If collection is capped, label results as top **retrieved** posts, not the definitive top ten. This can differ from a fully measured volume chart.
-5. Cache by scope/version, period, post-type policy, metric and capture version. Avoid repeated paid work when revisiting a date.
-6. Prepare offline rankings for the backed-up date range, without making period clicks depend on a live API.
+## Priority C — retrieve the conversation, not just the literal phrase
 
-The search documentation inspected exposes recency/relevancy ordering, not a likes sort. Sorting one newest-results page cannot establish the most popular posts in a period. Existing `cascade()` must not be reused as though it does.
+Use `docs/SEARCH_BRANCH_PLAN.md` as the retrieval design input, with these refinements:
 
-For monthly rankings, use the retained candidate corpus by default. A union of daily top-ten lists is sufficient only when every day is covered completely, the metric snapshots are consistent, and the ranking/tie-break rules match; incomplete or differently captured daily caches do not establish a monthly ranking.
+- Represent announcement, reporting, commentary, humor, and wider-context queries as typed branches with seed/evidence support, UTC windows, purpose, separate count/read budgets, and per-branch coverage.
+- Preserve the working zero-phrase context fallback. If all grounded scopes lack activity, return a no-evidence state rather than broad unrelated results.
+- Search relevant adjacent periods, not just a peak day. Follow supported quote/reply references with visited-ID deduplication and a bounded expansion frontier; resolve missing referenced posts where permitted.
+- Reserve retrieval and model-candidate capacity for ordinary accounts and playful adaptations. Current model paths select an early candidate slice; later branches can miss curation. Rank a branch-balanced candidate set, not only the first returned posts.
+- **Do not use same-claim scoring to exclude jokes.** A successful same-claim reranker belongs among optional signals for appropriate branches, not as the definition of relevance.
+- Treat the targeted “who up pacing they frontier” captures as regression evidence. The generic retrieval process should discover that kind of response; appending hardcoded saved humor does not demonstrate live retrieval recall. The separately remembered Gemini wording remains unverified.
+- Measure precision and known-post recall against saved Dario/Wet Lab evidence before another paid run. Verify genuine source fidelity and independent relevant responses, not merely a pleasing model explanation.
+- Keep one countable volume scope distinct from branch candidates. Never sum overlapping query totals. If broader counts cannot be measured defensibly, retain the honest phrase/context chart rather than claim total conversation volume.
 
-**Exit:** date clicks predictably show up to ten posts from that period with a defensible ranking and no stale cross-period results.
+The branch document proposes a per-post “why included” explanation. That conflicts with the earlier post-first/no-generated-prose brief. Prefer short provenance chips and optional query details; do not reintroduce generated paragraphs under posts. Move the visible OpenAI context card and match scores into details unless their prominence is now an intentional product decision.
 
-### Phase E — package and validate the stronger fallback
+**Acceptance:** Dario humor/criticism and Wet Lab-specific posts are found through documented generic branches, unrelated broad matches do not dominate the first screen, and every branch's cost/scope/truncation is inspectable. Only then authorize a bounded live comparison. Better retrieval comes before more training or model endpoints.
 
-- Build the new dataset into the same no-network fallback mechanism.
-- Preserve old captures as source history rather than relabelling the existing small sample as complete volume.
-- Bundle the agreed date range's daily counts, rankings, source posts, and available media.
-- Validate daily/monthly aggregation, overlapping queries, UTC boundaries, missing metrics, request races and pagination truncation using local/ad-hoc checks first.
-- Recheck source fidelity, keyboard/mobile interactions, accessibility and offline startup with the network disabled.
-- A reviewer should be able to select a spike, read its popular posts, and discover a funny or unexpected offshoot without reading generated explanations.
+## Priority D — finish period exploration and graph fidelity
 
-**Exit:** the demo is compelling as an exploration tool, and the portable backup contains enough data to support its visible interactions honestly.
+### Periods
 
-### Later — an interactive spread graph
+- Introduce an exact interval contract with inclusive UTC start/exclusive end, scope version, ranking metric, capture version, and separate count/candidate coverage.
+- Make a month selection request or use a cached monthly corpus and return up to ten posts published in that interval. Current monthly bars are display-only; do not present their existence as completion of monthly browsing.
+- Preserve unknown metrics and stable ties. Label rankings **top retrieved**, unless retrieval completeness actually establishes a stronger claim. Likes are captured totals, not likes earned during the selected interval.
+- Cache and cancel period work independently of the initial stream. Add yearly overview only after monthly interaction and missing-period semantics are reliable.
 
-Treat this as an alternate view once the feed/timeline are strong, not another permanent panel now.
+### Neighborhood
 
-- Save post/author IDs, publication times, quote/reply/repost references and discovery provenance from the next collection onward.
-- Begin with observed relationships and time filtering; open the actual post from a node.
-- Distinguish explicit references from any later similarity-based links. An unlinked joke can be related without a proven parent.
-- Do not interpret chronology or text similarity as evidence that somebody saw or copied a particular post.
-- “Different parts of Twitter” needs sufficient interaction data and a defensible grouping method. Do not invent community labels or imply access to private exposure/impression pathways.
+- Describe the current view as a **sampled chronological role map**, not a reconstructed spread/influence network or discovered communities. Solid links are observed references; dashed links are local shared-wording comparisons, not embeddings or proof of exposure.
+- The story artifact selects 150 IDs, but the component further caps the visible sample at 42 nodes. Make captured/eligible/displayed totals distinguishable; the tab's corpus count is not the visible node count.
+- Derive coordinates from a stable reference corpus and then filter/project. Current layout is recalculated from the sampled slice, so selection/layer/cutoff changes can move existing nodes (`Neighborhood.tsx:127–139`). The `referencePosts` prop is not used.
+- Fix link inspection and counts: seed links are normally hidden, the inspector lists only a few links, and “more links on the map” can refer to links that are neither drawn nor reachable. Provide accessible pagination/search or explicit missing/hidden-reference state.
+- Distinguish the graph's cumulative Eastern “Through” cutoff from the feed's selected UTC day. Do not silently treat them as equivalent windows.
+- Version graph annotations by source text, model, and prompt as well as ID; maintain capture hashes and reproducible selection. Resolve real missing edges before adding more inferred lines.
 
-## Existing foundations to retain
+**Acceptance:** changing focus preserves established coordinates; every claimed inspectable reference can be reached; time/filter/sample labels match their semantics; monthly selection returns the correct interval rather than just changing a histogram scale.
 
-- React/TypeScript/Vite frontend and the shared normalized event reducer.
-- Stable-ID source updates, source-link helpers, capture metadata, keyboard and responsive foundations.
-- Existing Python CLI behavior while the new conversation-oriented browser flow is developed separately.
-- Saved X source data and raw capture hashes.
-- Portable single-file backup generation. External source links require internet, but the built replay does not.
+## Priority E — rehearse and package the reliable path
 
-The composer/typewriter component need not remain in the user-facing flow. When connecting a backend, avoid paying to generate prose that the product no longer displays. Do not redeploy or retrain a model just to support this redesigned demo.
+- Preserve the recorded-first browser and CLI. Keep provider keys server-side and avoid paid composer prose the UI does not need.
+- Retain request manifests, raw source provenance where available, excerpt flags, and capture times for new collections, including separately added humor.
+- Bundle the supported period results and permitted avatars/media, or use honest local placeholders. Explicitly disable API/widget/remote-image attempts in offline mode; online embeds should be optional, not required to inspect a source.
+- Build and copy `web/dist/sequitor-offline.html` outside `dist` before another build clears it. Exercise the actual copied file with networking disabled, including tab return, date selection, context, and replay.
+- Rehearse one concise path through a spike, a genuine response/offshoot, and recorded context. Keep source-backed limits visible without making methodological prose the main experience.
+- Reconcile README/handoff/branch-plan claims with the reviewed implementation, actual submission status, and verified deployment capabilities. Do not claim a trained model, full ranking, stable graph, or network-free backup on the basis of configuration alone.
 
-## Current implementation locations
+## Validation performed for this review
 
-- `web/src/App.tsx`: landing/navigation, example entry points, branding and export.
-- `web/src/Investigation.tsx`: replace the editorial chronology/duplicate-post arrangement with the feed/context layout.
-- `web/src/Timeline.tsx`, `web/src/timeline.css`: daily resolution, histogram and period selection.
-- `web/src/investigation-state.ts`: scopes, periods, richer source data and coverage; preserve terminal semantics.
-- `web/src/Dialog.tsx`, `web/src/evidence.ts`: source presentation and on-demand details.
-- `web/src/styles.css`, `web/src/investigation.css`: neutral dark redesign.
-- `web/src/frontier-recording.ts`: existing small saved-source adapter, not broad conversation coverage.
-- `web/src/StreamText.tsx`: current generated-text presentation; remove from the normal experience rather than expand it.
-- `claimtrace/xapi.py`: search/counts pagination, structured queries, coverage and relationship retrieval need review. Existing `daily_curve()` ignores continuation and `counts_total()` has a page cap without adequate coverage reporting.
-- `demo/recordings/pace-the-frontier/`: current source snapshot, raw responses and collector. The embed-only collector cannot measure total conversation volume.
-- `web/scripts/build-offline.mjs`: portable backup packaging; update as needed for cached media while preserving network-free startup.
+- Built the reviewed Git snapshot in an isolated temporary directory with existing `web/node_modules`: TypeScript, Vite production build, and offline packaging passed. Existing project `web/dist` was left untouched.
+- Opened the generated single HTML file in Chrome with networking disabled from context creation. Saved posts, Wet Lab selection, and source fallback remained available; no uncaught page errors were observed in that exercise.
+- Reproduced invisible feed on tab return and non-modal/Escape-inert data drawer. Confirmed monthly bars are disabled for selection.
+- Checked desktop and mobile presentation; the checked mobile viewport had no horizontal document overflow. A settled initial-view axe scan reported landmark-region issues; this is not a full accessibility pass.
+- The offline session attempted remote avatar/widget requests. They could not succeed with networking disabled, but this is **offline-capable, not request-free**.
+- Confirmed the Dario excerpt mismatch and budget documentation mismatch directly against source/captures.
+- Backend and graph risk findings above are static-review findings unless a runtime reproduction is explicitly stated. No live provider calls, deployment, model training, credential changes, or new repository test files were made. Historical test reports are not current live verification.
 
-## Run and backup commands
+## Recommended next approval
 
-```bash
-cd /Users/james.begin/dev/claimtrace/web
-npm run dev
-npm run build:offline
-```
+Approve **Priority A: a saved-data-only stabilization pass** first, keeping the current branding and overall layout. In parallel with planning any live launch, settle Priority B's access and spend policy. Then implement branch-aware retrieval against saved inputs, followed by an explicitly budgeted live comparison.
 
-The generated backup is `web/dist/claimtrace-offline.html` relative to the project root. A later build clears `dist`; copy presentation backups somewhere safe. No broad volume dataset or daily top-ten feature has been implemented yet.
-
-## Deferred operations and constraints
-
-- The user authorized repository setup and pushing relevant code to `James-Begin/HTN2026`. Exclude secrets, dependencies, bulk datasets, model weights and generated builds.
-- No credential changes, paid collection, model redeployment, or Railway resource changes as part of this planning task.
-- Keep secrets server-side. Confirm budget and access before the richer collection; never ask for shared tokens to be committed to files or frontend variables.
-- Existing backend lifecycle, cancellation and spend-control work remains necessary before live execution, but is no longer the immediate visual/product priority.
-- Railway hosting and Baseten remain deferred. Verify current deployment status and replace the previously chat-exposed Railway credential securely before any authorized deployment; do not reproduce its value.
-- Do not add test files or expand into unrelated repositories without approval.
-
-## Decisions to make next
-
-1. Choose a naming direction—recommended visual trials: **Offshoot** and **Wake**.
-2. Confirm the simpler timeline + single-feed layout and likes-based top-ten default.
-3. Approve the next implementation slice: the neutral-dark, post-first visual redesign and daily/period data contracts. Richer X collection follows once access and a budget are agreed.
+Decisions still needed: whether Popular remains the desired default; whether generated context/match details should move out of the main view; whether live access is operator-only or intended for public users; and the authorized aggregate provider budget. Submission/deployment status must be confirmed separately.

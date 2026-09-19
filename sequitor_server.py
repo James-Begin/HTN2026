@@ -159,6 +159,28 @@ def read_json(path: Path, fallback: dict) -> dict:
         return fallback
 
 
+def source_metadata(value):
+    """Repair API copies only; exact captured text is not evidence about fuller text."""
+    excerpts = {(str(row["id"]), row["text"])
+                for row in read_json(SNAPSHOT_FILE, {}).get("posts", [])
+                if row.get("capture", {}).get("textIsExcerpt") is True}
+
+    def repair(item):
+        if isinstance(item, list):
+            return [repair(child) for child in item]
+        if not isinstance(item, dict):
+            return item
+        result = {key: repair(child) for key, child in item.items()}
+        if isinstance(item.get("text"), str):
+            if (str(item.get("id", "")), item["text"]) in excerpts:
+                result["textIsExcerpt"] = True
+            if item.get("id") == "seed-text":
+                result.update(sourceType="input", author="Search input", publishedAt="")
+        return result
+
+    return repair(value)
+
+
 def write_json(path: Path, value: dict) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     tmp = path.with_suffix(path.suffix + ".tmp")
@@ -325,7 +347,7 @@ def recorded_demo() -> dict:
     supplement = read_json(DARIO_HUMOR_FILE, {"posts": []})
     posts = supplement.get("posts") or []
     if not posts:
-        return recorded
+        return source_metadata(recorded)
     saved_periods = recorded.setdefault("savedPeriods", {})
     for post in posts:
         day = post["publishedAt"][:10]
@@ -335,7 +357,7 @@ def recorded_demo() -> dict:
         if day == recorded["selectedDay"]:
             recorded["posts"] = list({row["id"]: row for row in recorded.get("posts", []) + [post]}.values())
     recorded["note"] = (recorded.get("note") or "") + " Three later targeted humor-search posts are included with their own capture timestamps."
-    return recorded
+    return source_metadata(recorded)
 
 
 class Sequitor:
@@ -602,6 +624,9 @@ class Sequitor:
             return {"status": "unavailable", "model": None, "reason": type(exc).__name__}
 
     def period(self, run_id: str, day: str, emit=None) -> dict:
+        if emit:
+            send_event = emit
+            emit = lambda kind, payload: send_event(kind, source_metadata(payload))
         run = self.cache["runs"].get(run_id)
         if not run:
             raise ValueError("Run not found")
@@ -633,7 +658,7 @@ class Sequitor:
             self.save()
             if run.get("seed") == DEFAULT_SEED:
                 write_json(CAPTURE_FILE, run)
-            return cached_period
+            return source_metadata(cached_period)
         prior = self.cache["periods"].get(key)
         if prior:
             primary = [p for p in prior["posts"] if p.get("scope") == "measured phrase"]
@@ -741,7 +766,7 @@ class Sequitor:
         self.save()
         if run.get("seed") == DEFAULT_SEED:
             write_json(CAPTURE_FILE, run)
-        return result
+        return source_metadata(result)
 
     def activity(self, run_id: str, day: str, granularity: str) -> dict:
         """Fetch and cache an hourly count series for a selected UTC day."""
@@ -770,6 +795,9 @@ class Sequitor:
         return result
 
     def explore(self, seed: str, emit=None) -> dict:
+        if emit:
+            send_event = emit
+            emit = lambda kind, payload: send_event(kind, source_metadata(payload))
         seed = seed.strip()[:2000]
         if not seed:
             seed = DEFAULT_SEED
@@ -795,7 +823,7 @@ class Sequitor:
                 model = self.classify(cached["seedPost"]["text"], cached["posts"], emit=emit)
                 cached["model"] = {**cached.get("model", {}), "baseten": model}
                 self.save()
-            return cached
+            return source_metadata(cached)
         if not self.x:
             raise RuntimeError("X bearer token unavailable")
         original_text = seed
@@ -814,7 +842,7 @@ class Sequitor:
                          "authorId": original.author_id, "likes": original.likes,
                          "avatar": original.avatar or None,
                          "url": f"https://x.com/{original.handle}/status/{original.tweet_id}",
-                         "scope": "seed", "captureTime": today_utc(), "textIsExcerpt": False,
+                         "scope": "seed", "captureTime": today_utc(), "textIsExcerpt": original.text_is_excerpt,
                          "quotedPostId": None, "parentId": None}
         if emit:
             emit("seed.resolved", {"post": seed_post, "text": original_text[:2000]})
@@ -869,7 +897,7 @@ class Sequitor:
                "query": chart_query, "buckets": buckets, "posts": [],
                "selectedDay": selected, "rankingCoverage": "not collected yet",
                "searchPlan": plan, "seedPost": seed_post or {"id": "seed-text", "text": original_text,
-                                                  "publishedAt": selected + "T00:00:00Z", "author": "Seed text"},
+                                                  "sourceType": "input", "publishedAt": "", "author": "Search input"},
                "model": {"openai": plan.get("model"), "baseten": "pending"},
                "note": (f"The exact phrase {measured_phrase} had no matches. Bars measure the grounded context query {chart_query}. "
                         "The feed includes separately marked discovery branches." if plan.get("volumeFallback") else
@@ -889,7 +917,7 @@ class Sequitor:
         self.save()
         if seed == DEFAULT_SEED:
             write_json(CAPTURE_FILE, run)
-        return run
+        return source_metadata(run)
 
 
 APP = Sequitor()
@@ -897,7 +925,7 @@ APP = Sequitor()
 
 class Handler(BaseHTTPRequestHandler):
     def _send(self, status: int, obj: dict) -> None:
-        body = json.dumps(obj, ensure_ascii=False).encode()
+        body = json.dumps(source_metadata(obj), ensure_ascii=False).encode()
         self.send_response(status)
         self.send_header("Content-Type", "application/json; charset=utf-8")
         self.send_header("Content-Length", str(len(body)))
@@ -925,7 +953,7 @@ class Handler(BaseHTTPRequestHandler):
                     events = job.events[cursor:]
                     done = job.done
                 for event in events:
-                    body = json.dumps(event, ensure_ascii=False, separators=(",", ":"))
+                    body = json.dumps(source_metadata(event), ensure_ascii=False, separators=(",", ":"))
                     self.wfile.write(f"id: {event['sequence']}\nevent: sequitor\ndata: {body}\n\n".encode())
                     cursor = event["sequence"]
                 if events:
@@ -998,7 +1026,8 @@ class Handler(BaseHTTPRequestHandler):
                                  "authorId": found.author_id, "likes": found.likes,
                                  "avatar": found.avatar or None,
                                  "url": f"https://x.com/{found.handle}/status/{found.tweet_id}",
-                                 "scope": "referenced post", "captureTime": today_utc()})
+                                 "scope": "referenced post", "captureTime": today_utc(),
+                                 "textIsExcerpt": found.text_is_excerpt})
                 return
             if url.path == "/api/period" and method == "GET":
                 qs = parse_qs(url.query)
