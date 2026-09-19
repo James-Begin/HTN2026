@@ -1,0 +1,20 @@
+model_name: claimtrace-xenc-5way
+python_version: py311
+requirements:
+  - torch==2.6.0
+  - transformers==5.17.0
+  - sentencepiece
+  - numpy
+resources:
+  accelerator: L4
+  cpu: '4'
+  memory: 16Gi
+  use_gpu: true
+runtime:
+  predict_concurrency: 8
+environment_variables:
+  TOKENIZERS_PARALLELISM: "false"
+model_metadata:
+  purpose: claim-equivalence cross-encoder, 5-class
+  labels: unrelated,incidental,meta,same_paraphrase,same_verbatim
+  same_claim: p(same_paraphrase) + p(same_verbatim)

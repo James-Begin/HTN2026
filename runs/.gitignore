@@ -1,0 +1,4 @@
+# Eval runs are measurements, not source. Keep the committed baseline only.
+*
+!.gitignore
+!baseline-off-the-shelf.json

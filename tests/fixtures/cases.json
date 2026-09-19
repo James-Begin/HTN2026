@@ -1,0 +1,177 @@
+{
+ "_note": "Every entry here was resolved or measured against the live API. `expect` fields are assertions, not guesses. Sources noted per case.",
+ "ground_truth_earliest": [
+  {
+   "name": "first_tweet_ever",
+   "query": "\"just setting up my twttr\"",
+   "expect_earliest_id": "20",
+   "expect_earliest_date": "2006-03-21",
+   "why": "Jack Dorsey's first tweet. Bisect+exhaust returned exactly id 20 in 15 requests. The single hardest ground truth available because the window is sparse but the phrase was copied hundreds of times in 2006.",
+   "verified": "measured, exact match"
+  },
+  {
+   "name": "covfefe_deleted_root",
+   "query": "covfefe",
+   "expect_earliest_date": "2017-05-31",
+   "expect_earliest_after": "2017-05-31T04:06:00Z",
+   "true_origin": "2017-05-31T04:06:00Z, @realDonaldTrump, DELETED",
+   "why": "The root no longer exists. The tool should land within seconds of it and must NOT claim to have found the origin. Measured: earliest surviving is 04:06:26Z, 26s after the true post.",
+   "verified": "measured, 26s error"
+  }
+ ],
+ "ambiguity_collisions": [
+  {
+   "name": "ok_boomer_football_chant",
+   "query": "\"ok boomer\"",
+   "earliest_string_match": "2008-11-30T04:38:39Z",
+   "earliest_text": "Ok, boomer sooner. ;)",
+   "why": "FALSE POSITIVE. 'Boomer Sooner' is the University of Oklahoma fight song. Naive earliest-string-match returns a 2008 tweet with 0 likes that has nothing to do with the meme. The volume curve exposes it: 1 match in Nov 2008 against 897,135 in Nov 2019.",
+   "expect_semantic_reject": true,
+   "verified": "measured"
+  },
+  {
+   "name": "ssi_korean_honorific",
+   "query": "(ssi OR \"safe superintelligence\") (delay OR \"security incident\")",
+   "collision_text": "Happy birthday, Soleum-ssi. I apologize for my delay.",
+   "why": "FALSE POSITIVE. '-ssi' is a Korean honorific suffix. A string matcher cannot tell a company acronym from a politeness marker in another language. Cross-encoder scored this 0.0343.",
+   "expect_semantic_reject": true,
+   "expect_score_below": 0.1,
+   "verified": "measured, 0.0343"
+  }
+ ],
+ "paraphrase_recall": [
+  {
+   "name": "ssi_restated",
+   "reference": "ssi are delayed after a catastrophic security incident discovered after seeing what happened with openai, order of magnitude more damage caused.",
+   "paraphrase": "Safe Superintelligence has pushed back its timeline following a serious breach",
+   "why": "SAME CLAIM, different words. The off-the-shelf cross-encoder scores it 0.1332, below any usable threshold. This is the single clearest justification for fine-tuning, and the number to beat.",
+   "offtheshelf_score": 0.288,
+   "expect_finetuned_above": 0.5,
+   "verified": "measured, 0.1332",
+   "scored_against": "the full `reference` field above, verbatim",
+   "note": "A cross-encoder score depends on BOTH texts. Measured 0.1332 against a short hand-written query and 0.2880 against the full claim, so a fixture must record the query it used. Either way it sits below the 0.5 threshold."
+  },
+  {
+   "name": "morphological_inflection",
+   "anchor": "\"pace the frontier\"",
+   "variant": "\"pacing the frontier\"",
+   "anchor_volume_2d": 37840,
+   "variant_volume_2d": 4543,
+   "why": "Inflection alone hides 12% of volume from an exact-phrase query. Cheap to fix with morphological expansion; no model needed for this specific gap.",
+   "verified": "measured"
+  }
+ ],
+ "routing": [
+  {
+   "name": "recent_spike_verify",
+   "query": "\"catastrophic security incident\"",
+   "expect_route": "TIME_RELATIVE",
+   "shape": {
+    "total_30d": 31,
+    "peak": 20,
+    "peak_day": "2026-09-13",
+    "baseline": 0
+   },
+   "why": "Measured VERIFY when the claim was 2 hours old (pre-spike 1). Re-measured LINEAGE a day later (pre-spike 21), because yesterday's posts are now history relative to today's peak. ROUTING IS TIME-RELATIVE, so an absolute route label in a fixture goes stale. Assert the property instead: near-zero pre-spike volume routes VERIFY.",
+   "verified": "measured"
+  },
+  {
+   "name": "essay_title_has_no_history",
+   "query": "\"We Must Pace the Frontier\"",
+   "expect_route": "VERIFY",
+   "shape": {
+    "total_30d": 16679,
+    "peak": 9571,
+    "peak_day": "2026-09-12"
+   },
+   "expect_earliest_before": "2026-09-12T00:00:00Z",
+   "measured_earliest": "2026-08-12T02:47:48Z",
+   "why": "COUNTERINTUITIVE BUT CORRECT. The essay TITLE has only 3 posts in the 30 days before the spike (Aug 17, Aug 25, Sep 9 - one each), so there is no history to trace and the correct mode is corroboration. Caught by a failing test that I initially assumed was a router bug.",
+   "verified": "measured",
+   "measured_pre_spike": 3
+  },
+  {
+   "name": "phrase_has_history_lineage",
+   "query": "\"pace the frontier\"",
+   "expect_route": "LINEAGE",
+   "measured_pre_spike": 16664,
+   "measured_ramp": {
+    "2026-09-07": 4,
+    "2026-09-08": 14,
+    "2026-09-09": 37,
+    "2026-09-10": 76,
+    "2026-09-11": 59
+   },
+   "why": "The PHRASE, unlike the title, has a clear pre-spike ramp. Routing must therefore key on pre-spike volume, not on whether the spike is recent.",
+   "verified": "measured"
+  }
+ ],
+ "corroboration": [
+  {
+   "name": "single_source_uncorroborated",
+   "query": "\"catastrophic security incident\"",
+   "signals": {
+    "raw_7d": 30,
+    "verified_authors": 19,
+    "originals_only": 3,
+    "retweet_share": 0.9,
+    "subject_speaks": 0
+   },
+   "premise_volumes": {
+    "claim_itself": 28,
+    "adjacent_real_event": 160,
+    "magnitude_claim": 25
+   },
+   "why": "The adjacent premise carries 160 against the claim's 28. The claim is borrowing credibility from a genuine ongoing OpenAI security story (4,500 posts over 14 days, sustained). 90% retweet share means one source amplified, not many reporting.",
+   "expect_posture": "uncorroborated",
+   "verified": "measured"
+  }
+ ],
+ "api_edge_cases": [
+  {
+   "name": "max_results_one",
+   "detail": "max_results=1 returns HTTP 400 'not between 10 and 500'",
+   "verified": true
+  },
+  {
+   "name": "end_time_now",
+   "detail": "end_time = present moment returns HTTP 400",
+   "verified": true
+  },
+  {
+   "name": "end_time_future",
+   "detail": "end_time in the future returns HTTP 400",
+   "verified": true
+  },
+  {
+   "name": "explicit_AND",
+   "detail": "the literal token AND is not an operator; a space is implicit AND",
+   "verified": true
+  },
+  {
+   "name": "min_faves",
+   "detail": "min_faves / min_retweets are web-search names, rejected by the API",
+   "verified": true
+  },
+  {
+   "name": "bare_stopword",
+   "detail": "a bare common stopword query such as 'the' returns HTTP 400",
+   "verified": true
+  },
+  {
+   "name": "counts_total_per_page",
+   "detail": "meta.total_tweet_count equals the sum of the returned 31 buckets only, never the whole range",
+   "verified": true
+  },
+  {
+   "name": "counts_newest_first",
+   "detail": "counts pages come back newest-first and paginate backwards",
+   "verified": true
+  },
+  {
+   "name": "miss_is_free",
+   "detail": "a search returning 0 rows bills 0 posts",
+   "verified": true
+  }
+ ]
+}

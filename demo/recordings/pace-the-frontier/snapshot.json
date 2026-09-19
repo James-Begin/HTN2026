@@ -1,0 +1,169 @@
+{
+  "schemaVersion": 1,
+  "kind": "curated-source-snapshot",
+  "capturedAt": "2026-09-18T19:54:56Z",
+  "primaryPostId": "2098773920774074715",
+  "essayUrl": "https://darioamodei.com/post/we-must-pace-the-frontier",
+  "selection": "Author announcement, an earlier phrase match, and selected publicly linked reactions. Purposive selection, not an exhaustive search or random sample.",
+  "limitations": [
+    "This records source payloads, not a production pipeline execution or model predictions.",
+    "Replay timing and editorial explanations are prepared for the demo, not recorded execution timings.",
+    "Timeline counts cover only the saved posts; no X search-volume measurements were collected.",
+    "Engagement is a point-in-time snapshot and will change. Popular ranks only the selected posts.",
+    "Long posts may be truncated by X's embed endpoint; marked excerpts are never reconstructed.",
+    "The earlier phrase is not established as the first use, nor as the origin of Dario's essay.",
+    "Chronology and reactions do not establish copying, independent corroboration, or implementation of commitments."
+  ],
+  "posts": [
+    {
+      "id": "2087370436959186977",
+      "postId": "2087370436959186977",
+      "author": "roon · @tszzl",
+      "authorId": "1460283925",
+      "handle": "tszzl",
+      "text": "“ceterum censeo we must pace the frontier of global machine intelligence progress”",
+      "publishedAt": "2026-08-12T02:47:48.000Z",
+      "url": "https://x.com/tszzl/status/2087370436959186977",
+      "role": "Earlier phrase",
+      "capture": {
+        "method": "X public syndication embed",
+        "endpoint": "https://cdn.syndication.twimg.com/tweet-result?id=2087370436959186977&token=a",
+        "capturedAt": "2026-09-18T19:54:48Z",
+        "textIsExcerpt": false,
+        "sha256": "dea9b5b3b366ece0618a120c2a2593bf40f74aa557f6627cab82390c10baf2c9",
+        "rawFile": "raw/2087370436959186977.json",
+        "discoveredVia": "Project README, independently re-fetched from X"
+      },
+      "likes": 248
+    },
+    {
+      "id": "2098773920774074715",
+      "postId": "2098773920774074715",
+      "author": "Dario Amodei · @DarioAmodei",
+      "authorId": "874126509245476864",
+      "handle": "DarioAmodei",
+      "text": "We Must Pace the Frontier: I’ve written a new essay on why the AI industry should slow down, with a three-part plan for doing so.\n\nAnthropic is unilaterally committing to the first of these steps. We’ll provide third-party evaluators with permanent, employee-level access to our",
+      "publishedAt": "2026-09-12T14:01:10.000Z",
+      "url": "https://x.com/DarioAmodei/status/2098773920774074715",
+      "role": "Author announcement",
+      "capture": {
+        "method": "X public syndication embed",
+        "endpoint": "https://cdn.syndication.twimg.com/tweet-result?id=2098773920774074715&token=a",
+        "capturedAt": "2026-09-18T19:54:49Z",
+        "textIsExcerpt": true,
+        "sha256": "d7d28b3751cec0aa37c0f80d697d73190048cf7f4663ef088116998a73b49287",
+        "rawFile": "raw/2098773920774074715.json",
+        "discoveredVia": "https://www.livemint.com/technology/must-slow-the-pace-down-anthropic-ceo-dario-amodei-calls-for-ai-industry-to-slow-down-or-risk-losing-control-11789229416944.html"
+      },
+      "likes": 87545
+    },
+    {
+      "id": "2098789109980332057",
+      "postId": "2098789109980332057",
+      "author": "Elon Musk · @elonmusk",
+      "authorId": "44196397",
+      "handle": "elonmusk",
+      "text": "Dario is right",
+      "publishedAt": "2026-09-12T15:01:32.000Z",
+      "url": "https://x.com/elonmusk/status/2098789109980332057",
+      "role": "Reaction",
+      "capture": {
+        "method": "X public syndication embed",
+        "endpoint": "https://cdn.syndication.twimg.com/tweet-result?id=2098789109980332057&token=a",
+        "capturedAt": "2026-09-18T19:54:50Z",
+        "textIsExcerpt": false,
+        "sha256": "66418e85c08ce3eaf62dcc619294d7ae378de014e3b5eca148cd43ada167277f",
+        "rawFile": "raw/2098789109980332057.json",
+        "discoveredVia": "https://techcrunch.com/2026/09/12/anthropic-ceo-outlines-plan-to-pace-the-frontier/"
+      },
+      "likes": 58269,
+      "quotedPostId": "2098773920774074715"
+    },
+    {
+      "id": "2098811563415150910",
+      "postId": "2098811563415150910",
+      "author": "Sam Altman · @sama",
+      "authorId": "1605",
+      "handle": "sama",
+      "text": "I agree with Dario that we need to pace the frontier. This has been a primary topic of discussions we've had at OpenAI in recent weeks.\n\nCommitting to having independent evaluators with employee-like access is a great idea, and we will do the same. We'll have more to share soon.",
+      "publishedAt": "2026-09-12T16:30:45.000Z",
+      "url": "https://x.com/sama/status/2098811563415150910",
+      "role": "Reaction",
+      "capture": {
+        "method": "X public syndication embed",
+        "endpoint": "https://cdn.syndication.twimg.com/tweet-result?id=2098811563415150910&token=a",
+        "capturedAt": "2026-09-18T19:54:51Z",
+        "textIsExcerpt": false,
+        "sha256": "4bcef2e87c8f1d3397d6274de7ee869b9bfa57209c85d941c86b90b2e32364c0",
+        "rawFile": "raw/2098811563415150910.json",
+        "discoveredVia": "https://techcrunch.com/2026/09/12/anthropic-ceo-outlines-plan-to-pace-the-frontier/"
+      },
+      "likes": 67586,
+      "quotedPostId": "2098773920774074715"
+    },
+    {
+      "id": "2098847403134611522",
+      "postId": "2098847403134611522",
+      "author": "Sen. Bernie Sanders · @SenSanders",
+      "authorId": "29442313",
+      "handle": "SenSanders",
+      "text": "Dario Amodei, Elon Musk and Sam Altman now agree that we must slow down the development of AI and “pace the frontier.”\n\nThat’s a start, but it’s not enough.  \n\nWhen you are racing towards a cliff, you don’t just ease up on the gas pedal. You hit the brakes.\n\nWhen the future of",
+      "publishedAt": "2026-09-12T18:53:10.000Z",
+      "url": "https://x.com/SenSanders/status/2098847403134611522",
+      "role": "Reaction",
+      "capture": {
+        "method": "X public syndication embed",
+        "endpoint": "https://cdn.syndication.twimg.com/tweet-result?id=2098847403134611522&token=a",
+        "capturedAt": "2026-09-18T19:54:53Z",
+        "textIsExcerpt": true,
+        "sha256": "de1cb564eff4ac27a30e0fd3eae2dfae6f5e47e6fa5f323923aba751bef000c6",
+        "rawFile": "raw/2098847403134611522.json",
+        "discoveredVia": "https://cellcog.ai/blog/we-must-pace-the-frontier/"
+      },
+      "likes": 9774
+    },
+    {
+      "id": "2098909516582490602",
+      "postId": "2098909516582490602",
+      "author": "Demis Hassabis · @demishassabis",
+      "authorId": "1482581556",
+      "handle": "demishassabis",
+      "text": "Dario's essay points towards the right path forward. The details need working through, but the direction is correct for meeting this critical moment.\n\nThis is also why we recently put out our proposal for an industry-wide standards body for frontier AI. https://t.co/Mm1hmcaSmH",
+      "publishedAt": "2026-09-12T22:59:59.000Z",
+      "url": "https://x.com/demishassabis/status/2098909516582490602",
+      "role": "Reaction",
+      "capture": {
+        "method": "X public syndication embed",
+        "endpoint": "https://cdn.syndication.twimg.com/tweet-result?id=2098909516582490602&token=a",
+        "capturedAt": "2026-09-18T19:54:54Z",
+        "textIsExcerpt": false,
+        "sha256": "a1f0635a9de80067968a912f70cb14268db99cdb331e29f56c6d38bfeb5f2c5c",
+        "rawFile": "raw/2098909516582490602.json",
+        "discoveredVia": "https://cellcog.ai/blog/we-must-pace-the-frontier/"
+      },
+      "likes": 9052,
+      "quotedPostId": "2098773920774074715"
+    },
+    {
+      "id": "2099145338678378958",
+      "postId": "2099145338678378958",
+      "author": "Tim Hwang · @timhwang",
+      "authorId": "14903327",
+      "handle": "timhwang",
+      "text": "The third party AI evaluator can either be independent, knowledgeable, or sustainably funded. Pick two.",
+      "publishedAt": "2026-09-13T14:37:03.000Z",
+      "url": "https://x.com/timhwang/status/2099145338678378958",
+      "role": "Reaction",
+      "capture": {
+        "method": "X public syndication embed",
+        "endpoint": "https://cdn.syndication.twimg.com/tweet-result?id=2099145338678378958&token=a",
+        "capturedAt": "2026-09-18T19:54:55Z",
+        "textIsExcerpt": false,
+        "sha256": "22c88ea4ff683c20cc9ace30730c15a0f3f449ac233a6541c48e6e6d8f49b81e",
+        "rawFile": "raw/2099145338678378958.json",
+        "discoveredVia": "https://thezvi.substack.com/p/we-must-pace-the-frontier"
+      },
+      "likes": 131
+    }
+  ]
+}

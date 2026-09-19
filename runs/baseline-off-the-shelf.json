@@ -1,0 +1,590 @@
+{
+  "scorer": "replay",
+  "when": "2026-09-14T18:56:22Z",
+  "threshold": 0.5,
+  "wall_s": 0.0,
+  "cases": [
+    {
+      "id": "ssi-01",
+      "label": "same_verbatim",
+      "confidence": "certain",
+      "score": 1.0,
+      "baseline": 1.0,
+      "probs": null
+    },
+    {
+      "id": "ssi-02",
+      "label": "same_verbatim",
+      "confidence": "certain",
+      "score": 0.9994,
+      "baseline": 0.9994,
+      "probs": null
+    },
+    {
+      "id": "ssi-03",
+      "label": "same_paraphrase",
+      "confidence": "certain",
+      "score": 0.288,
+      "baseline": 0.288,
+      "probs": null
+    },
+    {
+      "id": "ssi-04",
+      "label": "incidental",
+      "confidence": "certain",
+      "score": 0.0343,
+      "baseline": 0.0343,
+      "probs": null
+    },
+    {
+      "id": "ssi-06",
+      "label": "unrelated",
+      "confidence": "certain",
+      "score": 0.0,
+      "baseline": 0.0,
+      "probs": null
+    },
+    {
+      "id": "ssi-07",
+      "label": "unrelated",
+      "confidence": "certain",
+      "score": 0.0,
+      "baseline": 0.0,
+      "probs": null
+    },
+    {
+      "id": "ssi-08",
+      "label": "unrelated",
+      "confidence": "likely",
+      "score": 0.001,
+      "baseline": 0.001,
+      "probs": null
+    },
+    {
+      "id": "ssi-09",
+      "label": "meta",
+      "confidence": "certain",
+      "score": 0.4009,
+      "baseline": 0.4009,
+      "probs": null
+    },
+    {
+      "id": "ptf-01",
+      "label": "same_verbatim",
+      "confidence": "certain",
+      "score": 0.9996,
+      "baseline": 0.9996,
+      "probs": null
+    },
+    {
+      "id": "ptf-02",
+      "label": "same_verbatim",
+      "confidence": "certain",
+      "score": 0.2611,
+      "baseline": 0.2611,
+      "probs": null
+    },
+    {
+      "id": "ptf-03",
+      "label": "same_paraphrase",
+      "confidence": "certain",
+      "score": 0.012,
+      "baseline": 0.012,
+      "probs": null
+    },
+    {
+      "id": "ptf-05",
+      "label": "meta",
+      "confidence": "likely",
+      "score": 0.8127,
+      "baseline": 0.8127,
+      "probs": null
+    },
+    {
+      "id": "ptf-07",
+      "label": "meta",
+      "confidence": "likely",
+      "score": 0.0147,
+      "baseline": 0.0147,
+      "probs": null
+    },
+    {
+      "id": "ptf-08",
+      "label": "incidental",
+      "confidence": "debatable",
+      "score": 0.4053,
+      "baseline": 0.4053,
+      "probs": null
+    }
+  ],
+  "skipped": [
+    "ssi-05",
+    "ssi-10",
+    "ptf-04",
+    "ptf-06",
+    "boom-01",
+    "boom-02",
+    "twtr-01",
+    "twtr-02",
+    "dril-01",
+    "cov-01",
+    "cov-02"
+  ],
+  "report": {
+    "n": 14,
+    "n_gating": 13,
+    "at_threshold": {
+      "threshold": 0.5,
+      "tp": 3,
+      "fp": 1,
+      "fn": 3,
+      "tn": 7,
+      "precision": 0.75,
+      "recall": 0.5,
+      "f1": 0.6,
+      "accuracy": 0.7142857142857143
+    },
+    "at_threshold_gating_only": {
+      "threshold": 0.5,
+      "tp": 3,
+      "fp": 1,
+      "fn": 3,
+      "tn": 6,
+      "precision": 0.75,
+      "recall": 0.5,
+      "f1": 0.6,
+      "accuracy": 0.6923076923076923
+    },
+    "best_threshold": {
+      "threshold": 0.2611,
+      "tp": 5,
+      "fp": 3,
+      "fn": 1,
+      "tn": 5,
+      "precision": 0.625,
+      "recall": 0.8333333333333334,
+      "f1": 0.7142857142857143,
+      "accuracy": 0.7142857142857143
+    },
+    "roc_auc": 0.7708333333333334,
+    "average_precision": 0.7903138528138527,
+    "separation_margin": -0.8007,
+    "worst_positive": 0.012,
+    "best_negative": 0.8127,
+    "brier": 0.21542324999999998,
+    "ece": 0.2863428571428571,
+    "reliability": [
+      {
+        "lo": 0.0,
+        "hi": 0.1,
+        "n": 6,
+        "confidence": 0.010333333333333332,
+        "accuracy": 0.16666666666666666
+      },
+      {
+        "lo": 0.1,
+        "hi": 0.2,
+        "n": 0,
+        "confidence": null,
+        "accuracy": null
+      },
+      {
+        "lo": 0.2,
+        "hi": 0.3,
+        "n": 2,
+        "confidence": 0.27454999999999996,
+        "accuracy": 1.0
+      },
+      {
+        "lo": 0.3,
+        "hi": 0.4,
+        "n": 0,
+        "confidence": null,
+        "accuracy": null
+      },
+      {
+        "lo": 0.4,
+        "hi": 0.5,
+        "n": 2,
+        "confidence": 0.4031,
+        "accuracy": 0.0
+      },
+      {
+        "lo": 0.5,
+        "hi": 0.6,
+        "n": 0,
+        "confidence": null,
+        "accuracy": null
+      },
+      {
+        "lo": 0.6,
+        "hi": 0.7,
+        "n": 0,
+        "confidence": null,
+        "accuracy": null
+      },
+      {
+        "lo": 0.7,
+        "hi": 0.8,
+        "n": 0,
+        "confidence": null,
+        "accuracy": null
+      },
+      {
+        "lo": 0.8,
+        "hi": 0.9,
+        "n": 1,
+        "confidence": 0.8127,
+        "accuracy": 0.0
+      },
+      {
+        "lo": 0.9,
+        "hi": 1.0,
+        "n": 3,
+        "confidence": 0.9996666666666667,
+        "accuracy": 1.0
+      }
+    ],
+    "coverage_curve": [
+      {
+        "threshold": 0.0,
+        "coverage": 1.0,
+        "precision": 0.42857142857142855,
+        "recall": 1.0
+      },
+      {
+        "threshold": 0.05,
+        "coverage": 0.5714285714285714,
+        "precision": 0.625,
+        "recall": 0.8333333333333334
+      },
+      {
+        "threshold": 0.1,
+        "coverage": 0.5714285714285714,
+        "precision": 0.625,
+        "recall": 0.8333333333333334
+      },
+      {
+        "threshold": 0.15,
+        "coverage": 0.5714285714285714,
+        "precision": 0.625,
+        "recall": 0.8333333333333334
+      },
+      {
+        "threshold": 0.2,
+        "coverage": 0.5714285714285714,
+        "precision": 0.625,
+        "recall": 0.8333333333333334
+      },
+      {
+        "threshold": 0.25,
+        "coverage": 0.5714285714285714,
+        "precision": 0.625,
+        "recall": 0.8333333333333334
+      },
+      {
+        "threshold": 0.3,
+        "coverage": 0.42857142857142855,
+        "precision": 0.5,
+        "recall": 0.5
+      },
+      {
+        "threshold": 0.35,
+        "coverage": 0.42857142857142855,
+        "precision": 0.5,
+        "recall": 0.5
+      },
+      {
+        "threshold": 0.4,
+        "coverage": 0.42857142857142855,
+        "precision": 0.5,
+        "recall": 0.5
+      },
+      {
+        "threshold": 0.45,
+        "coverage": 0.2857142857142857,
+        "precision": 0.75,
+        "recall": 0.5
+      },
+      {
+        "threshold": 0.5,
+        "coverage": 0.2857142857142857,
+        "precision": 0.75,
+        "recall": 0.5
+      },
+      {
+        "threshold": 0.55,
+        "coverage": 0.2857142857142857,
+        "precision": 0.75,
+        "recall": 0.5
+      },
+      {
+        "threshold": 0.6,
+        "coverage": 0.2857142857142857,
+        "precision": 0.75,
+        "recall": 0.5
+      },
+      {
+        "threshold": 0.65,
+        "coverage": 0.2857142857142857,
+        "precision": 0.75,
+        "recall": 0.5
+      },
+      {
+        "threshold": 0.7,
+        "coverage": 0.2857142857142857,
+        "precision": 0.75,
+        "recall": 0.5
+      },
+      {
+        "threshold": 0.75,
+        "coverage": 0.2857142857142857,
+        "precision": 0.75,
+        "recall": 0.5
+      },
+      {
+        "threshold": 0.8,
+        "coverage": 0.2857142857142857,
+        "precision": 0.75,
+        "recall": 0.5
+      },
+      {
+        "threshold": 0.85,
+        "coverage": 0.21428571428571427,
+        "precision": 1.0,
+        "recall": 0.5
+      },
+      {
+        "threshold": 0.9,
+        "coverage": 0.21428571428571427,
+        "precision": 1.0,
+        "recall": 0.5
+      },
+      {
+        "threshold": 0.95,
+        "coverage": 0.21428571428571427,
+        "precision": 1.0,
+        "recall": 0.5
+      },
+      {
+        "threshold": 1.0,
+        "coverage": 0.07142857142857142,
+        "precision": 1.0,
+        "recall": 0.16666666666666666
+      }
+    ],
+    "max_coverage_at_perfect_precision": 0.21428571428571427,
+    "perfect_precision_threshold": 0.82,
+    "per_class": {
+      "unrelated": {
+        "n": 3,
+        "mean": 0.0003333333333333333,
+        "min": 0.0,
+        "max": 0.001,
+        "median": 0.0,
+        "want": "low",
+        "n_wrong_side": 0
+      },
+      "incidental": {
+        "n": 2,
+        "mean": 0.2198,
+        "min": 0.0343,
+        "max": 0.4053,
+        "median": 0.4053,
+        "want": "low",
+        "n_wrong_side": 0
+      },
+      "meta": {
+        "n": 3,
+        "mean": 0.4094333333333333,
+        "min": 0.0147,
+        "max": 0.8127,
+        "median": 0.4009,
+        "want": "low",
+        "n_wrong_side": 1
+      },
+      "same_paraphrase": {
+        "n": 2,
+        "mean": 0.15,
+        "min": 0.012,
+        "max": 0.288,
+        "median": 0.288,
+        "want": "high",
+        "n_wrong_side": 2
+      },
+      "same_verbatim": {
+        "n": 4,
+        "mean": 0.815025,
+        "min": 0.2611,
+        "max": 1.0,
+        "median": 0.9996,
+        "want": "high",
+        "n_wrong_side": 1
+      }
+    },
+    "class_confusion": null
+  },
+  "gates": {
+    "rows": [
+      {
+        "kind": "unlock",
+        "id": "ssi-03",
+        "why": "English paraphrase, no shared phrase (was 0.288)",
+        "score": 0.288,
+        "want": ">= 0.5",
+        "passed": false
+      },
+      {
+        "kind": "unlock",
+        "id": "ptf-03",
+        "why": "Arabic restatement of the same announcement (was 0.012)",
+        "score": 0.012,
+        "want": ">= 0.5",
+        "passed": false
+      },
+      {
+        "kind": "unlock",
+        "id": "ptf-02",
+        "why": "the title plus a link to the same essay (was 0.261)",
+        "score": 0.2611,
+        "want": ">= 0.5",
+        "passed": false
+      },
+      {
+        "kind": "unlock",
+        "id": "dril-01",
+        "why": "a repost with the original's typo corrected",
+        "score": null,
+        "want": ">= 0.5",
+        "passed": null
+      },
+      {
+        "kind": "unlock",
+        "id": "boom-02",
+        "why": "the bare phrase against its own definition",
+        "score": null,
+        "want": ">= 0.5",
+        "passed": null
+      },
+      {
+        "kind": "regression",
+        "id": "ssi-04",
+        "why": "Korean honorific '-ssi' (holds at 0.034)",
+        "score": 0.0343,
+        "want": "< 0.5",
+        "passed": true
+      },
+      {
+        "kind": "regression",
+        "id": "ssi-05",
+        "why": "Supplemental Security Income, 2017",
+        "score": null,
+        "want": "< 0.5",
+        "passed": null
+      },
+      {
+        "kind": "regression",
+        "id": "ssi-06",
+        "why": "shares the entity OpenAI and nothing else (holds at 0.000)",
+        "score": 0.0,
+        "want": "< 0.5",
+        "passed": true
+      },
+      {
+        "kind": "regression",
+        "id": "ssi-07",
+        "why": "spam matching on one word (holds at 0.000)",
+        "score": 0.0,
+        "want": "< 0.5",
+        "passed": true
+      },
+      {
+        "kind": "regression",
+        "id": "boom-01",
+        "why": "the Oklahoma fight song",
+        "score": null,
+        "want": "< 0.5",
+        "passed": null
+      },
+      {
+        "kind": "regression",
+        "id": "ssi-10",
+        "why": "a reply DISPUTING the claim; must never count as corroboration",
+        "score": null,
+        "want": "< 0.5",
+        "passed": null
+      },
+      {
+        "kind": "regression",
+        "id": "ptf-05",
+        "why": "commentary about reactions, currently a false accept at 0.813",
+        "score": 0.8127,
+        "want": "< 0.5",
+        "passed": false
+      },
+      {
+        "kind": "regression",
+        "id": "cov-02",
+        "why": "the live follow-up six hours after the deleted original",
+        "score": null,
+        "want": "< 0.5",
+        "passed": null
+      },
+      {
+        "kind": "aggregate",
+        "id": "separation_margin",
+        "why": "some threshold separates the whole set; negative means none does",
+        "score": -0.8007,
+        "want": "> 0.0",
+        "passed": false
+      },
+      {
+        "kind": "aggregate",
+        "id": "roc_auc",
+        "why": "ranking quality independent of scale",
+        "score": 0.7708333333333334,
+        "want": ">= 0.95",
+        "passed": false
+      },
+      {
+        "kind": "aggregate",
+        "id": "average_precision",
+        "why": "ranking quality weighted toward the top",
+        "score": 0.7903138528138527,
+        "want": ">= 0.9",
+        "passed": false
+      },
+      {
+        "kind": "aggregate",
+        "id": "ece",
+        "why": "a 0.9 score must be right about 90% of the time",
+        "score": 0.2863428571428571,
+        "want": "<= 0.1",
+        "passed": false
+      },
+      {
+        "kind": "aggregate",
+        "id": "max_coverage_at_perfect_precision",
+        "why": "share of candidates judgeable with zero false accepts",
+        "score": 0.21428571428571427,
+        "want": ">= 0.8",
+        "passed": false
+      }
+    ],
+    "skipped": [
+      "dril-01",
+      "boom-02",
+      "ssi-05",
+      "boom-01",
+      "ssi-10",
+      "cov-02"
+    ],
+    "unlock_passed": 0,
+    "unlock_total": 3,
+    "regression_held": 3,
+    "regression_total": 4,
+    "aggregate_passed": 0,
+    "aggregate_total": 5,
+    "shippable": false
+  }
+}

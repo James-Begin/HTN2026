@@ -1,0 +1,24 @@
+__pycache__/
+*.pyc
+.env
+.env.*
+!.env.example
+.envrc
+.envrc.*
+creds.env
+.venv/
+.pytest_cache/
+.DS_Store
+
+# Regenerable bulk mining data and ad-hoc benchmark output.
+mine/out/
+runs_*.json
+
+# Model checkpoints: multi-GB binaries, regenerable via train/run.py.
+# Ignore checkpoint directories recursively. runs/.gitignore separately keeps
+# only the small reference baseline and excludes other experiment outputs.
+runs/*/
+
+# The deployed Truss bundle's weights: a copy of a runs/ checkpoint, staged
+# for `truss push`. Regenerate per deploy/README.md before redeploying.
+deploy/xenc/data/

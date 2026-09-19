@@ -1,0 +1,134 @@
+{
+ "_note": "45 tweets verified against the syndication endpoint by an independent sweep, zero fabricated. Snowflake ids cross-checked with (id>>22)+1288834974657. Deleted entries are POSITIVELY verified: the id resolves to a tombstone.",
+ "states": {
+  "live": [
+   {
+    "id": "20",
+    "date": "2006-03-21T20:50:14Z",
+    "handle": "jack",
+    "text": "just setting up my twttr",
+    "note": "first tweet ever"
+   },
+   {
+    "id": "21",
+    "date": "2006-03-21T20:51:43Z",
+    "handle": "biz",
+    "text": "just setting up my twttr",
+    "note": "2nd ever, 89s later - same text, different author"
+   },
+   {
+    "id": "869858333477523458",
+    "date": "2017-05-31T10:09:22Z",
+    "handle": "realDonaldTrump",
+    "note": "covfefe FOLLOW-UP, survives while the original does not"
+   }
+  ],
+  "deleted": [
+   {
+    "id": "869766994899468288",
+    "date": "2017-05-31T04:06:25Z",
+    "note": "the covfefe original. Snowflake-decoded time is 04:06:25.730Z; our bisect found the earliest survivor at 04:06:26Z, a 0.27s gap"
+   },
+   {
+    "id": "750140619801014273",
+    "date": "2016-07-05T01:33:55Z",
+    "note": "harambe catchphrase origin, deleted by its own author"
+   },
+   {
+    "id": "1001353729872773121",
+    "date": "2018-05-29T06:45:08Z",
+    "note": "cancelled a network sitcom in 12 hours"
+   }
+  ],
+  "protected": [
+   {
+    "id": "223115412",
+    "date": "2007-08-23",
+    "handle": "chrismessina",
+    "note": "the tweet that invented the hashtag. Also a tokenizer trap: '#' is usually stripped, so the origin of hashtag search is invisible to hashtag search"
+   }
+  ],
+  "nonexistent": [
+   {
+    "id": "999999999999999999999",
+    "note": "fabricated: out-of-range id returns HTTP 400"
+   }
+  ]
+ },
+ "killer_edge_cases": [
+  {
+   "name": "empty_text_most_liked",
+   "id": "1299530165463199747",
+   "date": "2020-08-29T02:11:50Z",
+   "handle": "chadwickboseman",
+   "likes": 6650000,
+   "why": "The MOST-LIKED TWEET IN HISTORY has no prose. Its text is a bare t.co link and the claim lives in 2 attached images. A text-only provenance pipeline scores it as a null document."
+  },
+  {
+   "name": "handle_drift",
+   "id": "14599635273",
+   "date": "2010-05-24T03:43:00Z",
+   "old_handle": "BPGlobalPR",
+   "current_handle": "thededsouls",
+   "author_id": "145753059",
+   "why": "Every citation in the literature points at a handle that no longer exists while the id still resolves. Author identity must key on the immutable id, never the screen name."
+  },
+  {
+   "name": "deleted_root_vs_live_followup",
+   "deleted_id": "869766994899468288",
+   "live_id": "869858333477523458",
+   "gap_hours": 6.05,
+   "why": "THE failure mode this tool exists to catch. The deleted original and its live follow-up are adjacent in time and topic, so retrieval happily returns the survivor as if it were the origin."
+  }
+ ],
+ "retrieval_hostile": [
+  {
+   "id": "922321981",
+   "handle": "dril",
+   "text": "no",
+   "why": "One word, 122k likes. Unsearchable by keyword; only the id identifies it. Worst case in the corpus."
+  },
+  {
+   "id": "51",
+   "handle": "jack",
+   "text": "lunch",
+   "why": "One common noun, historically significant, retrievally hopeless."
+  },
+  {
+   "id": "1683301504248061952",
+   "handle": "elonmusk",
+   "text": "\ud835\udd4f",
+   "why": "A single U+1D54F MATHEMATICAL DOUBLE-STRUCK CAPITAL X, not ASCII 'X'. Unicode-normalisation trap, and collides with the letter, the platform, Malcolm X, X-Men."
+  },
+  {
+   "id": "218439593240956928",
+   "handle": "Horse_ebooks",
+   "text": "Everything happens so much",
+   "why": "A grammatically ordinary English sentence that matches countless unrelated posts."
+  },
+  {
+   "id": "247222360309121024",
+   "handle": "dril",
+   "text": "who the fuck is scraeming \"LOG OFF\" at my house...",
+   "why": "Reposted for years WITH the typo 'scraeming' preserved. The typo is a better fingerprint than the sentence."
+  },
+  {
+   "id": "670963270317154304",
+   "handle": "dril",
+   "text": "...only 1 song aboutr the boys being back in town",
+   "why": "Typo 'aboutr' distinguishes the original from cleaned-up reposts; also collides with the actual Thin Lizzy song."
+  }
+ ],
+ "corrected_premises": [
+  "world record egg was an INSTAGRAM post, not a tweet - no origin tweet exists",
+  "'It's Wednesday my dudes' originated on Tumblr (2014-12-10), popularised via Vine",
+  "'Bones day' originated on TikTok (@jongraz, 2021-08-13)",
+  "'Deez nuts' predates Twitter entirely (Dr. Dre, 1992)"
+ ],
+ "unverifiable_no_id_supplied": [
+  "2013 AP hack tweet - 2,462 archived AP ids checked, none in the window",
+  "@comfortablysmug Hurricane Sandy hoaxes - 1,732 ids pulled, none decode to Oct 2012",
+  "Douglass Mackey vote-by-text tweets - zero Wayback coverage",
+  "a canonical 'WAP' origin tweet"
+ ]
+}
