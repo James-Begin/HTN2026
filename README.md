@@ -16,6 +16,8 @@ python3 sequitor_server.py
 
 Open <http://127.0.0.1:8765>. The browser loads a recorded real-source run automatically; the **Explore live** button runs a new bounded investigation. Local provider credentials are read from an ignored `.env` file in the project root. See `.env.example` for the variable names. Never put credentials in `web` or in Git.
 
+A [public recorded demo](https://james-begin.github.io/HTN2026/) is also available on GitHub Pages. It includes the measured saved run and day selection, with no provider keys or live API access.
+
 For frontend development, run `python3 sequitor_server.py` and `cd web && npm run dev` in separate terminals. Vite proxies `/api` to the local server. The production build is served by the Python process, so the demo needs only one URL.
 
 To prepare a network-independent copy, run `cd web && npm run build:offline`. The generated `web/dist/sequitor-offline.html` embeds the Sequitor interface and the recorded run. It does not make live provider calls when opened as a local file. External X links still require internet.
@@ -30,7 +32,7 @@ To prepare a network-independent copy, run `cd web && npm run build:offline`. Th
 
 ## Build status
 
-The browser, local API, OpenAI planning, X counts/search, Baseten hosted curation, day switching, source context, and offline backup are implemented. The saved run covers the frontier announcement and adjacent days. The remaining release work is a publicly reachable demo or video, Devpost submission, and final presentation rehearsal; see `SEQUITOR_HANDOFF.md`.
+The browser, local API, OpenAI planning, X counts/search, Baseten hosted curation, day switching, source context, public recorded demo, and offline backup are implemented. The saved run covers the frontier announcement and adjacent days. The remaining release work is a short video, Devpost submission, and final presentation rehearsal; see `SEQUITOR_HANDOFF.md`.
 
 ---
 

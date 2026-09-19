@@ -1,6 +1,6 @@
 # Sequitor: morning handoff
 
-**Updated September 19, 2026.** This repository now contains a working, one-URL local demo and a recorded offline fallback. The new browser app is Sequitor; the older Claimtrace research code remains in the repository. No Devpost submission or public deployment has been made.
+**Updated September 19, 2026.** This repository now contains a working, one-URL local demo, a [public recorded demo](https://james-begin.github.io/HTN2026/), and an offline fallback. The new browser app is Sequitor; the older Claimtrace research code remains in the repository. No Devpost submission has been made.
 
 ## What works
 
@@ -40,4 +40,4 @@ Open the default conversation; point to the 9,571 measured phrase mentions on Se
 
 ## Remaining opportunities
 
-The highest-value improvement is a short, clear demo video and a polished Devpost page. A public URL would help sponsor reviewers but is not in place. If there is extra time after submission, test one genuinely new seed and add richer quote/reply traversal, under the remaining X cap. Do not spend the morning retraining the unavailable cross-encoder or building new product surfaces.
+The highest-value improvement is a short, clear demo video and a polished Devpost page. Use the public recorded URL for sponsor reviewers and the local server for a live provider demonstration. If there is extra time after submission, test one genuinely new seed and add richer quote/reply traversal, under the remaining X cap. Do not spend the morning retraining the unavailable cross-encoder or building new product surfaces.
