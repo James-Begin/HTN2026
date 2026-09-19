@@ -10,9 +10,11 @@ import urllib.request
 from typing import AsyncIterator
 
 import truss_chains as chains
+from truss.base import truss_config
 
 
 MODEL = "openai/gpt-oss-120b"
+RERANKER_MODEL = "BAAI/bge-reranker-base"
 ALLOWED_KINDS = {"same wording", "reaction", "criticism", "question", "joke"}
 
 
@@ -103,6 +105,54 @@ class ObservedConnections(chains.ChainletBase):
         return json.dumps({"edges": edges, "posts": len(posts)})
 
 
+class BaselineReranker(chains.ChainletBase):
+    """Score seed/post relevance with a compact, public BGE cross-encoder.
+
+    This is intentionally separate from the fine-tuned claim-equivalence model.
+    Its sigmoid scores are relevance signals for ranking, never truth, provenance,
+    or evidence that an author copied a post.
+    """
+
+    remote_config = chains.RemoteConfig(
+        compute=chains.Compute(gpu=truss_config.Accelerator.L4, cpu_count=4, memory="12Gi"),
+        docker_image=chains.DockerImage(
+            # Chain GPU images do not guarantee a framework runtime. Pin the
+            # same torch line used by Sequitor's standalone Truss reranker.
+            pip_requirements=["torch==2.6.0", "transformers>=4.45,<5", "sentencepiece"],
+        ),
+    )
+
+    def __init__(self) -> None:
+        import torch
+        from transformers import AutoModelForSequenceClassification, AutoTokenizer
+
+        self._torch = torch
+        self._tokenizer = AutoTokenizer.from_pretrained(RERANKER_MODEL, use_fast=True)
+        self._model = AutoModelForSequenceClassification.from_pretrained(
+            RERANKER_MODEL, torch_dtype=torch.float16,
+        ).eval().to("cuda")
+
+    async def run_remote(self, seed_text: str, posts_json: str) -> str:
+        posts = json.loads(posts_json)
+        rows = []
+        for offset in range(0, len(posts), 16):
+            chunk = posts[offset:offset + 16]
+            encoded = self._tokenizer(
+                [seed_text[:1000]] * len(chunk),
+                [str(post.get("text") or "")[:1000] for post in chunk],
+                padding=True,
+                truncation=True,
+                max_length=384,
+                return_tensors="pt",
+            ).to("cuda")
+            with self._torch.inference_mode():
+                logits = self._model(**encoded).logits.reshape(-1).float()
+                scores = self._torch.sigmoid(logits).cpu().tolist()
+            rows.extend({"id": str(post["id"]), "score": round(float(score), 5)}
+                        for post, score in zip(chunk, scores))
+        return json.dumps({"model": RERANKER_MODEL, "scores": rows, "pairs": len(rows)})
+
+
 @chains.mark_entrypoint("Sequitor Analysis")
 class SequitorAnalysis(chains.ChainletBase):
     """Fan out independent post analysis, streaming each completed result."""
@@ -113,9 +163,11 @@ class SequitorAnalysis(chains.ChainletBase):
         self,
         curator: ConversationCuration = chains.depends(ConversationCuration, retries=0),
         observations: ObservedConnections = chains.depends(ObservedConnections),
+        reranker: BaselineReranker = chains.depends(BaselineReranker, retries=0),
     ) -> None:
         self._curator = curator
         self._observations = observations
+        self._reranker = reranker
 
     async def run_remote(self, seed_text: str, posts_json: str) -> AsyncIterator[str]:
         posts = json.loads(posts_json)
@@ -129,8 +181,12 @@ class SequitorAnalysis(chains.ChainletBase):
         async def connect() -> tuple[str, dict]:
             return "observed.ready", json.loads(await self._observations.run_remote(bounded_json))
 
+        async def rerank() -> tuple[str, dict]:
+            return "rerank.ready", json.loads(await self._reranker.run_remote(seed_text[:1000], bounded_json))
+
         failed = False
-        for task in asyncio.as_completed([asyncio.create_task(curate()), asyncio.create_task(connect())]):
+        tasks = [asyncio.create_task(curate()), asyncio.create_task(connect()), asyncio.create_task(rerank())]
+        for task in asyncio.as_completed(tasks):
             try:
                 kind, payload = await task
                 yield _sse(kind, payload)

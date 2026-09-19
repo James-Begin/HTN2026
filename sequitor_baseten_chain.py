@@ -47,6 +47,8 @@ class BasetenChainClient:
         candidate_count = 0
         picks_count = 0
         observed_edges = 0
+        reranker_model = None
+        reranked = 0
         try:
             with urllib.request.urlopen(request, timeout=120) as response:
                 lines = []
@@ -87,15 +89,30 @@ class BasetenChainClient:
                         observed_edges = len(edges)
                         if edges and emit:
                             emit("graph.observed", {"edges": edges, "source": "X referenced_tweets"})
+                    elif kind == "rerank.ready":
+                        reranker_model = payload.get("model")
+                        updates = []
+                        for row in payload.get("scores") or []:
+                            post = by_id.get(str(row.get("id")))
+                            score = row.get("score")
+                            if not post or not isinstance(score, (float, int)):
+                                continue
+                            post["rerankerScore"] = round(float(score), 5)
+                            post["rerankerModel"] = str(reranker_model or "BGE reranker")
+                            updates.append(post)
+                        reranked = len(updates)
+                        if updates and emit:
+                            emit("posts.upsert", {"posts": updates})
                     elif kind == "analysis.completed":
                         completed = True
         except urllib.error.HTTPError as exc:
             raise RuntimeError(f"Baseten Chain HTTP {exc.code}") from None
-        if not curated or not completed:
-            raise RuntimeError("Baseten Chain curation did not complete")
+        if not curated or not reranked or not completed:
+            raise RuntimeError("Baseten Chain curation or BGE reranking did not complete")
         result = {"status": "baseten chain", "model": model, "chainId": self.chain_id,
                   "classified": picks_count, "candidates": candidate_count,
-                  "observedEdges": observed_edges}
+                  "observedEdges": observed_edges, "reranker": reranker_model,
+                  "reranked": reranked}
         if emit:
             emit("model.ready", {"model": result})
         return result

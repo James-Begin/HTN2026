@@ -16,7 +16,7 @@ type Post = {
   avatar?: string; likes?: number | null; reposts?: number | null; replies?: number | null
   url?: string; parentId?: string | null; quotedPostId?: string | null
   scope?: string; captureTime?: string; textIsExcerpt?: boolean; sourceType?: 'input'
-  basetenKind?: string; sameClaimScore?: number; sameClaimRegister?: string
+  basetenKind?: string; sameClaimScore?: number; sameClaimRegister?: string; rerankerScore?: number; rerankerModel?: string
   basetenPick?: boolean; semanticScore?: number; lexicalScore?: number
   rankingScore?: number; rankingMethod?: string
 }

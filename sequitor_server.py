@@ -564,14 +564,18 @@ class Sequitor:
             relation = 1.0 if seed_id and (post.get("parentId") == seed_id or post.get("quotedPostId") == seed_id) else 0.0
             scope = 1.0 if post.get("scope") in {"direct conversation", "context expansion"} else .6 if post.get("scope") == "broader discovery" else .35
             reranker = post.get("sameClaimScore")
+            reranker_name = "trained reranker"
+            if reranker is None:
+                reranker = post.get("rerankerScore")
+                reranker_name = "Baseten BGE reranker"
             score = (.45 * float(reranker) + .25 * semantic + .18 * lexical + .08 * relation + .04 * scope) if reranker is not None \
                 else (.52 * semantic + .25 * lexical + .18 * relation + .05 * scope)
             post["semanticScore"] = round(semantic, 4)
             post["lexicalScore"] = round(lexical, 4)
             post["rankingScore"] = round(score, 4)
-            post["rankingMethod"] = "hybrid + trained reranker" if reranker is not None else "hybrid retrieval"
+            post["rankingMethod"] = "hybrid + " + reranker_name if reranker is not None else "hybrid retrieval"
         return {"status": "ready", "semantic": semantic_method,
-                "reranker": "connected" if any(post.get("sameClaimScore") is not None for post in posts) else "awaiting trained endpoint",
+                "reranker": "connected" if any(post.get("sameClaimScore") is not None or post.get("rerankerScore") is not None for post in posts) else "awaiting trained endpoint",
                 **({"embeddingError": embedding_error} if embedding_error else {})}
 
     def classify(self, seed_text: str, posts: list[dict], emit=None) -> dict:
