@@ -2,7 +2,7 @@
 
 **Explore how a post becomes a conversation.** Paste an X post URL or topic, see measured activity by UTC day, read popular retrieved posts from a selected day, and open recorded quote/reply context. Sequitor keeps the original posts visible and states how much of the conversation it actually captured.
 
-This is the Hack the North 2026 build. It uses the **OpenAI API** to plan a measured phrase and a broader search from a seed post, **X** for activity and source records, and **Baseten** for model-backed curation of retrieved reactions. The Baseten-hosted curation is running; an older dedicated cross-encoder deployment named in the research notes is unavailable with the supplied demo key, so the current browser demo does not claim to run that fine-tune.
+This is the Hack the North 2026 build. It uses the **OpenAI API** to turn a seed post into an inspectable context card, **X** for bounded activity and source retrieval, and **Baseten** for optional semantic embeddings and reranking. The current build always has a local lexical fallback; it only reports a Baseten semantic or reranker signal after that server-side endpoint returns a result.
 
 ## Run the demo
 
@@ -26,20 +26,21 @@ To prepare a network-independent copy, run `cd web && npm run build:offline`. Th
 
 `POST /api/runs` with `{"seed":"...","mode":"live"}` creates a job and returns its event URL. `mode:"recorded"` replays the saved run without provider calls. `GET /api/runs/{id}/events` streams SSE events with increasing IDs; `Last-Event-ID` resumes after a disconnect. Events are appended to ignored `work/sequitor-streams/` so a reconnect does not repeat paid retrieval. `POST /api/runs/{id}/cancel` stops further stages after any in-flight provider request completes. The previous `/api/explore` route remains available for whole-response clients.
 
-Events include `run.started`, `seed.resolved`, `plan.ready`, `run.ready`, `stage`, `posts.upsert`, `model.ready`, and one terminal event. A new search closes the previous browser stream; IDs and sequence numbers prevent stale or duplicate events from appearing. The selected-post drawer loads an official X embed when available and retains the source card when it is not.
+Events include `run.started`, `seed.resolved`, `plan.ready`, `context.expanded`, `run.ready`, `stage`, `posts.upsert`, `model.ready`, and one terminal event. A new search closes the previous browser stream; IDs and sequence numbers prevent stale or duplicate events from appearing. The selected-post drawer loads an official X embed when available and retains the source card when it is not.
 
 ## What the demo measures
 
 - The histogram counts X matches for **one inspectable exact phrase**. It does not count every reply or quote in the broader discussion.
 - The feed shows up to ten posts **among retrieved candidates** on the selected UTC day, sorted by likes recorded when collected. Search pagination may be incomplete; these are not guaranteed to be the platform's top ten.
-- A related OpenAI-planned query and explicit conversation replies can add posts outside the histogram's phrase scope. Each post's scope is retained. Baseten picks a few responses worth exploring; model labels do not establish truth, copying, or popularity.
+- OpenAI derives a neutral context card and up to two first-pass discovery branches from the seed. After the first retrieval, it can add at most two evidence-grounded branches. Each post retains its retrieval scope.
+- Posts rank by a hybrid of semantic similarity, lexical overlap, direct reply/quote relation, and retrieval scope. When a trained reranker returns `sameClaimScore`, it becomes one extra signal. A match score is never a truth, influence, or copying judgment.
 - The recorded Neighborhood maps 150 selected posts in chronological order, with rows suggested by a Baseten-hosted model's post-level role labels. Solid links represent X reply/quote references present in the capture; dashed links represent 25 local TF-IDF shared-wording comparisons. The 78 direct links to the starting post are summarized in the inspector and revealed individually when inspected, avoiding a visually misleading star. Horizontal order is time, but distance is not elapsed time or causal strength. Selecting a new focus leaves every node in place. The Baseten-labeled artifact can be regenerated with `python3 demo/recordings/build_story_map.py` using a server-side key.
 - `demo/recordings/sequitor-live.json` is a saved real run, including counts, source posts, capture time, model provenance, and cached day results. The earlier seven-post snapshot is retained separately. Neither contains provider keys.
 - The local server caps X at 600 returned posts and 20 counts calls, approximately **$3.20 maximum** under the repository's measured prices. It persists usage counters across restarts in ignored `work/sequitor-cache.json`.
 
 ## Build status
 
-The browser, streamed local API, OpenAI planning, X counts/search, Baseten hosted curation and recorded post-role grouping, chronological Neighborhood, day switching, source context, selected-post X embeds, public recorded demo, and offline backup are implemented. Card timestamps display Eastern local time; the measured chart still uses UTC day buckets until the source counts are accurately rebucketed. The Baseten Chain code exists but is not deployed; a working relevance reranker remains separate work. See `SEQUITOR_HANDOFF.md` for deadline-critical steps.
+The browser, streamed local API, two-pass OpenAI context planning, X counts/search, hybrid retrieval ranking, chronological Neighborhood, day switching, source context, selected-post X embeds, public recorded demo, and offline backup are implemented. Card timestamps display Eastern local time; the measured chart still uses UTC day buckets until the source counts are accurately rebucketed. Configure `SEQUITOR_BASETEN_EMBED_URL` once an embeddings deployment is ready; configure the existing reranker route when the separate Baseten training run is deployed. See `SEQUITOR_HANDOFF.md` for deadline-critical steps.
 
 ---
 

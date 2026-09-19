@@ -14,14 +14,15 @@ type Post = {
   url?: string; parentId?: string | null; quotedPostId?: string | null
   scope?: string; captureTime?: string; textIsExcerpt?: boolean
   basetenKind?: string; sameClaimScore?: number; sameClaimRegister?: string
-  basetenPick?: boolean
+  basetenPick?: boolean; semanticScore?: number; lexicalScore?: number
+  rankingScore?: number; rankingMethod?: string
 }
 type Bucket = { day: string; count: number; coverage: 'complete' | 'partial' | 'sample'; pending?: boolean }
 type Run = {
   id: string; seed: string; title: string; kind: 'live' | 'saved'; capturedAt?: string
   scope: string; query?: string | null; buckets: Bucket[]; posts: Post[]; selectedDay: string
-  rankingCoverage: string; searchPlan?: { volumePhrase?: string; discoveryPhrase?: string | null; whyDiscovery?: string; model?: string | null; error?: string } | null
-  model?: { openai?: string | null; baseten?: { status?: string; model?: string | null; classified?: number } | string }
+  rankingCoverage: string; searchPlan?: { contextLabel?: string; entities?: string[]; angles?: string[]; uncertainties?: string[]; volumePhrase?: string; discoveryPhrase?: string | null; discoveryQueries?: string[]; expansionQueries?: string[]; expansionReason?: string; whyDiscovery?: string; model?: string | null; error?: string } | null
+  model?: { openai?: string | null; baseten?: { status?: string; model?: string | null; classified?: number; retrieval?: { status?: string; semantic?: string; reranker?: string } } | string }
   note: string; xSpend?: number
   savedPeriods?: Record<string, PeriodResult>
   streamSource?: 'live' | 'cache' | 'recorded'
@@ -78,8 +79,20 @@ const sevenPostFallback: Run = {
   searchPlan: null, model: { openai: 'not run in saved sample', baseten: 'not run in saved sample' },
   note: 'This is a selected source sample. Its bar heights count saved posts, not X-wide activity.', xSpend: 0,
 }
+function hydrateRecordedContext(run: Run): Run {
+  if (run.searchPlan?.contextLabel || !run.searchPlan?.discoveryPhrase) return run
+  return { ...run, searchPlan: {
+    ...run.searchPlan,
+    contextLabel: 'AI-industry slowdown discussion',
+    entities: ['Anthropic', 'AI industry'],
+    angles: ['frontier pacing', 'independent evaluation'],
+    uncertainties: ['The recorded post and its retrieved responses do not establish influence, provenance, or factual accuracy.'],
+    discoveryQueries: [run.searchPlan.discoveryPhrase],
+    expansionQueries: [],
+  } }
+}
 const fallback: Run = {
-  ...(liveCapture as Run), kind: 'saved',
+  ...hydrateRecordedContext(liveCapture as Run), kind: 'saved',
   scope: 'Recorded X counts and retrieved posts',
   note: `Saved run captured ${formatTime(liveCapture.capturedAt)}. Its bars were measured on X at capture time; post lists cover retrieved candidates only.`,
 }
@@ -136,6 +149,18 @@ function Timeline({ buckets, selectedDay, onSelect, kind, scaleMax }: { buckets:
   </section>
 }
 
+function ContextCard({ plan }: { plan?: Run['searchPlan'] }) {
+  if (!plan?.contextLabel) return null
+  const queries = [...(plan.discoveryQueries || []), ...(plan.expansionQueries || [])]
+  return <section className="seq-context-card" aria-label="Investigation context">
+    <p>OPENAI CONTEXT CARD</p><h3>{plan.contextLabel}</h3>
+    {plan.entities?.length ? <div><span>Entities</span><p>{plan.entities.join(' · ')}</p></div> : null}
+    {queries.length ? <div><span>Discovery branches</span><p>{queries.map(query => <code key={query}>{query}</code>)}</p></div> : null}
+    {plan.expansionReason && <small>Second pass: {plan.expansionReason}</small>}
+    {plan.uncertainties?.[0] && <small>Limit: {plan.uncertainties[0]}</small>}
+  </section>
+}
+
 function PostRow({ post, onOpen }: { post: Post; onOpen: (post: Post) => void }) {
   const displayAuthor = post.author.replace(/\s*·\s*@\S+$/, '')
   const showHandle = post.handle && displayAuthor.toLowerCase() !== `@${post.handle}`.toLowerCase()
@@ -147,8 +172,8 @@ function PostRow({ post, onOpen }: { post: Post; onOpen: (post: Post) => void })
       <p className="seq-post-text">{post.text}</p>
       {post.textIsExcerpt && <span className="seq-post-notice">Captured excerpt; full text unavailable here</span>}
       <div className="seq-post-foot">
-        <span>{post.scope === 'broader discovery' ? <><Sparkles size={12} /> Related search</> : post.scope === 'direct conversation' ? 'Direct reply or thread' : post.scope === 'saved source' ? 'Saved source' : post.scope === 'seed' ? 'Starting post' : null}</span>
-        <div>{post.likes !== undefined && post.likes !== null && <span title={`Likes captured ${post.captureTime || 'when retrieved'}`}><Heart size={14} /> {shortNumber(post.likes)}</span>}
+        <span>{post.scope === 'broader discovery' ? <><Sparkles size={12} /> Related search</> : post.scope === 'context expansion' ? <><Sparkles size={12} /> Context branch</> : post.scope === 'direct conversation' ? 'Direct reply or thread' : post.scope === 'saved source' ? 'Saved source' : post.scope === 'seed' ? 'Starting post' : null}</span>
+        <div>{post.rankingScore !== undefined && <span className="seq-rank-score" title={`${post.rankingMethod || 'Hybrid'} score. This is a retrieval signal, not a truth or influence score.`}>Match {Math.round(post.rankingScore * 100)}</span>}{post.likes !== undefined && post.likes !== null && <span title={`Likes captured ${post.captureTime || 'when retrieved'}`}><Heart size={14} /> {shortNumber(post.likes)}</span>}
           <button onClick={() => onOpen(post)}>Context <ArrowRight size={13} /></button>
           {post.url && <a href={post.url} target="_blank" rel="noopener noreferrer" aria-label={`Open ${post.author}'s post on X`}><ArrowUpRight size={16} /></a>}</div>
       </div>
@@ -209,7 +234,7 @@ export default function Sequitor() {
   const [selectedDay, setSelectedDay] = useState(fallback.selectedDay)
   const [periodPosts, setPeriodPosts] = useState<Post[]>(fallback.posts)
   const [rankingCoverage, setRankingCoverage] = useState(fallback.rankingCoverage)
-  const [sort, setSort] = useState<'popular' | 'recent'>('popular')
+  const [sort, setSort] = useState<'relevance' | 'popular' | 'recent'>('relevance')
   const [busy, setBusy] = useState('')
   const [error, setError] = useState('')
   const [inspect, setInspect] = useState<Post | null>(null)
@@ -241,7 +266,7 @@ export default function Sequitor() {
   }, [])
 
   useEffect(() => {
-    getJson<Run>('/api/demo').then(demo => { if (requestId.current === 0) { setRun(demo); setSelectedDay(demo.selectedDay); setPeriodPosts(demo.posts); setRankingCoverage(demo.rankingCoverage) } setHealth(true) })
+    getJson<Run>('/api/demo').then(demo => { const recorded = hydrateRecordedContext(demo); if (requestId.current === 0) { setRun(recorded); setSelectedDay(recorded.selectedDay); setPeriodPosts(recorded.posts); setRankingCoverage(recorded.rankingCoverage) } setHealth(true) })
       .catch(() => setHealth(false))
   }, [])
 
@@ -325,9 +350,10 @@ export default function Sequitor() {
         lastSequence.current = message.sequence
         const payload = message.payload
         if (message.type === 'stage') setBusy(String(payload.name || 'Investigating…'))
+        if (message.type === 'plan.ready' || message.type === 'context.expanded') setRun(previous => ({ ...previous, searchPlan: payload.plan as Run['searchPlan'] }))
         if (message.type === 'seed.resolved') setRun(previous => ({ ...previous, title: String(payload.text || previous.title).split('\n')[0].slice(0, 110) }))
         if (message.type === 'run.ready') {
-          const ready = payload as unknown as Run
+          const ready = hydrateRecordedContext(payload as unknown as Run)
           setRun({ ...ready, posts: [], savedPeriods: undefined })
           setSelectedDay(ready.selectedDay)
           setPeriodPosts([])
@@ -398,7 +424,8 @@ export default function Sequitor() {
     const dayPosts = periodPosts.filter(post => post.publishedAt?.startsWith(selectedDay))
     return (busy ? dayPosts : [...dayPosts].sort((a, b) => sort === 'popular'
       ? (b.likes ?? -1) - (a.likes ?? -1) || a.id.localeCompare(b.id)
-      : b.publishedAt.localeCompare(a.publishedAt))).slice(0, 10)
+      : sort === 'recent' ? b.publishedAt.localeCompare(a.publishedAt)
+      : (b.rankingScore ?? -1) - (a.rankingScore ?? -1) || (b.likes ?? -1) - (a.likes ?? -1))).slice(0, 10)
   }, [periodPosts, selectedDay, sort, busy])
   const discoveries = useMemo(() => {
     const visibleIds = new Set(visible.map(post => post.id))
@@ -432,10 +459,11 @@ export default function Sequitor() {
     <nav className="seq-view-tabs" aria-label="Investigation views"><button type="button" className={view === 'feed' ? 'active' : ''} aria-current={view === 'feed' ? 'page' : undefined} onClick={() => setView('feed')}>Activity & posts</button><button type="button" className={view === 'network' ? 'active' : ''} aria-current={view === 'network' ? 'page' : undefined} onClick={() => setView('network')}>Neighborhood <span>{graphPosts.length}</span></button></nav>
     {view === 'feed' ? <main id="seq-main" className="seq-layout">
       <aside className="seq-sidebar"><Timeline buckets={run.buckets} selectedDay={selectedDay} onSelect={chooseDay} kind={run.streamSource === 'cache' ? 'saved' : run.kind} scaleMax={run.activityScaleMax} />
+        <ContextCard plan={run.searchPlan} />
         <section className="seq-sidebar-note"><p className="seq-sidebar-note-title">A slice of the discussion</p><p>{run.note}</p><button onClick={() => setShowData(true)}>See scope and sources <ArrowRight size={13} /></button></section>
         {run.model?.openai && <section className="seq-model-trace"><p>{run.kind === 'saved' ? 'RECORDED MODEL RUN' : 'POWERED BY'}</p><span>OpenAI <small>{run.model.openai}</small></span><span>Baseten <small>{basetenLabel}</small></span></section>}
       </aside>
-      <section className="seq-feed seq-reveal" aria-label="Posts from selected day"><div className="seq-feed-head"><div><p>Conversation on</p><h2>{formatDay(selectedDay)} <small>UTC</small></h2></div><div className="seq-feed-actions"><button className={sort === 'popular' ? 'active' : ''} onClick={() => setSort('popular')}>Popular</button><button className={sort === 'recent' ? 'active' : ''} onClick={() => setSort('recent')}>Recent</button></div></div>
+      <section className="seq-feed seq-reveal" aria-label="Posts from selected day"><div className="seq-feed-head"><div><p>Conversation on</p><h2>{formatDay(selectedDay)} <small>UTC</small></h2></div><div className="seq-feed-actions"><button className={sort === 'relevance' ? 'active' : ''} onClick={() => setSort('relevance')}>Sequitor</button><button className={sort === 'popular' ? 'active' : ''} onClick={() => setSort('popular')}>Popular</button><button className={sort === 'recent' ? 'active' : ''} onClick={() => setSort('recent')}>Recent</button></div></div>
         <div className="seq-feed-status"><span>{run.id === sevenPostFallback.id ? 'Selected saved posts' : rankingCoverage}</span><span>{visible.length} shown</span></div>
         {busy && <div className="seq-stream-status" role="status" aria-live="polite"><span className="seq-stream-pulse" /><span>{busy}</span><span className="seq-stream-count">{periodPosts.length ? `${periodPosts.length} retrieved` : 'Waiting for the first results'}</span><button type="button" onClick={() => { ++requestId.current; stopCurrent(); setBusy('') }}>Stop</button></div>}
         {visible.length ? <div className="seq-post-list">{visible.map(post => <PostRow key={post.id} post={post} onOpen={setInspect} />)}</div> : busy ? <div className="seq-stream-skeleton" aria-hidden="true"><i /><i /><i /></div> : <div className="seq-empty"><Clock3 size={21} /><h3>No retrieved posts for this day</h3><p>The count can include posts that were not fetched for this feed. Choose another day or try a different seed.</p></div>}

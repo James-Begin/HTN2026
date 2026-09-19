@@ -5,7 +5,9 @@ work/sequitor-cache.json, which is deliberately excluded from Git.
 """
 from __future__ import annotations
 
+import hashlib
 import json
+import math
 import os
 import re
 import threading
@@ -221,6 +223,38 @@ def terms(raw: str) -> str:
     return " ".join(words)
 
 
+def distinct_queries(values: list[str], limit: int = 2) -> list[str]:
+    """Keep model-generated discovery bounded and compatible with X implicit AND."""
+    queries: list[str] = []
+    for value in values:
+        try:
+            query = terms(value)
+        except (TypeError, ValueError):
+            continue
+        if query.casefold() not in {item.casefold() for item in queries}:
+            queries.append(query)
+        if len(queries) >= limit:
+            break
+    return queries
+
+
+def normalized_words(text: str) -> set[str]:
+    return {word.casefold() for word in re.findall(r"[\w'-]{3,}", text, flags=re.UNICODE)
+            if word.casefold() not in {"the", "and", "that", "with", "this", "from", "have", "will", "about", "your"}}
+
+
+def token_overlap(left: str, right: str) -> float:
+    a, b = normalized_words(left), normalized_words(right)
+    return len(a & b) / len(a | b) if a and b else 0.0
+
+
+def cosine(left: list[float] | None, right: list[float] | None) -> float | None:
+    if not left or not right or len(left) != len(right):
+        return None
+    denominator = math.sqrt(sum(value * value for value in left)) * math.sqrt(sum(value * value for value in right))
+    return sum(a * b for a, b in zip(left, right)) / denominator if denominator else None
+
+
 def post_from_x(row: dict, scope: str) -> dict:
     refs = row.get("referenced_tweets") or []
     metrics = row.get("public_metrics") or {}
@@ -275,6 +309,7 @@ class Sequitor:
         self.cache.setdefault("runs", {})
         self.cache.setdefault("periods", {})
         self.cache.setdefault("ledger", {})
+        self.cache.setdefault("embeddings", {})
         self._cross_encoder_unavailable = False
         self.x = XClient(os.environ.get("X_BEARER", ""), post_budget=MAX_POSTS) if os.environ.get("X_BEARER") else None
         if self.x:
@@ -316,27 +351,35 @@ class Sequitor:
         return [post_from_x(row, scope) for row in rows], bool(next_token)
 
     def openai_plan(self, text: str) -> dict:
+        """Create a small, inspectable context card before any X search."""
         key = os.environ.get("OPENAI_API_KEY")
         if not key:
             raise RuntimeError("OpenAI API key unavailable")
         schema = {
             "type": "object", "additionalProperties": False,
             "properties": {
+                "context_label": {"type": "string"},
+                "entities": {"type": "array", "items": {"type": "string"}},
+                "angles": {"type": "array", "items": {"type": "string"}},
+                "uncertainties": {"type": "array", "items": {"type": "string"}},
                 "volume_phrase": {"type": "string"},
-                "discovery_query": {"type": "string"},
+                "discovery_queries": {"type": "array", "items": {"type": "string"}},
                 "why_discovery": {"type": "string"},
             },
-            "required": ["volume_phrase", "discovery_query", "why_discovery"],
+            "required": ["context_label", "entities", "angles", "uncertainties",
+                         "volume_phrase", "discovery_queries", "why_discovery"],
         }
         body = {
             "model": "gpt-4.1-mini",
             "instructions": (
-                "Plan X archive discovery around this post. volume_phrase must be 2–6 "
-                "consecutive words copied from the post, for a measured histogram. "
-                "discovery_query must be 2–3 separate, unquoted search terms likely to "
-                "occur in posts about this event that do NOT repeat the volume_phrase. "
-                "Prefer a name plus distinctive concept, e.g. 'Dario slowdown'. "
-                "Do not invent a quotation, add operators, or write a sentence."
+                "Build an evidence-bounded context card for exploring discussion around an X post. "
+                "context_label must be a neutral 3–10 word description, not a truth claim. "
+                "entities are only names or organizations grounded in the post. angles are possible "
+                "discussion directions, not facts. uncertainties must say what the post alone cannot establish. "
+                "volume_phrase must be 2–6 consecutive words copied from the post for a measured histogram. "
+                "discovery_queries contains at most two 2–3 word, unquoted search term groups likely to find "
+                "posts about the same event that do not repeat the volume phrase. Prefer a name plus a distinctive "
+                "concept. Do not add X operators, invent quotations, or state that a rumor is true."
             ),
             "input": text[:3000],
             "text": {"format": {"type": "json_schema", "name": "sequitor_search_plan",
@@ -357,9 +400,117 @@ class Sequitor:
         primary = phrase(plan["volume_phrase"])
         if primary.strip('"').casefold() not in text.casefold():
             raise RuntimeError("OpenAI's measured phrase was not in the seed post")
-        secondary = terms(plan["discovery_query"])
-        return {"volumePhrase": primary, "discoveryPhrase": secondary,
-                "whyDiscovery": plan["why_discovery"][:200], "model": data.get("model")}
+        discovery = distinct_queries(plan.get("discovery_queries") or [])
+        return {"planVersion": 4, "contextLabel": str(plan["context_label"])[:110],
+                "entities": [str(item)[:50] for item in plan["entities"][:6]],
+                "angles": [str(item)[:70] for item in plan["angles"][:4]],
+                "uncertainties": [str(item)[:110] for item in plan["uncertainties"][:3]],
+                "volumePhrase": primary, "discoveryPhrase": discovery[0] if discovery else None,
+                "discoveryQueries": discovery, "expansionQueries": [],
+                "whyDiscovery": str(plan["why_discovery"])[:200], "model": data.get("model")}
+
+    def expand_context(self, plan: dict, seed_text: str, posts: list[dict]) -> dict:
+        """One grounded expansion round. It never sees an unbounded X corpus."""
+        key = os.environ.get("OPENAI_API_KEY")
+        if not key or not posts:
+            return {"queries": [], "reason": ""}
+        schema = {
+            "type": "object", "additionalProperties": False,
+            "properties": {"queries": {"type": "array", "items": {"type": "string"}},
+                           "reason": {"type": "string"}},
+            "required": ["queries", "reason"],
+        }
+        evidence = [{"id": post["id"], "scope": post.get("scope"), "text": post.get("text", "")[:240]}
+                    for post in sorted(posts, key=lambda post: -(post.get("rankingScore") or 0))[:12]]
+        body = {
+            "model": "gpt-4.1-mini",
+            "instructions": (
+                "Suggest at most two new, unquoted 2–3 term X discovery queries. Base them only on the seed, "
+                "the supplied context card, and retrieved posts. Seek a missing facet or alternate wording rather "
+                "than repeating an existing query. Do not add X operators, claim truth, infer a source, or use "
+                "generic terms alone. Return an empty list when the evidence is already repetitive."
+            ),
+            "input": json.dumps({"seed": seed_text[:700], "context": plan.get("contextLabel"),
+                                  "entities": plan.get("entities", []), "existingQueries": plan.get("discoveryQueries", []),
+                                  "posts": evidence}, ensure_ascii=False),
+            "text": {"format": {"type": "json_schema", "name": "sequitor_context_expansion",
+                                "strict": True, "schema": schema}},
+            "max_output_tokens": 180,
+        }
+        req = urllib.request.Request("https://api.openai.com/v1/responses", data=json.dumps(body).encode(),
+                                     headers={"Authorization": "Bearer " + key, "Content-Type": "application/json"})
+        with urllib.request.urlopen(req, timeout=25) as response:
+            data = json.load(response)
+        content = next((part.get("text") for item in data.get("output", [])
+                        for part in item.get("content", []) if part.get("type") == "output_text"), None)
+        if not content:
+            raise RuntimeError("OpenAI returned no context expansion")
+        result = json.loads(content)
+        known = {str(query).casefold() for query in plan.get("discoveryQueries", [])}
+        queries = [query for query in distinct_queries(result.get("queries") or []) if query.casefold() not in known]
+        return {"queries": queries, "reason": str(result.get("reason") or "")[:180], "model": data.get("model")}
+
+    def embed_texts(self, texts: list[str]) -> tuple[list[list[float] | None], str]:
+        """Use an optional Baseten BEI endpoint; retain a clear local fallback until it exists."""
+        endpoint = os.environ.get("SEQUITOR_BASETEN_EMBED_URL", "").rstrip("/")
+        key = os.environ.get("BASETEN_API_KEY")
+        model = os.environ.get("SEQUITOR_BASETEN_EMBED_MODEL", "not-required")
+        if not endpoint or not key:
+            return [None] * len(texts), "token-overlap fallback"
+        # Keep vectors tied to the deployment as well as the model label: two
+        # Baseten deployments can legitimately expose the same model name.
+        deployment = hashlib.sha256(endpoint.encode()).hexdigest()[:16]
+        cached = self.cache.setdefault("embeddings", {}).setdefault(deployment, {}).setdefault(model, {})
+        hashes = [hashlib.sha256(text.encode()).hexdigest() for text in texts]
+        missing = [index for index, digest in enumerate(hashes) if digest not in cached]
+        for offset in range(0, len(missing), 64):
+            indices = missing[offset:offset + 64]
+            body = {"input": [texts[index][:3000] for index in indices], "model": model}
+            req = urllib.request.Request(endpoint + "/embeddings", data=json.dumps(body).encode(),
+                                         headers={"Authorization": "Bearer " + key, "Content-Type": "application/json"})
+            with urllib.request.urlopen(req, timeout=25) as response:
+                payload = json.load(response)
+            rows = payload.get("data") or []
+            if len(rows) != len(indices):
+                raise RuntimeError("Baseten embedding response did not match the request")
+            for index, row in zip(indices, rows):
+                vector = row.get("embedding")
+                if not isinstance(vector, list) or not vector:
+                    raise RuntimeError("Baseten embedding response was missing a vector")
+                cached[hashes[index]] = vector
+        self.save()
+        return [cached.get(digest) for digest in hashes], "Baseten embeddings"
+
+    def rank_posts(self, seed: dict, posts: list[dict]) -> dict:
+        """Stable hybrid scoring now; a future trained reranker simply supplies one signal."""
+        if not posts:
+            return {"status": "no posts", "semantic": None, "reranker": "not available"}
+        try:
+            vectors, semantic_method = self.embed_texts([seed.get("text", "")] + [post.get("text", "") for post in posts])
+        except Exception as exc:
+            vectors, semantic_method = [None] * (len(posts) + 1), "token-overlap fallback"
+            embedding_error = type(exc).__name__
+        else:
+            embedding_error = None
+        seed_vector = vectors[0]
+        seed_id = str(seed.get("id") or "")
+        for post, vector in zip(posts, vectors[1:]):
+            lexical = token_overlap(seed.get("text", ""), post.get("text", ""))
+            semantic = cosine(seed_vector, vector)
+            if semantic is None:
+                semantic = lexical
+            relation = 1.0 if seed_id and (post.get("parentId") == seed_id or post.get("quotedPostId") == seed_id) else 0.0
+            scope = 1.0 if post.get("scope") in {"direct conversation", "context expansion"} else .6 if post.get("scope") == "broader discovery" else .35
+            reranker = post.get("sameClaimScore")
+            score = (.45 * float(reranker) + .25 * semantic + .18 * lexical + .08 * relation + .04 * scope) if reranker is not None \
+                else (.52 * semantic + .25 * lexical + .18 * relation + .05 * scope)
+            post["semanticScore"] = round(semantic, 4)
+            post["lexicalScore"] = round(lexical, 4)
+            post["rankingScore"] = round(score, 4)
+            post["rankingMethod"] = "hybrid + trained reranker" if reranker is not None else "hybrid retrieval"
+        return {"status": "ready", "semantic": semantic_method,
+                "reranker": "connected" if any(post.get("sameClaimScore") is not None for post in posts) else "awaiting trained endpoint",
+                **({"embeddingError": embedding_error} if embedding_error else {})}
 
     def classify(self, seed_text: str, posts: list[dict], emit=None) -> dict:
         key = os.environ.get("BASETEN_API_KEY")
@@ -417,7 +568,7 @@ class Sequitor:
         if not re.fullmatch(r"\d{4}-\d{2}-\d{2}", day):
             raise ValueError("Invalid UTC day")
         key = run_id + ":" + day
-        if key in self.cache["periods"] and self.cache["periods"][key].get("schemaVersion") == 3 and self.cache["periods"][key].get("discoveryQuery") == run["searchPlan"].get("discoveryPhrase"):
+        if key in self.cache["periods"] and self.cache["periods"][key].get("schemaVersion") == 4 and self.cache["periods"][key].get("discoveryQuery") == run["searchPlan"].get("discoveryPhrase"):
             cached_period = self.cache["periods"][key]
             if emit:
                 emit("stage", {"name": "Loading cached posts", "source": "cache"})
@@ -431,6 +582,10 @@ class Sequitor:
                 self.save()
                 if run.get("seed") == DEFAULT_SEED:
                     write_json(CAPTURE_FILE, run)
+            if any("rankingScore" not in post for post in cached_period["posts"]):
+                retrieval = self.rank_posts(run["seedPost"], cached_period["posts"])
+                cached_period["model"] = {**cached_period.get("model", {}), "retrieval": retrieval}
+                self.save()
             current_spend = round(self.x.spend, 3) if self.x else 0
             cached_period["xSpend"] = current_spend
             run["xSpend"] = current_spend
@@ -450,16 +605,21 @@ class Sequitor:
                                            limit=70 if day == run["selectedDay"] else 40)
         if emit and primary:
             emit_progressive_posts(emit, sorted(primary, key=lambda post: -(post.get("likes") or 0)))
-        # One bounded secondary search creates a real branch outside the chart's
-        # literal phrase scope. It is explicitly labelled as broader discovery.
+        # Initial context-card queries create explicitly-labelled branches outside
+        # the chart's literal phrase scope.
         secondary, extra_partial = [], False
-        if day == run["selectedDay"] and run["searchPlan"].get("discoveryPhrase") and run["searchPlan"].get("discoveryPhrase") != run["query"]:
+        initial_queries = run["searchPlan"].get("discoveryQueries") or ([run["searchPlan"].get("discoveryPhrase")] if run["searchPlan"].get("discoveryPhrase") else [])
+        if day == run["selectedDay"] and initial_queries:
             if emit:
-                emit("stage", {"name": "Looking beyond the exact phrase"})
-            secondary, extra_partial = self.search(run["searchPlan"]["discoveryPhrase"],
-                                                   day, limit=40, scope="broader discovery")
-            if emit and secondary:
-                emit_post_batches(emit, secondary)
+                emit("stage", {"name": "Searching the first context branches"})
+            for query in initial_queries[:2]:
+                if query == run["query"]:
+                    continue
+                rows, partial_result = self.search(query, day, limit=30, scope="broader discovery")
+                secondary.extend(rows)
+                extra_partial = extra_partial or partial_result
+                if emit and rows:
+                    emit_post_batches(emit, rows)
         unique = {p["id"]: p for p in primary}
         if prior:
             for post in prior["posts"]:
@@ -489,19 +649,46 @@ class Sequitor:
         if seed_id.isdigit() and day == run["seedPost"]["publishedAt"][:10]:
             unique.setdefault(run["seedPost"]["id"], run["seedPost"])
         posts = list(unique.values())
+        retrieval = self.rank_posts(run["seedPost"], posts)
+        # A single second round is grounded in retrieved evidence, then capped at
+        # two short X queries. This prevents topic drift and surprise X spend.
+        if day == run["selectedDay"] and not run["searchPlan"].get("expansionQueries"):
+            try:
+                if emit:
+                    emit("stage", {"name": "Finding missing context from retrieved evidence"})
+                expansion = self.expand_context(run["searchPlan"], run["seedPost"]["text"], posts)
+                run["searchPlan"]["expansionQueries"] = expansion["queries"]
+                run["searchPlan"]["expansionReason"] = expansion["reason"]
+                run["searchPlan"]["expansionModel"] = expansion.get("model")
+                if emit:
+                    emit("context.expanded", {"plan": run["searchPlan"]})
+                for query in expansion["queries"]:
+                    rows, partial_result = self.search(query, day, limit=25, scope="context expansion")
+                    extra_partial = extra_partial or partial_result
+                    for post in rows:
+                        unique.setdefault(post["id"], post)
+                    if emit and rows:
+                        emit_post_batches(emit, rows)
+                posts = list(unique.values())
+                retrieval = self.rank_posts(run["seedPost"], posts)
+            except Exception as exc:
+                run["searchPlan"]["expansionError"] = type(exc).__name__
+                if emit:
+                    emit("stage", {"name": "Context expansion unavailable; keeping first-round evidence"})
         if emit:
             emit_post_batches(emit, posts, size=24, pause=0)
             emit("stage", {"name": "Curating retrieved posts with Baseten"})
         model = self.classify(run["seedPost"]["text"], posts, emit=emit)
+        retrieval = self.rank_posts(run["seedPost"], posts)
         if emit:
-            updates = [post for post in posts if post.get("basetenPick") or post.get("sameClaimScore") is not None]
+            updates = [post for post in posts if post.get("basetenPick") or post.get("sameClaimScore") is not None or post.get("rankingScore") is not None]
             emit_post_batches(emit, updates, size=12, pause=0)
-            emit("model.ready", {"model": model})
-        result = {"schemaVersion": 3, "discoveryQuery": run["searchPlan"].get("discoveryPhrase"),
+            emit("model.ready", {"model": {**model, "retrieval": retrieval}})
+        result = {"schemaVersion": 4, "discoveryQuery": run["searchPlan"].get("discoveryPhrase"),
                   "day": day, "posts": posts,
                   "rankingCoverage": "top retrieved posts; search may be truncated" if partial or extra_partial
                   else "top retrieved posts; phrase scope plus one related search",
-                  "partial": partial or extra_partial, "model": model,
+                  "partial": partial or extra_partial, "model": {**model, "retrieval": retrieval},
                   "xSpend": round(self.x.spend, 3) if self.x else 0}
         self.cache["periods"][key] = result
         if day == run["selectedDay"]:
@@ -523,10 +710,9 @@ class Sequitor:
         cache_key = re.sub(r"[^a-z0-9]+", "-", seed.lower())[:100]
         if cache_key in self.cache["runs"]:
             cached = self.cache["runs"][cache_key]
-            if cached.get("searchPlan", {}).get("planVersion") != 3:
+            if cached.get("searchPlan", {}).get("planVersion") != 4:
                 try:
                     revised = self.openai_plan(cached["seedPost"]["text"])
-                    revised["planVersion"] = 3
                     cached["searchPlan"] = revised
                     self.save()
                     self.period(cache_key, cached["selectedDay"])
@@ -569,12 +755,13 @@ class Sequitor:
             emit("stage", {"name": "Planning bounded discovery with OpenAI"})
         try:
             plan = self.openai_plan(original_text)
-            plan["planVersion"] = 3
         except Exception as exc:
             # An OpenAI failure is visible in provenance, never silently counted as API use.
             words = re.findall(r"[\w'-]+", original_text)
-            plan = {"volumePhrase": phrase(" ".join(words[:4])),
-                    "discoveryPhrase": None, "whyDiscovery": "",
+            plan = {"planVersion": 4, "contextLabel": "Unstructured seed post",
+                    "entities": [], "angles": [], "uncertainties": ["Context planning was unavailable."],
+                    "volumePhrase": phrase(" ".join(words[:4])), "discoveryPhrase": None,
+                    "discoveryQueries": [], "expansionQueries": [], "whyDiscovery": "",
                     "model": None, "error": type(exc).__name__}
         if emit:
             emit("plan.ready", {"plan": plan})
