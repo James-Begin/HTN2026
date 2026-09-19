@@ -33,8 +33,8 @@ DARIO_HUMOR_FILE = ROOT / "demo" / "recordings" / "dario-humor.json"
 SNAPSHOT_FILE = ROOT / "demo" / "recordings" / "pace-the-frontier" / "snapshot.json"
 EVENT_DIR = DATA_DIR / "sequitor-streams"
 DEFAULT_SEED = "https://x.com/DarioAmodei/status/2098773920774074715"
-MAX_POSTS = 600  # $3.00 at the default cap.
-MAX_COUNTS = 20  # $0.20 at the default cap.
+MAX_POSTS = 1800  # $9.00 at the default cap.
+MAX_COUNTS = 48   # $0.48 at the default cap.
 
 
 class StoppedRun(Exception):
@@ -360,10 +360,13 @@ class Sequitor:
                                     "estimatedXSpend": round(self.x.spend, 3)}
         write_json(CACHE_FILE, self.cache)
 
-    def count(self, query: str, start: datetime, end: datetime) -> list[dict]:
+    def count(self, query: str, start: datetime, end: datetime,
+              granularity: str = "day") -> list[dict]:
         if not self.x or self.x.counts_calls >= MAX_COUNTS:
             raise RuntimeError("X counts budget reached or bearer token unavailable")
-        buckets, token = self.x.counts(query, start, end)
+        if granularity not in {"hour", "day"}:
+            raise ValueError("Unsupported activity granularity")
+        buckets, token = self.x.counts(query, start, end, granularity=granularity)
         self.save()
         if token:
             # One demo window is at most 30 days; never pretend a truncated series is complete.
@@ -639,7 +642,7 @@ class Sequitor:
             if emit:
                 emit("stage", {"name": "Retrieving phrase matches"})
             primary, partial = self.search(run["query"], day,
-                                           limit=70 if day == run["selectedDay"] else 40)
+                                           limit=100 if day == run["selectedDay"] else 70)
         if emit and primary:
             emit_progressive_posts(emit, sorted(primary, key=lambda post: -(post.get("likes") or 0)))
         # Initial context-card queries create explicitly-labelled branches outside
@@ -652,7 +655,7 @@ class Sequitor:
             for query in initial_queries[:2]:
                 if query == run["query"]:
                     continue
-                rows, partial_result = self.search(query, day, limit=30, scope="broader discovery")
+                rows, partial_result = self.search(query, day, limit=60, scope="broader discovery")
                 secondary.extend(rows)
                 extra_partial = extra_partial or partial_result
                 if emit and rows:
@@ -669,7 +672,7 @@ class Sequitor:
                 if emit:
                     emit("stage", {"name": "Reading direct conversation"})
                 conversation, conv_partial = self.search(f"conversation_id:{seed_id}", day,
-                                                         limit=60, scope="direct conversation")
+                                                         limit=100, scope="direct conversation")
                 for post in conversation:
                     unique.setdefault(post["id"], post)
                 if emit and conversation:
@@ -700,7 +703,7 @@ class Sequitor:
                 if emit:
                     emit("context.expanded", {"plan": run["searchPlan"]})
                 for query in expansion["queries"]:
-                    rows, partial_result = self.search(query, day, limit=25, scope="context expansion")
+                    rows, partial_result = self.search(query, day, limit=50, scope="context expansion")
                     extra_partial = extra_partial or partial_result
                     for post in rows:
                         unique.setdefault(post["id"], post)
@@ -738,6 +741,32 @@ class Sequitor:
         self.save()
         if run.get("seed") == DEFAULT_SEED:
             write_json(CAPTURE_FILE, run)
+        return result
+
+    def activity(self, run_id: str, day: str, granularity: str) -> dict:
+        """Fetch and cache an hourly count series for a selected UTC day."""
+        run = self.cache["runs"].get(run_id)
+        if not run:
+            raise ValueError("Run not found")
+        if granularity != "hour":
+            raise ValueError("Only hourly activity is fetched on demand")
+        if not re.fullmatch(r"\d{4}-\d{2}-\d{2}", day):
+            raise ValueError("Invalid UTC day")
+        key = f"activity:{day}:{granularity}"
+        cached = run.setdefault("activity", {}).get(key)
+        if cached:
+            return cached
+        start, end = day_bounds(day)
+        rows = self.count(run["query"], start, end, granularity="hour")
+        buckets = sorted([{"day": row["start"],
+                           "count": int(row.get("tweet_count", row.get("post_count", 0))),
+                           "coverage": "partial" if row.get("sequitor_partial") else "complete"}
+                          for row in rows], key=lambda row: row["day"])
+        result = {"granularity": "hour", "day": day, "query": run["query"], "buckets": buckets,
+                  "xSpend": round(self.x.spend, 3) if self.x else 0}
+        run["activity"][key] = result
+        run["xSpend"] = result["xSpend"]
+        self.save()
         return result
 
     def explore(self, seed: str, emit=None) -> dict:
@@ -831,7 +860,9 @@ class Sequitor:
             raise RuntimeError("No X activity found for the exact phrase or grounded context query")
         chart_query = plan.get("volumeFallback") or measured_phrase
         peak = max(buckets, key=lambda row: row["count"])
-        selected = seed_post["publishedAt"][:10] if seed_post else peak["day"]
+        seed_day = seed_post["publishedAt"][:10] if seed_post else ""
+        seed_bucket = next((bucket for bucket in buckets if bucket["day"] == seed_day), None)
+        selected = seed_day if seed_bucket and seed_bucket["count"] else peak["day"]
         run = {"id": cache_key, "seed": seed, "title": original_text.split("\n")[0][:110],
                "kind": "live", "capturedAt": today_utc(),
                "scope": "X counts for one context query" if plan.get("volumeFallback") else "X counts for one exact phrase",
@@ -973,6 +1004,12 @@ class Handler(BaseHTTPRequestHandler):
                 qs = parse_qs(url.query)
                 with APP.lock:
                     self._send(200, APP.period(qs.get("run", [""])[0], qs.get("day", [""])[0]))
+                return
+            if url.path == "/api/activity" and method == "GET":
+                qs = parse_qs(url.query)
+                with APP.lock:
+                    self._send(200, APP.activity(qs.get("run", [""])[0], qs.get("day", [""])[0],
+                                                  qs.get("granularity", [""])[0]))
                 return
             if url.path == "/api/explore" and method == "POST":
                 length = int(self.headers.get("Content-Length", "0"))

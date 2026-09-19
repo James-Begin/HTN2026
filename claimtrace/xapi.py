@@ -166,10 +166,11 @@ class XClient:
         raise RuntimeError("X API: retries exhausted on 429")
 
     # ------------------------------------------------------------------ counts
-    def counts(self, query: str, start: datetime, end: datetime, token: str = None):
+    def counts(self, query: str, start: datetime, end: datetime, token: str = None,
+               granularity: str = "day"):
         """One page = 31 days, newest first. FLAT rate, no post billing."""
         params = {"query": query, "start_time": iso(start), "end_time": iso(end),
-                  "granularity": "day"}
+                  "granularity": granularity}
         if token:
             params["next_token"] = token
         d = self._get("tweets/counts/all", params)

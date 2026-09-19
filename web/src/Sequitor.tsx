@@ -20,6 +20,8 @@ type Post = {
   rankingScore?: number; rankingMethod?: string
 }
 type Bucket = { day: string; count: number; coverage: 'complete' | 'partial' | 'sample'; pending?: boolean }
+type ActivityScale = 'day' | 'hour' | 'month'
+type ActivityResult = { granularity: 'hour'; day: string; query: string; buckets: Bucket[]; xSpend: number }
 type Run = {
   id: string; seed: string; title: string; kind: 'live' | 'saved'; capturedAt?: string
   scope: string; query?: string | null; buckets: Bucket[]; posts: Post[]; selectedDay: string
@@ -132,6 +134,45 @@ function shortNumber(value: number | null | undefined) {
   if (value === null || value === undefined) return '—'
   return Intl.NumberFormat('en', { notation: value >= 1000 ? 'compact' : 'standard', maximumFractionDigits: 1 }).format(value)
 }
+function activityAnnotation(post: Post): StoryAnnotation {
+  const kind = (post.basetenKind || '').toLowerCase()
+  if (post.scope === 'seed') return { role: 'announcement', focus: 'starting post' }
+  if (post.scope === 'humor branch' || /joke|humou?r|meme|riff/.test(kind)) return { role: 'humor', focus: 'humor or riff' }
+  if (/criticism|critique|skeptic/.test(kind)) return { role: 'critique', focus: 'critical response' }
+  if (/question|ask/.test(kind)) return { role: 'question', focus: 'question or uncertainty' }
+  if (/same wording|report|explanation/.test(kind) || post.scope === 'wet-lab context' || post.scope === 'broader discovery') return { role: 'reporting', focus: 'event framing' }
+  if (/reaction|response/.test(kind) || post.scope === 'direct conversation') return { role: 'adoption', focus: 'response' }
+  if (post.scope === 'context expansion') return { role: 'explanation', focus: 'context expansion' }
+  return { role: 'other', focus: 'not yet classified' }
+}
+function inferredAnnotations(posts: Post[]): Record<string, StoryAnnotation> {
+  return Object.fromEntries(posts.map(post => [post.id, activityAnnotation(post)]))
+}
+function aggregateMonths(buckets: Bucket[]): Bucket[] {
+  const months = new Map<string, Bucket>()
+  for (const bucket of buckets) {
+    const month = bucket.day.slice(0, 7)
+    const prior = months.get(month)
+    months.set(month, { day: `${month}-01`, count: (prior?.count || 0) + bucket.count,
+      coverage: bucket.coverage === 'partial' || prior?.coverage === 'partial' ? 'partial' : bucket.coverage,
+      pending: bucket.pending || prior?.pending })
+  }
+  return [...months.values()]
+}
+function sampleHourly(posts: Post[], selectedDay: string): Bucket[] {
+  const hours = new Map<string, Bucket>()
+  for (const post of posts.filter(item => item.publishedAt?.startsWith(selectedDay))) {
+    const hour = post.publishedAt.slice(0, 13) + ':00:00Z'
+    const prior = hours.get(hour)
+    hours.set(hour, { day: hour, count: (prior?.count || 0) + 1, coverage: 'sample' })
+  }
+  return [...hours.values()].sort((left, right) => left.day.localeCompare(right.day))
+}
+function activityLabel(value: string, scale: ActivityScale) {
+  if (scale === 'hour') return new Intl.DateTimeFormat('en-CA', { hour: 'numeric', timeZone: 'UTC' }).format(new Date(value)) + ' UTC'
+  if (scale === 'month') return new Intl.DateTimeFormat('en-CA', { month: 'short', year: 'numeric', timeZone: 'UTC' }).format(new Date(value))
+  return formatDay(value)
+}
 async function getJson<T>(url: string): Promise<T> {
   const response = await fetch(url)
   const data = await response.json()
@@ -143,22 +184,24 @@ function Wordmark() {
   return <span className="seq-wordmark"><span className="seq-mark" aria-hidden="true"><i /><i /><i /></span>sequitor<span className="seq-wordmark-dot">.</span></span>
 }
 
-function Timeline({ buckets, selectedDay, onSelect, kind, scaleMax, contextQuery }: { buckets: Bucket[]; selectedDay: string; onSelect: (day: string) => void; kind: Run['kind']; scaleMax?: number; contextQuery?: string }) {
+function Timeline({ buckets, selectedDay, onSelect, kind, scaleMax, contextQuery, scale, onScaleChange, loading }: { buckets: Bucket[]; selectedDay: string; onSelect: (day: string) => void; kind: Run['kind']; scaleMax?: number; contextQuery?: string; scale: ActivityScale; onScaleChange: (scale: ActivityScale) => void; loading?: boolean }) {
   const max = Math.max(1, scaleMax || 0, ...buckets.map(bucket => bucket.count))
-  const selected = buckets.find(bucket => bucket.day === selectedDay)
+  const selected = scale === 'day' ? buckets.find(bucket => bucket.day === selectedDay) : undefined
+  const total = scale === 'day' ? selected?.count : buckets.reduce((sum, bucket) => sum + bucket.count, 0)
   const isSample = buckets.some(bucket => bucket.coverage === 'sample')
   return <section className="seq-timeline" aria-label="Activity over time">
     <div className="seq-section-top"><div><h2>Activity over time</h2><p>{isSample ? 'Selected saved posts' : contextQuery ? `X posts matching ${contextQuery}` : 'X posts matching the measured phrase'}</p></div><BarChart3 size={18} aria-hidden="true" /></div>
-    <div className="seq-activity-total"><strong>{selected?.pending ? '—' : shortNumber(selected?.count)}</strong><span>posts on {formatDay(selectedDay)} <span className="seq-utc">UTC</span></span></div>
-    <div className="seq-chart" role="group" aria-label="Choose a day">
-      {buckets.map(bucket => <button key={bucket.day} type="button" className={`seq-bar ${bucket.day === selectedDay ? 'is-selected' : ''} ${bucket.coverage !== 'complete' ? 'is-partial' : ''} ${bucket.pending ? 'is-pending' : ''}`}
-        style={{ height: bucket.pending ? '0%' : `${Math.max(9, Math.sqrt(bucket.count / max) * 100)}%` }}
-        title={bucket.pending ? `${formatDay(bucket.day)}: awaiting count` : `${formatDay(bucket.day)}: ${bucket.count.toLocaleString()} ${bucket.coverage === 'sample' ? 'saved' : 'matching'} posts`}
-        aria-label={bucket.pending ? `${formatDay(bucket.day)}: awaiting count` : `${formatDay(bucket.day)}: ${bucket.count.toLocaleString()} ${bucket.coverage === 'sample' ? 'saved' : 'matching'} posts`}
-        aria-pressed={bucket.day === selectedDay} disabled={bucket.pending} onClick={() => onSelect(bucket.day)}><span className="sr-only">{formatDay(bucket.day)}</span></button>)}
+    <div className="seq-activity-scale" role="group" aria-label="Activity resolution">{(['day', 'hour', 'month'] as const).map(value => <button key={value} type="button" className={scale === value ? 'active' : ''} aria-pressed={scale === value} onClick={() => onScaleChange(value)}>{value === 'day' ? 'Daily' : value === 'hour' ? 'Hourly' : 'Monthly'}</button>)}</div>
+    <div className="seq-activity-total"><strong>{loading || selected?.pending ? '—' : shortNumber(total)}</strong><span>{scale === 'hour' ? `posts across ${formatDay(selectedDay)} by hour` : scale === 'month' ? 'posts in the captured months' : <>posts on {formatDay(selectedDay)} <span className="seq-utc">UTC</span></>}</span></div>
+    <div className="seq-chart" role="group" aria-label={scale === 'day' ? 'Choose a day' : `${scale} activity`}>
+      {buckets.map(bucket => <button key={bucket.day} type="button" className={`seq-bar ${scale === 'day' && bucket.day === selectedDay ? 'is-selected' : ''} ${bucket.coverage !== 'complete' ? 'is-partial' : ''} ${bucket.pending ? 'is-pending' : ''}`}
+        style={{ height: '100%', transform: `scaleY(${bucket.pending ? 0 : Math.max(.09, Math.sqrt(bucket.count / max))})` }}
+        title={bucket.pending ? `${activityLabel(bucket.day, scale)}: awaiting count` : `${activityLabel(bucket.day, scale)}: ${bucket.count.toLocaleString()} ${bucket.coverage === 'sample' ? 'saved' : 'matching'} posts`}
+        aria-label={bucket.pending ? `${activityLabel(bucket.day, scale)}: awaiting count` : `${activityLabel(bucket.day, scale)}: ${bucket.count.toLocaleString()} ${bucket.coverage === 'sample' ? 'saved' : 'matching'} posts`}
+        aria-pressed={scale === 'day' && bucket.day === selectedDay} disabled={bucket.pending || scale !== 'day'} onClick={() => onSelect(bucket.day)}><span className="sr-only">{activityLabel(bucket.day, scale)}</span></button>)}
     </div>
-    <div className="seq-chart-axis"><span>{buckets.length ? formatDay(buckets[0].day, false) : ''}</span><span>{buckets.length ? formatDay(buckets[buckets.length - 1].day, false) : ''}</span></div>
-    <p className="seq-timeline-foot">{isSample ? 'Sample counts · not platform activity' : `${contextQuery ? 'One context query' : 'One exact phrase'} · retweets included · ${kind === 'saved' ? 'saved measurement' : 'live measurement'}`}{selected?.coverage === 'partial' ? ' · partial coverage' : ''}</p>
+    <div className="seq-chart-axis"><span>{buckets.length ? activityLabel(buckets[0].day, scale) : ''}</span><span>{buckets.length ? activityLabel(buckets[buckets.length - 1].day, scale) : ''}</span></div>
+    <p className="seq-timeline-foot">{isSample ? 'Sample counts · not platform activity' : `${contextQuery ? 'One context query' : 'One exact phrase'} · retweets included · ${kind === 'saved' ? 'saved measurement' : 'live measurement'}`}{scale === 'hour' ? isSample ? ' · saved post timestamps by hour' : ' · hourly count request for selected day' : scale === 'month' ? ' · monthly roll-up of daily counts' : ''}{selected?.coverage === 'partial' ? ' · partial coverage' : ''}</p>
   </section>
 }
 
@@ -255,6 +298,9 @@ export default function Sequitor() {
   const [showData, setShowData] = useState(false)
   const [view, setView] = useState<'feed' | 'network'>('feed')
   const [health, setHealth] = useState<boolean | null>(null)
+  const [activityScale, setActivityScale] = useState<ActivityScale>('day')
+  const [hourlyBuckets, setHourlyBuckets] = useState<Bucket[] | null>(null)
+  const [activityLoading, setActivityLoading] = useState(false)
   const requestId = useRef(0)
   const streamRef = useRef<EventSource | null>(null)
   const streamRunId = useRef<string | null>(null)
@@ -282,6 +328,22 @@ export default function Sequitor() {
     sections.forEach(section => observer.observe(section))
     return () => observer.disconnect()
   }, [])
+
+  useEffect(() => {
+    if (activityScale !== 'hour' || run.kind === 'saved' || run.id.startsWith('pending-')) return
+    let active = true
+    setHourlyBuckets(null)
+    setActivityLoading(true)
+    getJson<ActivityResult>(`/api/activity?run=${encodeURIComponent(run.id)}&day=${encodeURIComponent(selectedDay)}&granularity=hour`)
+      .then(result => {
+        if (!active) return
+        setHourlyBuckets(result.buckets)
+        setRun(previous => ({ ...previous, xSpend: result.xSpend }))
+      })
+      .catch(cause => { if (active) setError(cause instanceof Error ? cause.message : 'Could not measure hourly activity') })
+      .finally(() => { if (active) setActivityLoading(false) })
+    return () => { active = false }
+  }, [activityScale, run.id, run.kind, selectedDay])
 
   useEffect(() => {
     getJson<Run>('/api/demo').then(demo => { const recorded = hydrateRecordedContext(demo); if (requestId.current === 0) { setRun(recorded); setSelectedDay(recorded.selectedDay); setPeriodPosts(recorded.posts); setRankingCoverage(recorded.rankingCoverage) } setHealth(true) })
@@ -352,6 +414,8 @@ export default function Sequitor() {
     setRun(recorded)
     setSelectedDay(recorded.selectedDay)
     setPeriodPosts([])
+    setActivityScale('day')
+    setHourlyBuckets(null)
     setRankingCoverage('Recorded posts arriving…')
     setBusy('Replaying the recorded investigation…')
     setError('')
@@ -388,6 +452,8 @@ export default function Sequitor() {
     setPeriodPosts(wetLab.posts)
     setRankingCoverage(wetLab.rankingCoverage)
     setSort('recent')
+    setActivityScale('day')
+    setHourlyBuckets(null)
     setView('feed')
     setBusy('')
     setError('')
@@ -409,6 +475,8 @@ export default function Sequitor() {
       note: mode === 'recorded' ? fallback.note : 'The measured scope and retrieved posts will appear as they arrive.',
       rankingCoverage: 'Posts will appear as they arrive' })
     setPeriodPosts([])
+    setActivityScale('day')
+    setHourlyBuckets(null)
     postQueue.current = []
     pendingCompletion.current = null
     setRankingCoverage('Posts will appear as they arrive')
@@ -528,6 +596,14 @@ export default function Sequitor() {
     return [...new Map(candidates.map(post => [post.id, post])).values()]
   }, [periodPosts, run, busy])
   const graphSeedId = run.seedPost?.id || run.seed.match(/\/status\/(\d+)/)?.[1] || graphPosts[0]?.id || ''
+  const graphAnnotations = useMemo(() => graphSeedId === storyCapture.seedId
+    ? storyCapture.annotations as Record<string, StoryAnnotation>
+    : inferredAnnotations(graphPosts), [graphPosts, graphSeedId])
+  const activityBuckets = useMemo(() => {
+    if (activityScale === 'month') return aggregateMonths(run.buckets)
+    if (activityScale === 'hour') return hourlyBuckets || (run.kind === 'saved' ? sampleHourly(periodPosts, selectedDay) : [])
+    return run.buckets
+  }, [activityScale, hourlyBuckets, periodPosts, run.buckets, run.kind, selectedDay])
 
   return <div className="seq-shell">
     <a className="seq-skip" href="#seq-main">Skip to posts</a>
@@ -541,7 +617,7 @@ export default function Sequitor() {
     <div className="seq-investigation-head seq-reveal"><div><span className="seq-investigation-caption">CURRENT CONVERSATION</span><h2>{run.title.split(':')[0]}</h2><p>{run.streamSource === 'cache' ? 'Cached results from an earlier live investigation.' : run.kind === 'saved' ? 'A recorded conversation you can explore offline.' : 'Measured search, with original posts kept in view.'}</p></div><button className="seq-data-button" onClick={() => setShowData(true)}>About this data <ArrowUpRight size={15} /></button></div>
     <nav className="seq-view-tabs" aria-label="Investigation views"><button type="button" className={view === 'feed' ? 'active' : ''} aria-current={view === 'feed' ? 'page' : undefined} onClick={() => setView('feed')}>Activity & posts</button><button type="button" className={view === 'network' ? 'active' : ''} aria-current={view === 'network' ? 'page' : undefined} onClick={() => setView('network')}>Neighborhood <span>{graphPosts.length}</span></button></nav>
     {view === 'feed' ? <main id="seq-main" className="seq-layout">
-      <aside className="seq-sidebar"><Timeline buckets={run.buckets} selectedDay={selectedDay} onSelect={chooseDay} kind={run.streamSource === 'cache' ? 'saved' : run.kind} scaleMax={run.activityScaleMax} contextQuery={run.searchPlan?.volumeFallback} />
+      <aside className="seq-sidebar"><Timeline buckets={activityBuckets} selectedDay={selectedDay} onSelect={chooseDay} kind={run.streamSource === 'cache' ? 'saved' : run.kind} scaleMax={activityScale === 'day' ? run.activityScaleMax : undefined} contextQuery={run.searchPlan?.volumeFallback} scale={activityScale} onScaleChange={setActivityScale} loading={activityLoading} />
         <ContextCard plan={run.searchPlan} />
         <section className="seq-sidebar-note"><p className="seq-sidebar-note-title">A slice of the discussion</p><p>{run.note}</p><button onClick={() => setShowData(true)}>See scope and sources <ArrowRight size={13} /></button></section>
         {run.model?.openai && <section className="seq-model-trace"><p>{run.kind === 'saved' ? 'RECORDED MODEL RUN' : 'POWERED BY'}</p><span>OpenAI <small>{run.model.openai}</small></span><span>Baseten <small>{basetenLabel}</small></span></section>}
@@ -556,7 +632,7 @@ export default function Sequitor() {
     </main> : <main id="seq-main"><Neighborhood posts={graphPosts} seedId={graphSeedId}
       referencePosts={graphSeedId === storyCapture.seedId ? recordedReferencePosts : undefined}
       selectedPostIds={graphSeedId === storyCapture.seedId ? storyCapture.selectedPostIds : undefined}
-      annotations={graphSeedId === storyCapture.seedId ? storyCapture.annotations as Record<string, StoryAnnotation> : undefined}
+      annotations={graphAnnotations}
       semanticEdges={graphSeedId === storyCapture.seedId ? storyCapture.similarityEdges as SemanticEdge[] : undefined}
       modelLabel={graphSeedId === storyCapture.seedId ? storyCapture.model : undefined}
       onOpenPost={setInspect} /></main>}

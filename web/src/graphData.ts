@@ -41,7 +41,7 @@ export const STORY_LANES = [
   { label: 'Response & adoption', y: 322 },
   { label: 'Critique & questions', y: 434 },
   { label: 'Humor & riffs', y: 546 },
-  { label: 'Other captured', y: 658 },
+  { label: 'Unclassified capture', y: 658 },
 ]
 
 export function laneForRole(role: StoryRole | undefined): number {
