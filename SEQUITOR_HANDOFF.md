@@ -26,6 +26,8 @@ The production local URL was checked in a browser, including day switching and q
 
 The X server budget is hard-capped at 600 returned posts and 20 counts calls, an estimated $3.20 maximum using this repository's measured prices. The saved demo used 539 returned posts and one counts call: **$2.705 estimated X spend** in its ledger, plus approximately $0.03 of earlier exploratory count probes outside that ledger. The X account's own meter may lag. The remaining budget is intentionally small; do not clear `work/sequitor-cache.json` before judging because it stores both the results and the spend counters. A new seed can make paid calls; use one only when necessary.
 
+The public GitHub Pages copy is recorded-only and includes no provider keys. The three active demo credentials are in the ignored local `.env`; rotate them after the event before any live public release, as planned.
+
 The previously documented dedicated Baseten cross-encoder endpoint `q9p28o63` returned 404 with the supplied demo key, and the checkpoint is absent from this checkout. The current integration uses Baseten-hosted `openai/gpt-oss-120b` for curation. Describe it as hosted curation, not as the fine-tuned cross-encoder. OpenAI's separate direct API is used for discovery planning. The histogram measures one exact phrase; separately labelled related posts can appear in the feed without being included in those bars. The feed's “Popular” view ranks only retrieved candidates by likes captured at retrieval time. Search pagination and spend limits prevent a platform-wide top-ten claim.
 
 ## Deadline-critical work
