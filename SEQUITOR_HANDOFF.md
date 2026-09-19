@@ -8,6 +8,7 @@
 - A post URL or topic starts a bounded investigation. Direct OpenAI Responses API usage turns the seed into a measured exact phrase and a separate related-search query. X supplies daily counts and real source posts. A Baseten hosted model curates a few reactions for exploration.
 - The default Dario Amodei run is cached: ten daily count buckets and eight days with retrieved posts, September 12–19. The peak measured phrase count is 9,571 on September 12. The default day includes 198 distinct retrieved candidate posts. These are not an exhaustive platform-wide corpus or definitive top-ten ranking.
 - The browser supports day selection, captured-like and recency sorting, real authors and handles, post source links, recorded quote/reply references, a context drawer, and a data-scope drawer. It displays a small selected subset of model-curated offshoots. It does not present model suggestions as proof of influence or truth.
+- Searches now use a resumable server event stream. Retrieved posts appear before Baseten curation ends; the Dario example replays recorded posts through the same server contract, with a browser-only fallback on GitHub Pages. The selected-post drawer can load an official X embed with profile photo and media. Scroll entrances and post arrivals have restrained motion and a reduced-motion fallback.
 - `demo/recordings/sequitor-live.json` records real X counts and source posts for all populated saved days. `cd web && npm run build:offline` packages that run into `web/dist/sequitor-offline.html`, which needs no local server to display saved data.
 - `npm ci` now works from the public npm registry. The local `.env` is ignored and is used only by the Python server; browser assets and the recorded run contain no provider keys.
 
@@ -18,9 +19,9 @@ cd web && npm ci && npm run build
 cd .. && python3 sequitor_server.py
 ```
 
-Open `http://127.0.0.1:8765`. The saved run loads automatically. For the live-path demo, paste a post URL or topic and press **Explore live**. The default seed is cached, so exploring it again costs no additional X retrieval. Day switches within the saved run also reuse cached results. If the venue network is unreliable, use the saved view and keep a copy of `web/dist/sequitor-offline.html` on the presentation machine.
+Open `http://127.0.0.1:8765`. The saved run loads automatically. Press **Replay the Dario example** to show the flowing recorded experience. For the live-path demo, paste a post URL or topic and press **Explore live**. The default seed is cached, so exploring it again costs no additional X retrieval and is explicitly labelled cached. Day switches within the saved run also reuse cached results. If the venue network is unreliable, use the saved view and keep a copy of `web/dist/sequitor-offline.html` on the presentation machine.
 
-The production local URL was checked in a browser, including day switching and quote context. The offline HTML built successfully and contains the recorded data, but this assistant's browser session declined to open local `file://` pages; open that copy once in your ordinary browser before relying on it at the venue.
+The production local URL was checked in a browser, including streamed replay, cached live-mode streaming, day switching, quote context, and a successful official X embed. The offline HTML builds successfully and contains the recorded data, but this assistant's browser session declined to open local `file://` pages; open that copy once in your ordinary browser before relying on it at the venue.
 
 ## Provider and data limits
 
@@ -42,4 +43,4 @@ Open the default conversation; point to the 9,571 measured phrase mentions on Se
 
 ## Remaining opportunities
 
-The highest-value improvement is a short, clear demo video and a polished Devpost page. Use the public recorded URL for sponsor reviewers and the local server for a live provider demonstration. If there is extra time after submission, test one genuinely new seed and add richer quote/reply traversal, under the remaining X cap. Do not spend the morning retraining the unavailable cross-encoder or building new product surfaces.
+The next technical work is a deployed Baseten Chain and working relevance reranker, OpenAI post embeddings, and a graph that distinguishes observed reply/quote links from semantic similarity. Training is possible through Baseten Training Jobs, but the old checkpoint and mined training rows are absent from this checkout; bound any training attempt tightly. The current archive has no author bios or locations, so persona facets require new evidence. Card timestamps use Eastern local time; accurate Eastern daily buckets still require rebucketing the source counts, so the chart explicitly remains in UTC. Keep a short demo video and a polished Devpost page ahead of the final deadline.

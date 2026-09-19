@@ -12,6 +12,7 @@ import threading
 import time
 import urllib.error
 import urllib.request
+import uuid
 from datetime import datetime, timedelta, timezone
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -25,9 +26,101 @@ ROOT = Path(__file__).resolve().parent
 CACHE_FILE = ROOT / "work" / "sequitor-cache.json"
 CAPTURE_FILE = ROOT / "demo" / "recordings" / "sequitor-live.json"
 SNAPSHOT_FILE = ROOT / "demo" / "recordings" / "pace-the-frontier" / "snapshot.json"
+EVENT_DIR = ROOT / "work" / "sequitor-streams"
 DEFAULT_SEED = "https://x.com/DarioAmodei/status/2098773920774074715"
 MAX_POSTS = 600  # Approximately $3.00 in X post charges, below the $10 test credit.
 MAX_COUNTS = 20  # Approximately $0.20 more at the repository's measured price.
+
+
+class StoppedRun(Exception):
+    pass
+
+
+class StreamJob:
+    """Small durable event log. A reconnect never starts provider work again."""
+
+    def __init__(self, job_id: str, events: list[dict] | None = None) -> None:
+        self.id = job_id
+        self.events = events or []
+        self.condition = threading.Condition()
+        self.stopped = False
+        self.done = bool(self.events and self.events[-1]["type"] in
+                         {"run.completed", "run.failed", "run.stopped"})
+
+    def emit(self, kind: str, payload: dict) -> None:
+        with self.condition:
+            if self.stopped and kind not in {"run.stopped", "run.failed"}:
+                raise StoppedRun()
+            event = {"runId": self.id, "sequence": len(self.events) + 1,
+                     "type": kind, "at": today_utc(), "payload": payload}
+            EVENT_DIR.mkdir(parents=True, exist_ok=True)
+            with (EVENT_DIR / (self.id + ".jsonl")).open("a") as output:
+                output.write(json.dumps(event, ensure_ascii=False) + "\n")
+            self.events.append(event)
+            if kind in {"run.completed", "run.failed", "run.stopped"}:
+                self.done = True
+            self.condition.notify_all()
+
+
+class StreamHub:
+    def __init__(self) -> None:
+        self.jobs: dict[str, StreamJob] = {}
+        self.lock = threading.Lock()
+
+    def get(self, job_id: str) -> StreamJob | None:
+        with self.lock:
+            if job_id in self.jobs:
+                return self.jobs[job_id]
+            if not re.fullmatch(r"[0-9a-f]{32}", job_id):
+                return None
+            path = EVENT_DIR / (job_id + ".jsonl")
+            if not path.is_file():
+                return None
+            events = [json.loads(line) for line in path.read_text().splitlines() if line]
+            job = StreamJob(job_id, events)
+            if not job.done:
+                job.emit("run.failed", {"message": "The server restarted during this investigation. Existing results remain available."})
+            self.jobs[job_id] = job
+            return job
+
+    def start(self, seed: str, mode: str) -> StreamJob:
+        job = StreamJob(uuid.uuid4().hex)
+        with self.lock:
+            self.jobs[job.id] = job
+
+        def work() -> None:
+            try:
+                job.emit("run.started", {"source": "recorded" if mode == "recorded" else "live",
+                                         "seed": seed})
+                if mode == "recorded":
+                    recorded = read_json(CAPTURE_FILE, sample_demo())
+                    job.emit("run.ready", {**recorded, "kind": "saved", "posts": [],
+                                           "savedPeriods": {}, "streamSource": "recorded"})
+                    posts = sorted(recorded.get("posts", []),
+                                   key=lambda post: -(post.get("likes") or 0))
+                    for index in range(0, len(posts), 12):
+                        job.emit("posts.upsert", {"posts": posts[index:index + 12]})
+                        time.sleep(0.045)
+                    job.emit("run.completed", {"model": recorded.get("model"),
+                                               "rankingCoverage": recorded.get("rankingCoverage"),
+                                               "xSpend": recorded.get("xSpend", 0)})
+                    return
+                with APP.lock:
+                    result = APP.explore(seed, emit=job.emit)
+                job.emit("run.completed", {"model": result.get("model"),
+                                           "rankingCoverage": result.get("rankingCoverage"),
+                                           "xSpend": result.get("xSpend", 0)})
+            except StoppedRun:
+                job.emit("run.stopped", {})
+            except Exception as exc:
+                job.emit("run.failed", {"message": str(exc)[:180],
+                                        "reason": type(exc).__name__})
+
+        threading.Thread(target=work, daemon=True).start()
+        return job
+
+
+STREAMS = StreamHub()
 
 
 def load_local_env() -> None:
@@ -56,6 +149,16 @@ def write_json(path: Path, value: dict) -> None:
 
 def today_utc() -> str:
     return datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+
+
+def emit_post_batches(emit, posts: list[dict], size: int = 10, pause: float = 0.025) -> None:
+    """Pace a returned X page briefly so the browser can paint between updates."""
+    if not emit:
+        return
+    for index in range(0, len(posts), size):
+        emit("posts.upsert", {"posts": posts[index:index + size]})
+        if index + size < len(posts):
+            time.sleep(pause)
 
 
 def day_bounds(day: str) -> tuple[datetime, datetime]:
@@ -261,7 +364,7 @@ class Sequitor:
         except Exception as exc:
             return {"status": "unavailable", "model": None, "reason": type(exc).__name__}
 
-    def period(self, run_id: str, day: str) -> dict:
+    def period(self, run_id: str, day: str, emit=None) -> dict:
         run = self.cache["runs"].get(run_id)
         if not run:
             raise ValueError("Run not found")
@@ -270,6 +373,10 @@ class Sequitor:
         key = run_id + ":" + day
         if key in self.cache["periods"] and self.cache["periods"][key].get("schemaVersion") == 3 and self.cache["periods"][key].get("discoveryQuery") == run["searchPlan"].get("discoveryPhrase"):
             cached_period = self.cache["periods"][key]
+            if emit:
+                emit("stage", {"name": "Loading cached posts", "source": "cache"})
+                ordered = sorted(cached_period["posts"], key=lambda post: -(post.get("likes") or 0))
+                emit_post_batches(emit, ordered, size=16, pause=0.035)
             if cached_period.get("model", {}).get("status") == "unavailable":
                 cached_period["model"] = self.classify(run["seedPost"]["text"], cached_period["posts"])
                 run["posts"] = cached_period["posts"]
@@ -290,14 +397,22 @@ class Sequitor:
             primary = [p for p in prior["posts"] if p.get("scope") == "measured phrase"]
             partial = prior.get("partial", False)
         else:
+            if emit:
+                emit("stage", {"name": "Retrieving phrase matches"})
             primary, partial = self.search(run["query"], day,
                                            limit=70 if day == run["selectedDay"] else 40)
+        if emit and primary:
+            emit_post_batches(emit, sorted(primary, key=lambda post: -(post.get("likes") or 0)))
         # One bounded secondary search creates a real branch outside the chart's
         # literal phrase scope. It is explicitly labelled as broader discovery.
         secondary, extra_partial = [], False
         if day == run["selectedDay"] and run["searchPlan"].get("discoveryPhrase") and run["searchPlan"].get("discoveryPhrase") != run["query"]:
+            if emit:
+                emit("stage", {"name": "Looking beyond the exact phrase"})
             secondary, extra_partial = self.search(run["searchPlan"]["discoveryPhrase"],
                                                    day, limit=40, scope="broader discovery")
+            if emit and secondary:
+                emit_post_batches(emit, secondary)
         unique = {p["id"]: p for p in primary}
         if prior:
             for post in prior["posts"]:
@@ -307,10 +422,14 @@ class Sequitor:
         seed_id = str(run.get("seedPost", {}).get("id") or "")
         if day == run["selectedDay"] and seed_id.isdigit() and not (prior and prior.get("schemaVersion", 0) >= 2):
             try:
+                if emit:
+                    emit("stage", {"name": "Reading direct conversation"})
                 conversation, conv_partial = self.search(f"conversation_id:{seed_id}", day,
                                                          limit=60, scope="direct conversation")
                 for post in conversation:
                     unique.setdefault(post["id"], post)
+                if emit and conversation:
+                    emit_post_batches(emit, conversation)
                 extra_partial = extra_partial or conv_partial
             except (RuntimeError, urllib.error.HTTPError):
                 pass
@@ -323,7 +442,14 @@ class Sequitor:
         if seed_id.isdigit() and day == run["seedPost"]["publishedAt"][:10]:
             unique.setdefault(run["seedPost"]["id"], run["seedPost"])
         posts = list(unique.values())
+        if emit:
+            emit_post_batches(emit, posts, size=24, pause=0)
+            emit("stage", {"name": "Curating retrieved posts with Baseten"})
         model = self.classify(run["seedPost"]["text"], posts)
+        if emit:
+            updates = [post for post in posts if post.get("basetenPick") or post.get("sameClaimScore") is not None]
+            emit_post_batches(emit, updates, size=12, pause=0)
+            emit("model.ready", {"model": model})
         result = {"schemaVersion": 3, "discoveryQuery": run["searchPlan"].get("discoveryPhrase"),
                   "day": day, "posts": posts,
                   "rankingCoverage": "top retrieved posts; search may be truncated" if partial or extra_partial
@@ -343,7 +469,7 @@ class Sequitor:
             write_json(CAPTURE_FILE, run)
         return result
 
-    def explore(self, seed: str) -> dict:
+    def explore(self, seed: str, emit=None) -> dict:
         seed = seed.strip()[:2000]
         if not seed:
             seed = DEFAULT_SEED
@@ -360,6 +486,11 @@ class Sequitor:
                 except Exception as exc:
                     cached["searchPlan"]["revisionError"] = type(exc).__name__
                     self.save()
+            if emit:
+                emit("run.ready", {**cached, "posts": [], "savedPeriods": {},
+                                   "streamSource": "cache"})
+                ordered = sorted(cached["posts"], key=lambda post: -(post.get("likes") or 0))
+                emit_post_batches(emit, ordered, size=16, pause=0.035)
             return cached
         if not self.x:
             raise RuntimeError("X bearer token unavailable")
@@ -367,6 +498,8 @@ class Sequitor:
         seed_post = None
         match = re.search(r"/(?:status|statuses)/(\d+)", seed)
         if match:
+            if emit:
+                emit("stage", {"name": "Resolving the starting post"})
             original = resolve(match.group(1))
             if not original.recoverable_text:
                 raise RuntimeError("The seed post's text is unavailable; paste its text instead")
@@ -378,6 +511,9 @@ class Sequitor:
                          "url": f"https://x.com/{original.handle}/status/{original.tweet_id}",
                          "scope": "seed", "captureTime": today_utc(), "textIsExcerpt": False,
                          "quotedPostId": None, "parentId": None}
+        if emit:
+            emit("seed.resolved", {"post": seed_post, "text": original_text[:2000]})
+            emit("stage", {"name": "Planning bounded discovery with OpenAI"})
         try:
             plan = self.openai_plan(original_text)
             plan["planVersion"] = 3
@@ -387,6 +523,9 @@ class Sequitor:
             plan = {"volumePhrase": phrase(" ".join(words[:4])),
                     "discoveryPhrase": None, "whyDiscovery": "",
                     "model": None, "error": type(exc).__name__}
+        if emit:
+            emit("plan.ready", {"plan": plan})
+            emit("stage", {"name": "Measuring phrase activity on X"})
         end = now_safe()
         if seed_post:
             start = max(datetime.fromisoformat(seed_post["publishedAt"].replace("Z", "+00:00")) - timedelta(days=2), end - timedelta(days=28))
@@ -412,7 +551,11 @@ class Sequitor:
                "xSpend": round(self.x.spend, 3)}
         self.cache["runs"][cache_key] = run
         self.save()
-        result = self.period(cache_key, selected)
+        if emit:
+            emit("run.ready", {**run, "streamSource": "live"})
+            if seed_post and seed_post["publishedAt"][:10] == selected:
+                emit("posts.upsert", {"posts": [seed_post]})
+        result = self.period(cache_key, selected, emit=emit)
         run = {**run, "posts": result["posts"], "rankingCoverage": result["rankingCoverage"],
                "model": {"openai": plan.get("model"), "baseten": result["model"]},
                "xSpend": result["xSpend"]}
@@ -436,6 +579,40 @@ class Handler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(body)
 
+    def _stream(self, job: StreamJob) -> None:
+        try:
+            cursor = max(0, int(self.headers.get("Last-Event-ID") or
+                                parse_qs(urlsplit(self.path).query).get("after", ["0"])[0]))
+        except ValueError:
+            cursor = 0
+        self.send_response(200)
+        self.send_header("Content-Type", "text/event-stream; charset=utf-8")
+        self.send_header("Cache-Control", "no-cache, no-transform")
+        self.send_header("X-Accel-Buffering", "no")
+        self.send_header("Connection", "close")
+        self.end_headers()
+        try:
+            while True:
+                with job.condition:
+                    if len(job.events) <= cursor and not job.done:
+                        job.condition.wait(timeout=12)
+                    events = job.events[cursor:]
+                    done = job.done
+                for event in events:
+                    body = json.dumps(event, ensure_ascii=False, separators=(",", ":"))
+                    self.wfile.write(f"id: {event['sequence']}\nevent: sequitor\ndata: {body}\n\n".encode())
+                    cursor = event["sequence"]
+                if events:
+                    self.wfile.flush()
+                if done:
+                    break
+                if not events:
+                    self.wfile.write(b": keepalive\n\n")
+                    self.wfile.flush()
+        except (BrokenPipeError, ConnectionResetError):
+            pass
+        self.close_connection = True
+
     def _route(self, method: str) -> None:
         url = urlsplit(self.path)
         try:
@@ -448,6 +625,38 @@ class Handler(BaseHTTPRequestHandler):
             if url.path == "/api/demo" and method == "GET":
                 recorded = read_json(CAPTURE_FILE, sample_demo())
                 self._send(200, {**recorded, "kind": "saved"})
+                return
+            if url.path == "/api/runs" and method == "POST":
+                length = int(self.headers.get("Content-Length", "0"))
+                if length < 1 or length > 4096:
+                    raise ValueError("Invalid request size")
+                data = json.loads(self.rfile.read(length))
+                mode = str(data.get("mode") or "live")
+                if mode not in {"live", "recorded"}:
+                    raise ValueError("Invalid run mode")
+                job = STREAMS.start(str(data.get("seed") or DEFAULT_SEED)[:2000], mode)
+                self._send(202, {"runId": job.id, "source": mode,
+                                 "eventsUrl": f"/api/runs/{job.id}/events"})
+                return
+            match = re.fullmatch(r"/api/runs/([0-9a-f]{32})(?:/(events|cancel))?", url.path)
+            if match:
+                job = STREAMS.get(match.group(1))
+                if not job:
+                    self._send(404, {"error": "Investigation not found"})
+                    return
+                action = match.group(2)
+                if action == "events" and method == "GET":
+                    self._stream(job)
+                elif action == "cancel" and method == "POST":
+                    with job.condition:
+                        job.stopped = True
+                    self._send(200, {"ok": True})
+                elif action is None and method == "GET":
+                    with job.condition:
+                        self._send(200, {"runId": job.id, "events": list(job.events),
+                                         "done": job.done})
+                else:
+                    self._send(405, {"error": "Method not allowed"})
                 return
             if url.path == "/api/context" and method == "GET":
                 post_id = parse_qs(url.query).get("id", [""])[0]

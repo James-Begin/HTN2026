@@ -14,13 +14,19 @@ cd ..
 python3 sequitor_server.py
 ```
 
-Open <http://127.0.0.1:8765>. The browser loads a recorded real-source run automatically; the **Explore live** button runs a new bounded investigation. Local provider credentials are read from an ignored `.env` file in the project root. See `.env.example` for the variable names. Never put credentials in `web` or in Git.
+Open <http://127.0.0.1:8765>. The browser loads a recorded real-source run automatically. **Replay the Dario example** streams its recorded posts into the feed; **Explore live** starts a bounded investigation and streams real retrieval batches before model curation finishes. A cached repeat is labelled as cached. Local provider credentials are read from an ignored `.env` file in the project root. See `.env.example` for the variable names. Never put credentials in `web` or in Git.
 
-A [public recorded demo](https://james-begin.github.io/HTN2026/) is also available on GitHub Pages. It includes the measured saved run and day selection, with no provider keys or live API access.
+A [public recorded demo](https://james-begin.github.io/HTN2026/) is also available on GitHub Pages. It includes the measured saved run and browser-side replay, with no provider keys or live API access.
 
 For frontend development, run `python3 sequitor_server.py` and `cd web && npm run dev` in separate terminals. Vite proxies `/api` to the local server. The production build is served by the Python process, so the demo needs only one URL.
 
-To prepare a network-independent copy, run `cd web && npm run build:offline`. The generated `web/dist/sequitor-offline.html` embeds the Sequitor interface and the recorded run. It does not make live provider calls when opened as a local file. External X links still require internet.
+To prepare a network-independent copy, run `cd web && npm run build:offline`. The generated `web/dist/sequitor-offline.html` embeds the Sequitor interface and the recorded run. It does not make live provider calls when opened as a local file. External X links and official X widgets still require internet; the source card remains readable without them.
+
+## Streaming API
+
+`POST /api/runs` with `{"seed":"...","mode":"live"}` creates a job and returns its event URL. `mode:"recorded"` replays the saved run without provider calls. `GET /api/runs/{id}/events` streams SSE events with increasing IDs; `Last-Event-ID` resumes after a disconnect. Events are appended to ignored `work/sequitor-streams/` so a reconnect does not repeat paid retrieval. `POST /api/runs/{id}/cancel` stops further stages after any in-flight provider request completes. The previous `/api/explore` route remains available for whole-response clients.
+
+Events include `run.started`, `seed.resolved`, `plan.ready`, `run.ready`, `stage`, `posts.upsert`, `model.ready`, and one terminal event. A new search closes the previous browser stream; IDs and sequence numbers prevent stale or duplicate events from appearing. The selected-post drawer loads an official X embed when available and retains the source card when it is not.
 
 ## What the demo measures
 
@@ -32,7 +38,7 @@ To prepare a network-independent copy, run `cd web && npm run build:offline`. Th
 
 ## Build status
 
-The browser, local API, OpenAI planning, X counts/search, Baseten hosted curation, day switching, source context, public recorded demo, and offline backup are implemented. The saved run covers the frontier announcement and adjacent days. The remaining release work is a short video, Devpost submission, and final presentation rehearsal; see `SEQUITOR_HANDOFF.md`.
+The browser, streamed local API, OpenAI planning, X counts/search, Baseten hosted curation, day switching, source context, selected-post X embeds, public recorded demo, and offline backup are implemented. Card timestamps display Eastern local time; the measured chart still uses UTC day buckets until the source counts are accurately rebucketed. The planned Baseten Chain, working relevance reranker, and semantic neighborhood remain separate work. See `SEQUITOR_HANDOFF.md` for deadline-critical steps.
 
 ---
 

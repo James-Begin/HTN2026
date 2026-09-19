@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { FormEvent } from 'react'
-import { ArrowLeft, ArrowRight, ArrowUpRight, BarChart3, Check, Clock3, Heart, Info, Link2, LoaderCircle, Search, Sparkles, X } from 'lucide-react'
+import { ArrowLeft, ArrowRight, ArrowUpRight, BarChart3, Check, Clock3, Heart, Info, Link2, Search, Sparkles, X } from 'lucide-react'
 import snapshot from '../../demo/recordings/pace-the-frontier/snapshot.json'
 import liveCapture from '../../demo/recordings/sequitor-live.json'
 import './sequitor.css'
@@ -21,8 +21,40 @@ type Run = {
   model?: { openai?: string | null; baseten?: { status?: string; model?: string | null; classified?: number } | string }
   note: string; xSpend?: number
   savedPeriods?: Record<string, PeriodResult>
+  streamSource?: 'live' | 'cache' | 'recorded'
 }
 type PeriodResult = { day: string; posts: Post[]; rankingCoverage: string; partial: boolean; xSpend: number; model: Run['model'] }
+type StreamEvent = { runId: string; sequence: number; type: string; payload: Record<string, unknown> }
+type StartedRun = { runId: string; eventsUrl: string }
+type XWidgets = { widgets: { createTweet: (id: string, element: HTMLElement, options: Record<string, string | boolean>) => Promise<HTMLElement | null> } }
+declare global { interface Window { twttr?: XWidgets } }
+let widgetsLoad: Promise<XWidgets> | null = null
+
+function loadXWidgets(): Promise<XWidgets> {
+  if (window.twttr?.widgets) return Promise.resolve(window.twttr)
+  if (!widgetsLoad) widgetsLoad = new Promise((resolve, reject) => {
+    const script = document.createElement('script')
+    script.src = 'https://platform.twitter.com/widgets.js'
+    script.async = true
+    script.onload = () => window.twttr?.widgets ? resolve(window.twttr) : reject(new Error('X widgets unavailable'))
+    script.onerror = () => reject(new Error('X widgets unavailable'))
+    document.head.appendChild(script)
+  })
+  return widgetsLoad
+}
+
+function mergePosts(existing: Post[], incoming: Post[]): Post[] {
+  const positions = new Map(existing.map((post, index) => [post.id, index]))
+  const merged = [...existing]
+  for (const post of incoming) {
+    const index = positions.get(post.id)
+    if (index === undefined) {
+      positions.set(post.id, merged.length)
+      merged.push(post)
+    } else merged[index] = { ...merged[index], ...post }
+  }
+  return merged
+}
 
 const defaultSeed = 'https://x.com/DarioAmodei/status/2098773920774074715'
 const sourcePosts: Post[] = snapshot.posts.map(post => ({
@@ -53,7 +85,7 @@ function formatDay(day: string, withYear = true) {
 }
 function formatTime(iso: string) {
   if (!iso || Number.isNaN(Date.parse(iso))) return 'Time unavailable'
-  return new Intl.DateTimeFormat('en-CA', { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit', timeZone: 'UTC', timeZoneName: 'short' }).format(new Date(iso))
+  return new Intl.DateTimeFormat('en-CA', { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit', timeZone: 'America/Toronto', timeZoneName: 'short' }).format(new Date(iso))
 }
 function shortNumber(value: number | null | undefined) {
   if (value === null || value === undefined) return '—'
@@ -109,6 +141,30 @@ function PostRow({ post, onOpen }: { post: Post; onOpen: (post: Post) => void })
   </article>
 }
 
+function TweetEmbed({ post }: { post: Post }) {
+  const holder = useRef<HTMLDivElement>(null)
+  const [state, setState] = useState<'loading' | 'ready' | 'unavailable'>('loading')
+  useEffect(() => {
+    if (!/^\d+$/.test(post.id) || !holder.current) { setState('unavailable'); return }
+    let active = true
+    const node = holder.current
+    node.replaceChildren()
+    setState('loading')
+    const timeout = window.setTimeout(() => { if (active) setState('unavailable') }, 8000)
+    loadXWidgets().then(widgets => widgets.widgets.createTweet(post.id, node,
+      { theme: 'dark', dnt: true, conversation: 'none', align: 'center' }))
+      .then(result => { if (active) setState(result ? 'ready' : 'unavailable') })
+      .catch(() => { if (active) setState('unavailable') })
+      .finally(() => window.clearTimeout(timeout))
+    return () => { active = false; window.clearTimeout(timeout); node.replaceChildren() }
+  }, [post.id])
+  return <section className={`seq-embed seq-embed-${state}`} aria-label="Official X post">
+    <div className="seq-embed-label">POST ON X <span>{state === 'loading' ? 'Loading original…' : state === 'unavailable' ? 'Original preview unavailable' : 'Original preview'}</span></div>
+    <div ref={holder} className="seq-embed-host" />
+    {state === 'unavailable' && <p>The source card above remains available. <a href={post.url || `https://x.com/i/status/${post.id}`} target="_blank" rel="noopener noreferrer">Open on X <ArrowUpRight size={13} /></a></p>}
+  </section>
+}
+
 function Context({ post, posts, onClose }: { post: Post; posts: Post[]; onClose: () => void }) {
   const relationId = post.quotedPostId || post.parentId
   const [related, setRelated] = useState<Post | null>(posts.find(item => item.id === relationId) || null)
@@ -121,6 +177,7 @@ function Context({ post, posts, onClose }: { post: Post; posts: Post[]; onClose:
   return <div className="seq-overlay" role="presentation" onMouseDown={event => { if (event.target === event.currentTarget) onClose() }}>
     <aside className="seq-drawer" aria-label="Post context"><div className="seq-drawer-head"><button onClick={onClose}><ArrowLeft size={16} /> Back</button><h2>Post context</h2><button className="seq-icon" onClick={onClose} aria-label="Close context"><X size={18} /></button></div>
       <div className="seq-drawer-content"><p className="seq-drawer-label">SELECTED POST</p><PostRow post={post} onOpen={() => {}} />
+        <TweetEmbed post={post} />
         {relationId && <section className="seq-relationship"><div className="seq-relationship-line" /><p className="seq-drawer-label">{post.quotedPostId ? 'QUOTES' : 'REPLIES TO'}</p>
           {related ? <PostRow post={related} onOpen={() => {}} /> : <a href={`https://x.com/i/status/${relationId}`} target="_blank" rel="noopener noreferrer">Open referenced post on X <ArrowUpRight size={15} /></a>}</section>}
         {!relationId && <p className="seq-context-empty">No quote or reply relationship is recorded for this post. A shared topic does not establish who saw or copied whom.</p>}
@@ -144,23 +201,142 @@ export default function Sequitor() {
   const [showData, setShowData] = useState(false)
   const [health, setHealth] = useState<boolean | null>(null)
   const requestId = useRef(0)
+  const streamRef = useRef<EventSource | null>(null)
+  const streamRunId = useRef<string | null>(null)
+  const replayTimer = useRef<number | null>(null)
+  const lastSequence = useRef(0)
+
+  useEffect(() => () => {
+    streamRef.current?.close()
+    if (replayTimer.current !== null) window.clearInterval(replayTimer.current)
+  }, [])
 
   useEffect(() => {
-    getJson<Run>('/api/demo').then(demo => { setRun(demo); setSelectedDay(demo.selectedDay); setPeriodPosts(demo.posts); setRankingCoverage(demo.rankingCoverage); setHealth(true) })
+    const sections = document.querySelectorAll<HTMLElement>('.seq-reveal')
+    if (!('IntersectionObserver' in window)) { sections.forEach(section => section.classList.add('is-visible')); return }
+    const observer = new IntersectionObserver(entries => entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('is-visible')
+        observer.unobserve(entry.target)
+      }
+    }), { threshold: 0.08 })
+    sections.forEach(section => observer.observe(section))
+    return () => observer.disconnect()
+  }, [])
+
+  useEffect(() => {
+    getJson<Run>('/api/demo').then(demo => { if (requestId.current === 0) { setRun(demo); setSelectedDay(demo.selectedDay); setPeriodPosts(demo.posts); setRankingCoverage(demo.rankingCoverage) } setHealth(true) })
       .catch(() => setHealth(false))
   }, [])
 
+  function stopCurrent() {
+    streamRef.current?.close()
+    streamRef.current = null
+    if (replayTimer.current !== null) window.clearInterval(replayTimer.current)
+    replayTimer.current = null
+    if (streamRunId.current) {
+      fetch(`/api/runs/${streamRunId.current}/cancel`, { method: 'POST' }).catch(() => {})
+      streamRunId.current = null
+    }
+  }
+
+  function replayExample() {
+    if (health === true) { void startStreaming(defaultSeed, 'recorded'); return }
+    const id = ++requestId.current
+    stopCurrent()
+    const recorded = { ...fallback, posts: [], savedPeriods: undefined, streamSource: 'recorded' as const }
+    setRun(recorded)
+    setSelectedDay(recorded.selectedDay)
+    setPeriodPosts([])
+    setRankingCoverage('Recorded posts arriving…')
+    setBusy('Replaying the recorded investigation…')
+    setError('')
+    const posts = fallback.posts
+    let index = 0
+    replayTimer.current = window.setInterval(() => {
+      if (id !== requestId.current) return
+      const batch = posts.slice(index, index + 12)
+      index += batch.length
+      setPeriodPosts(previous => mergePosts(previous, batch))
+      if (index >= posts.length) {
+        if (replayTimer.current !== null) window.clearInterval(replayTimer.current)
+        replayTimer.current = null
+        setRankingCoverage(fallback.rankingCoverage)
+        setBusy('')
+      }
+    }, 55)
+  }
+
   async function explore(event?: FormEvent) {
     event?.preventDefault()
+    await startStreaming(seed.trim() || defaultSeed, 'live')
+  }
+
+  async function startStreaming(seedInput: string, mode: 'live' | 'recorded') {
     const id = ++requestId.current
-    setBusy('Reading the seed and planning a bounded search…'); setError('')
+    stopCurrent()
+    lastSequence.current = 0
+    setRun({ ...fallback, id: `pending-${id}`, seed: seedInput,
+      title: mode === 'recorded' ? fallback.title : seedInput || 'Starting investigation',
+      kind: mode === 'recorded' ? 'saved' : 'live', buckets: [], posts: [],
+      savedPeriods: undefined, streamSource: mode, model: undefined,
+      note: mode === 'recorded' ? fallback.note : 'The measured scope and retrieved posts will appear as they arrive.',
+      rankingCoverage: 'Posts will appear as they arrive' })
+    setPeriodPosts([])
+    setRankingCoverage('Posts will appear as they arrive')
+    setBusy('Starting the investigation…')
+    setError('')
     try {
-      const response = await fetch('/api/explore', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ seed: seed.trim() || defaultSeed }) })
-      const data = await response.json()
+      const response = await fetch('/api/runs', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ seed: seedInput, mode }) })
+      const data = await response.json() as StartedRun & { error?: string }
       if (!response.ok) throw new Error(data.error || 'Live exploration failed')
       if (id !== requestId.current) return
-      setRun(data as Run); setSelectedDay(data.selectedDay); setPeriodPosts(data.posts)
-      setRankingCoverage(data.rankingCoverage); setBusy(''); setHealth(true)
+      streamRunId.current = data.runId
+      const stream = new EventSource(data.eventsUrl)
+      streamRef.current = stream
+      stream.addEventListener('sequitor', (raw) => {
+        if (id !== requestId.current) return
+        const message = JSON.parse((raw as MessageEvent).data) as StreamEvent
+        if (message.sequence <= lastSequence.current) return
+        lastSequence.current = message.sequence
+        const payload = message.payload
+        if (message.type === 'stage') setBusy(String(payload.name || 'Investigating…'))
+        if (message.type === 'seed.resolved') setRun(previous => ({ ...previous, title: String(payload.text || previous.title).split('\n')[0].slice(0, 110) }))
+        if (message.type === 'run.ready') {
+          const ready = payload as unknown as Run
+          setRun({ ...ready, posts: [], savedPeriods: undefined })
+          setSelectedDay(ready.selectedDay)
+          setPeriodPosts([])
+          setRankingCoverage(ready.rankingCoverage || 'Posts arriving…')
+          setBusy(ready.streamSource === 'cache' ? 'Loading cached results…' : 'Retrieving posts…')
+        }
+        if (message.type === 'posts.upsert') {
+          const posts = payload.posts as Post[]
+          setPeriodPosts(previous => mergePosts(previous, posts))
+        }
+        if (message.type === 'model.ready') setRun(previous => ({ ...previous, model: { ...previous.model, baseten: payload.model as NonNullable<Run['model']>['baseten'] } }))
+        if (message.type === 'run.completed') {
+          setRun(previous => ({ ...previous, model: payload.model as Run['model'] || previous.model,
+            xSpend: typeof payload.xSpend === 'number' ? payload.xSpend : previous.xSpend }))
+          setRankingCoverage(String(payload.rankingCoverage || 'Retrieved posts'))
+          setBusy('')
+          stream.close()
+          streamRunId.current = null
+        }
+        if (message.type === 'run.failed' || message.type === 'run.stopped') {
+          setBusy('')
+          setError(String(payload.message || (message.type === 'run.stopped' ? 'Investigation stopped' : 'Investigation failed')))
+          stream.close()
+          streamRunId.current = null
+        }
+      })
+      stream.onerror = () => {
+        if (id !== requestId.current) return
+        // EventSource reconnects and resumes after its Last-Event-ID automatically.
+        setBusy(previous => previous || 'Reconnecting to the investigation…')
+      }
+      setHealth(true)
     } catch (cause) {
       if (id !== requestId.current) return
       setBusy(''); setError(cause instanceof Error ? cause.message : 'Live exploration failed')
@@ -169,10 +345,12 @@ export default function Sequitor() {
 
   async function chooseDay(day: string) {
     const id = ++requestId.current
+    stopCurrent()
     setSelectedDay(day); setError('')
     if (run.kind === 'saved') {
-      setPeriodPosts(run.savedPeriods?.[day]?.posts || (run.id === sevenPostFallback.id ? sevenPostFallback.posts : run.posts))
-      setRankingCoverage(run.savedPeriods?.[day]?.rankingCoverage || 'No posts saved for this date')
+      const periods = run.savedPeriods || (run.id === fallback.id ? fallback.savedPeriods : undefined)
+      setPeriodPosts(periods?.[day]?.posts || (run.id === sevenPostFallback.id ? sevenPostFallback.posts : run.posts))
+      setRankingCoverage(periods?.[day]?.rankingCoverage || 'No posts saved for this date')
       setBusy(''); return
     }
     setBusy(`Collecting posts for ${formatDay(day)}…`)
@@ -189,10 +367,10 @@ export default function Sequitor() {
 
   const visible = useMemo(() => {
     const dayPosts = periodPosts.filter(post => post.publishedAt?.startsWith(selectedDay))
-    return [...dayPosts].sort((a, b) => sort === 'popular'
+    return (busy ? dayPosts : [...dayPosts].sort((a, b) => sort === 'popular'
       ? (b.likes ?? -1) - (a.likes ?? -1) || a.id.localeCompare(b.id)
-      : b.publishedAt.localeCompare(a.publishedAt)).slice(0, 10)
-  }, [periodPosts, selectedDay, sort])
+      : b.publishedAt.localeCompare(a.publishedAt))).slice(0, 10)
+  }, [periodPosts, selectedDay, sort, busy])
   const discoveries = useMemo(() => {
     const visibleIds = new Set(visible.map(post => post.id))
     return periodPosts.filter(post => post.publishedAt?.startsWith(selectedDay) && !visibleIds.has(post.id)
@@ -206,21 +384,22 @@ export default function Sequitor() {
 
   return <div className="seq-shell">
     <a className="seq-skip" href="#seq-main">Skip to posts</a>
-    <header className="seq-topbar"><Wordmark /><span className="seq-topbar-right"><span className={`seq-live-dot ${run.kind === 'saved' ? 'is-saved' : ''}`} />{run.kind === 'saved' ? 'Recorded X activity' : 'Live X activity'}<button onClick={() => setShowData(true)} aria-label="About the data"><Info size={17} /></button></span></header>
+    <header className="seq-topbar"><Wordmark /><span className="seq-topbar-right"><span className={`seq-live-dot ${run.kind === 'saved' || run.streamSource === 'cache' ? 'is-saved' : ''}`} />{run.streamSource === 'cache' ? 'Cached X activity' : run.kind === 'saved' ? 'Recorded X activity' : 'Live X activity'}<button onClick={() => setShowData(true)} aria-label="About the data"><Info size={17} /></button></span></header>
     <div className="seq-intro"><div><h1>Follow the conversation.</h1><p>See when a post took off, what people said, and where it went next.</p></div>
-      {health === true ? <form className="seq-search" onSubmit={explore}><Link2 size={17} aria-hidden="true" /><input aria-label="X post URL or topic" value={seed} onChange={event => setSeed(event.target.value)} placeholder="Paste an X post URL or topic" /><button type="submit" disabled={Boolean(busy)}>{busy ? <LoaderCircle size={16} className="seq-spin" /> : <Search size={16} />}<span>Explore live</span></button></form>
-        : <a className="seq-recorded-cta" href="#seq-main">Explore the recorded run <ArrowRight size={17} /></a>}
+      <div className="seq-start-actions">{health === true && <form className="seq-search" onSubmit={explore}><Link2 size={17} aria-hidden="true" /><input aria-label="X post URL or topic" value={seed} onChange={event => setSeed(event.target.value)} placeholder="Paste an X post URL or topic" /><button type="submit"><Search size={16} /><span>Explore live</span></button></form>}
+        <button className="seq-recorded-cta" type="button" onClick={replayExample}>Replay the Dario example <ArrowRight size={17} /></button></div>
     </div>
     {error && <div className="seq-error" role="alert">{error} <button onClick={() => setError('')}>Dismiss</button></div>}
-    <div className="seq-investigation-head"><div><span className="seq-investigation-caption">CURRENT CONVERSATION</span><h2>{run.title.split(':')[0]}</h2><p>{run.kind === 'saved' ? 'A recorded conversation you can explore offline.' : 'Measured search, with original posts kept in view.'}</p></div><button className="seq-data-button" onClick={() => setShowData(true)}>About this data <ArrowUpRight size={15} /></button></div>
+    <div className="seq-investigation-head seq-reveal"><div><span className="seq-investigation-caption">CURRENT CONVERSATION</span><h2>{run.title.split(':')[0]}</h2><p>{run.streamSource === 'cache' ? 'Cached results from an earlier live investigation.' : run.kind === 'saved' ? 'A recorded conversation you can explore offline.' : 'Measured search, with original posts kept in view.'}</p></div><button className="seq-data-button" onClick={() => setShowData(true)}>About this data <ArrowUpRight size={15} /></button></div>
     <main id="seq-main" className="seq-layout">
-      <aside className="seq-sidebar"><Timeline buckets={run.buckets} selectedDay={selectedDay} onSelect={chooseDay} kind={run.kind} />
+      <aside className="seq-sidebar"><Timeline buckets={run.buckets} selectedDay={selectedDay} onSelect={chooseDay} kind={run.streamSource === 'cache' ? 'saved' : run.kind} />
         <section className="seq-sidebar-note"><p className="seq-sidebar-note-title">A slice of the discussion</p><p>{run.note}</p><button onClick={() => setShowData(true)}>See scope and sources <ArrowRight size={13} /></button></section>
         {run.model?.openai && <section className="seq-model-trace"><p>{run.kind === 'saved' ? 'RECORDED MODEL RUN' : 'POWERED BY'}</p><span>OpenAI <small>{run.model.openai}</small></span><span>Baseten <small>{basetenLabel}</small></span></section>}
       </aside>
-      <section className="seq-feed" aria-label="Posts from selected day"><div className="seq-feed-head"><div><p>Conversation on</p><h2>{formatDay(selectedDay)} <small>UTC</small></h2></div><div className="seq-feed-actions"><button className={sort === 'popular' ? 'active' : ''} onClick={() => setSort('popular')}>Popular</button><button className={sort === 'recent' ? 'active' : ''} onClick={() => setSort('recent')}>Recent</button></div></div>
+      <section className="seq-feed seq-reveal" aria-label="Posts from selected day"><div className="seq-feed-head"><div><p>Conversation on</p><h2>{formatDay(selectedDay)} <small>UTC</small></h2></div><div className="seq-feed-actions"><button className={sort === 'popular' ? 'active' : ''} onClick={() => setSort('popular')}>Popular</button><button className={sort === 'recent' ? 'active' : ''} onClick={() => setSort('recent')}>Recent</button></div></div>
         <div className="seq-feed-status"><span>{run.id === sevenPostFallback.id ? 'Selected saved posts' : rankingCoverage}</span><span>{visible.length} shown</span></div>
-        {busy ? <div className="seq-loading" role="status"><LoaderCircle size={22} className="seq-spin" />{busy}<span>One bounded request at a time.</span></div> : visible.length ? <div className="seq-post-list">{visible.map(post => <PostRow key={post.id} post={post} onOpen={setInspect} />)}</div> : <div className="seq-empty"><Clock3 size={21} /><h3>No retrieved posts for this day</h3><p>The count can include posts that were not fetched for this feed. Choose another day or try a different seed.</p></div>}
+        {busy && <div className="seq-stream-status" role="status" aria-live="polite"><span className="seq-stream-pulse" /><span>{busy}</span><span className="seq-stream-count">{periodPosts.length ? `${periodPosts.length} retrieved` : 'Waiting for the first results'}</span><button type="button" onClick={() => { ++requestId.current; stopCurrent(); setBusy('') }}>Stop</button></div>}
+        {visible.length ? <div className="seq-post-list">{visible.map(post => <PostRow key={post.id} post={post} onOpen={setInspect} />)}</div> : busy ? <div className="seq-stream-skeleton" aria-hidden="true"><i /><i /><i /></div> : <div className="seq-empty"><Clock3 size={21} /><h3>No retrieved posts for this day</h3><p>The count can include posts that were not fetched for this feed. Choose another day or try a different seed.</p></div>}
         {!busy && discoveries.length > 0 && <section className="seq-offshoots"><div className="seq-offshoots-heading"><Sparkles size={17} /><div><h3>A different turn</h3><p>Related replies and reactions beyond the ten posts above</p></div></div>{discoveries.map(post => <PostRow key={post.id} post={post} onOpen={setInspect} />)}</section>}
         <div className="seq-feed-bottom"><span>{run.id === sevenPostFallback.id ? 'Selected source capture' : `${run.kind === 'saved' ? 'Estimated X spend at capture' : 'Estimated X spend in this server'}: $${(run.xSpend || 0).toFixed(2)}`}</span><span>Likes reflect collection time, not the selected day.</span></div>
       </section>
