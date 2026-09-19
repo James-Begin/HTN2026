@@ -1,7 +1,7 @@
 # Live pipeline investigation — Claude Code
 
-**Date:** 2026-09-19  
-**Status:** completed once against the live provider path  
+**Date:** 2026-09-19
+**Status:** completed once against the live provider path
 **Seed:** `Claude Code is changing how developers build software.`
 
 ## Boundary
