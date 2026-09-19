@@ -20,6 +20,7 @@ export type GraphEdge = {
   type: 'reply' | 'quote' | 'semantic'
   cosine?: number
   model?: string
+  sharedTerms?: string[]
 }
 
 export type SemanticEdge = {
@@ -27,9 +28,30 @@ export type SemanticEdge = {
   target: string
   cosine: number
   model: string
+  sharedTerms?: string[]
 }
 
-export type PositionedNode = { id: string; x: number; y: number; depth: number }
+export type StoryRole = 'announcement' | 'reporting' | 'explanation' | 'adoption' | 'critique' | 'question' | 'humor' | 'other'
+export type StoryAnnotation = { role: StoryRole; focus?: string }
+export type PositionedNode = { id: string; x: number; y: number; lane: number }
+
+export const STORY_LANES = [
+  { label: 'Announcement', y: 98 },
+  { label: 'Reports & explanation', y: 210 },
+  { label: 'Response & adoption', y: 322 },
+  { label: 'Critique & questions', y: 434 },
+  { label: 'Humor & riffs', y: 546 },
+  { label: 'Other captured', y: 658 },
+]
+
+export function laneForRole(role: StoryRole | undefined): number {
+  if (role === 'announcement') return 0
+  if (role === 'reporting' || role === 'explanation') return 1
+  if (role === 'adoption') return 2
+  if (role === 'critique' || role === 'question') return 3
+  if (role === 'humor') return 4
+  return 5
+}
 
 export function buildObservedEdges(posts: GraphPost[]): GraphEdge[] {
   const ids = new Set(posts.map(post => post.id))
@@ -58,7 +80,8 @@ export function buildSemanticEdges(posts: GraphPost[], candidates: SemanticEdge[
     const id = `semantic:${pair[0]}:${pair[1]}`
     if (seen.has(id)) continue
     seen.add(id)
-    edges.push({ id, source: pair[0], target: pair[1], type: 'semantic', cosine: candidate.cosine, model: candidate.model })
+    edges.push({ id, source: pair[0], target: pair[1], type: 'semantic', cosine: candidate.cosine,
+      model: candidate.model, sharedTerms: candidate.sharedTerms })
   }
   return edges
 }
@@ -82,76 +105,44 @@ export function connectedComponent(focusId: string, edges: GraphEdge[]): string[
 }
 
 function between(value: number, low: number, high: number) { return Math.min(high, Math.max(low, value)) }
+function hashId(id: string) {
+  let hash = 2166136261
+  for (const letter of id) hash = Math.imul(hash ^ letter.charCodeAt(0), 16777619)
+  return hash >>> 0
+}
 
-/** Stable, evidence-driven structure: edge type determines the arc; distance does not encode strength. */
-export function layoutNeighborhood(focusId: string, edges: GraphEdge[], posts: GraphPost[]): PositionedNode[] {
-  const byId = new Map(posts.map(post => [post.id, post]))
-  const adjacency = new Map<string, GraphEdge[]>()
-  for (const edge of edges) {
-    if (!adjacency.has(edge.source)) adjacency.set(edge.source, [])
-    if (!adjacency.has(edge.target)) adjacency.set(edge.target, [])
-    adjacency.get(edge.source)!.push(edge)
-    adjacency.get(edge.target)!.push(edge)
-  }
-  const visited = new Set([focusId])
-  const direct = [...(adjacency.get(focusId) || [])].map(edge => ({
-    edge,
-    id: edge.source === focusId ? edge.target : edge.source,
-  })).filter(({ id }) => {
-    if (visited.has(id)) return false
-    visited.add(id)
-    return true
-  }).sort((a, b) => {
-    const sideA = a.edge.type === 'quote' ? 0 : a.edge.type === 'semantic' ? 1 : 2
-    const sideB = b.edge.type === 'quote' ? 0 : b.edge.type === 'semantic' ? 1 : 2
-    return sideA - sideB || (byId.get(a.id)?.publishedAt || '').localeCompare(byId.get(b.id)?.publishedAt || '') || a.id.localeCompare(b.id)
-  })
-  const result: PositionedNode[] = [{ id: focusId, x: 500, y: 320, depth: 0 }]
-  const groups = [
-    { nodes: direct.filter(item => item.edge.type === 'quote'), start: 98, end: 262 },
-    { nodes: direct.filter(item => item.edge.type === 'reply'), start: -82, end: 82 },
-    { nodes: direct.filter(item => item.edge.type === 'semantic'), start: 0, end: 360 },
-  ]
-  for (const group of groups) {
-    const caps = [14, 20, 26, 34]
-    let cursor = 0
-    let ring = 0
-    while (cursor < group.nodes.length) {
-      const count = Math.min(caps[ring] || 40, group.nodes.length - cursor)
-      const radius = Math.min(286, 132 + ring * 71)
-      for (let i = 0; i < count; i++) {
-        const fraction = count === 1 ? .5 : (i + .5) / count
-        const angle = (group.start + (group.end - group.start) * fraction) * Math.PI / 180
-        const id = group.nodes[cursor + i].id
-        result.push({ id, x: between(500 + Math.cos(angle) * radius, 24, 976), y: between(320 + Math.sin(angle) * radius, 24, 616), depth: 1 })
+/** A global chronology, computed without a focus ID: refocusing never changes topology. */
+export function layoutStory(posts: GraphPost[], annotations: Record<string, StoryAnnotation>, seedId: string): PositionedNode[] {
+  const chronological = [...posts].sort((a, b) => Date.parse(a.publishedAt) - Date.parse(b.publishedAt) || a.id.localeCompare(b.id))
+  const nodes = chronological.map((post, index) => {
+    const lane = post.id === seedId ? 0 : laneForRole(annotations[post.id]?.role)
+    // Horizontal order is chronology. Equal spacing keeps dense capture bursts
+    // legible; horizontal distance is deliberately not an elapsed-time scale.
+    const x = 90 + 1055 * index / Math.max(1, chronological.length - 1)
+    const jitter = (hashId(post.id) % 79) - 39
+    return { id: post.id, x, y: STORY_LANES[lane].y + jitter, lane }
+  }).sort((a, b) => a.x - b.x || a.id.localeCompare(b.id))
+
+  // Resolve local overlaps within a strand without moving posts into another
+  // strand. This runs on the reference corpus, not whenever focus changes.
+  for (let pass = 0; pass < 36; pass++) {
+    let moved = false
+    for (let i = 0; i < nodes.length; i++) {
+      for (let j = i + 1; j < nodes.length; j++) {
+        const a = nodes[i], b = nodes[j]
+        if (b.x - a.x > 24) break
+        if (a.lane !== b.lane) continue
+        const dx = b.x - a.x, dy = b.y - a.y
+        const distance = Math.hypot(dx, dy)
+        if (distance >= 17) continue
+        const push = (17 - distance) / 2
+        const sign = dy === 0 ? (hashId(a.id) % 2 ? 1 : -1) : Math.sign(dy)
+        a.y = between(a.y - push * sign, STORY_LANES[a.lane].y - 47, STORY_LANES[a.lane].y + 47)
+        b.y = between(b.y + push * sign, STORY_LANES[b.lane].y - 47, STORY_LANES[b.lane].y + 47)
+        moved = true
       }
-      cursor += count
-      ring++
     }
+    if (!moved) break
   }
-  const locations = new Map(result.map(node => [node.id, node]))
-  const queue = [...result.filter(node => node.depth === 1)]
-  for (let index = 0; index < queue.length; index++) {
-    const parent = queue[index]
-    if (parent.depth > 3) continue
-    const newNeighbors = (adjacency.get(parent.id) || []).map(edge => edge.source === parent.id ? edge.target : edge.source)
-      .filter(id => !visited.has(id)).sort()
-    for (let childIndex = 0; childIndex < newNeighbors.length; childIndex++) {
-      const id = newNeighbors[childIndex]
-      visited.add(id)
-      const base = Math.atan2(parent.y - 320, parent.x - 500)
-      const offset = (childIndex - (newNeighbors.length - 1) / 2) * .23
-      const angle = base + offset
-      const node = {
-        id,
-        x: between(parent.x + Math.cos(angle) * 50, 20, 980),
-        y: between(parent.y + Math.sin(angle) * 50, 20, 620),
-        depth: parent.depth + 1,
-      }
-      locations.set(id, node)
-      result.push(node)
-      queue.push(node)
-    }
-  }
-  return result
+  return nodes
 }

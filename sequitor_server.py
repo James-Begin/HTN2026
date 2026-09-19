@@ -99,16 +99,18 @@ class StreamHub:
                     posts = sorted(recorded.get("posts", []),
                                    key=lambda post: -(post.get("likes") or 0))
                     buckets = recorded.get("buckets", [])
-                    first = max(10, len(buckets))
-                    for index in range(first):
-                        if index < len(buckets):
-                            job.emit("buckets.upsert", {"bucket": buckets[index]})
-                        if index < min(10, len(posts)):
-                            job.emit("posts.upsert", {"posts": [posts[index]]})
-                        time.sleep(0.16)
-                    for index in range(10, len(posts), 10):
-                        job.emit("posts.upsert", {"posts": posts[index:index + 10]})
-                        time.sleep(0.09)
+                    # Bars arrive first. The visible posts and then the map fill
+                    # progressively instead of jumping to the completed capture.
+                    first = max(len(buckets), min(10, len(posts)) * 6)
+                    for tick in range(first):
+                        if tick < len(buckets):
+                            job.emit("buckets.upsert", {"bucket": buckets[tick]})
+                        if tick % 6 == 0 and tick // 6 < min(10, len(posts)):
+                            job.emit("posts.upsert", {"posts": [posts[tick // 6]]})
+                        time.sleep(0.14)
+                    for index in range(10, len(posts), 3):
+                        job.emit("posts.upsert", {"posts": posts[index:index + 3]})
+                        time.sleep(0.14)
                     job.emit("run.completed", {"model": recorded.get("model"),
                                                "rankingCoverage": recorded.get("rankingCoverage"),
                                                "xSpend": recorded.get("xSpend", 0)})

@@ -3,7 +3,9 @@ import type { FormEvent } from 'react'
 import { ArrowLeft, ArrowRight, ArrowUpRight, BarChart3, Check, Clock3, Heart, Info, Link2, Search, Sparkles, X } from 'lucide-react'
 import snapshot from '../../demo/recordings/pace-the-frontier/snapshot.json'
 import liveCapture from '../../demo/recordings/sequitor-live.json'
+import storyCapture from '../../demo/recordings/sequitor-story.json'
 import Neighborhood from './Neighborhood'
+import type { GraphPost, SemanticEdge, StoryAnnotation } from './graphData'
 import './sequitor.css'
 
 type Post = {
@@ -81,6 +83,11 @@ const fallback: Run = {
   scope: 'Recorded X counts and retrieved posts',
   note: `Saved run captured ${formatTime(liveCapture.capturedAt)}. Its bars were measured on X at capture time; post lists cover retrieved candidates only.`,
 }
+const recordedReferencePosts: GraphPost[] = [...new Map([
+  ...fallback.posts,
+  ...Object.values(fallback.savedPeriods || {}).flatMap(period => period.posts),
+  ...(fallback.seedPost ? [fallback.seedPost] : []),
+].map(post => [post.id, post])).values()]
 
 function pendingActivity(run: Run): Run {
   return { ...run, activityScaleMax: Math.max(1, ...run.buckets.map(bucket => bucket.count)),
@@ -267,7 +274,9 @@ export default function Sequitor() {
       if (id !== requestId.current) return
       const bucket = fallback.buckets[tick]
       if (bucket) setRun(previous => ({ ...previous, buckets: previous.buckets.map(item => item.day === bucket.day ? bucket : item) }))
-      const batch = posts.slice(index, index + (tick < 10 ? 1 : 10))
+      const batch = index < 10
+        ? tick % 6 === 0 ? posts.slice(index, index + 1) : []
+        : posts.slice(index, index + 3)
       index += batch.length
       tick += 1
       setPeriodPosts(previous => mergePosts(previous, batch))
@@ -278,7 +287,7 @@ export default function Sequitor() {
         setRankingCoverage(fallback.rankingCoverage)
         setBusy('')
       }
-    }, 160)
+    }, 140)
   }
 
   async function explore(event?: FormEvent) {
@@ -433,7 +442,13 @@ export default function Sequitor() {
         {!busy && discoveries.length > 0 && <section className="seq-offshoots"><div className="seq-offshoots-heading"><Sparkles size={17} /><div><h3>A different turn</h3><p>Related replies and reactions beyond the ten posts above</p></div></div>{discoveries.map(post => <PostRow key={post.id} post={post} onOpen={setInspect} />)}</section>}
         <div className="seq-feed-bottom"><span>{run.id === sevenPostFallback.id ? 'Selected source capture' : `${run.kind === 'saved' ? 'Estimated X spend at capture' : 'Estimated X spend in this server'}: $${(run.xSpend || 0).toFixed(2)}`}</span><span>Likes reflect collection time, not the selected day.</span></div>
       </section>
-    </main> : <main id="seq-main"><Neighborhood posts={graphPosts} seedId={graphSeedId} onOpenPost={setInspect} /></main>}
+    </main> : <main id="seq-main"><Neighborhood posts={graphPosts} seedId={graphSeedId}
+      referencePosts={graphSeedId === storyCapture.seedId ? recordedReferencePosts : undefined}
+      selectedPostIds={graphSeedId === storyCapture.seedId ? storyCapture.selectedPostIds : undefined}
+      annotations={graphSeedId === storyCapture.seedId ? storyCapture.annotations as Record<string, StoryAnnotation> : undefined}
+      semanticEdges={graphSeedId === storyCapture.seedId ? storyCapture.similarityEdges as SemanticEdge[] : undefined}
+      modelLabel={graphSeedId === storyCapture.seedId ? storyCapture.model : undefined}
+      onOpenPost={setInspect} /></main>}
     <footer className="seq-footer"><Wordmark /><span>Explore the posts. Keep the limits in view.</span><button onClick={() => setShowData(true)}>Method and sources <ArrowUpRight size={13} /></button></footer>
     {inspect && <Context post={inspect} posts={graphPosts} onClose={() => setInspect(null)} />}
     {showData && <div className="seq-overlay" role="presentation" onMouseDown={event => { if (event.target === event.currentTarget) setShowData(false) }}><aside className="seq-drawer seq-info-drawer" aria-label="About the data"><div className="seq-drawer-head"><button onClick={() => setShowData(false)}><ArrowLeft size={16} /> Back</button><h2>About this view</h2><button className="seq-icon" onClick={() => setShowData(false)} aria-label="Close data details"><X size={18} /></button></div><div className="seq-drawer-content"><h3>What the bars count</h3><p>{run.note}</p><p><strong>Scope:</strong> {run.scope}{run.query ? ` · ${run.query}` : ''}</p><h3>What the feed contains</h3><p>{rankingCoverage}. Posts are sorted by likes recorded at collection time. The feed excludes native retweet copies and can include an explicitly marked related search outside the measured phrase.</p><h3>Models in this run</h3><p><strong>OpenAI:</strong> {run.model?.openai || 'not run'}. It plans bounded literal searches from the seed text.</p><p><strong>Baseten:</strong> {basetenLabel}. It groups or compares retrieved posts; it does not determine truth, copying, or popularity.</p>{run.searchPlan?.discoveryPhrase && <p><strong>Related query:</strong> {run.searchPlan.discoveryPhrase}. {run.searchPlan.whyDiscovery}</p>}<h3>Source fidelity</h3><p>Post text and IDs come from X responses or the saved source snapshot. An earlier post, similar wording, or quote does not by itself prove who influenced whom.</p><p className="seq-data-time"><Check size={14} /> Captured {run.capturedAt ? formatTime(run.capturedAt) : 'at an unknown time'}</p></div></aside></div>}

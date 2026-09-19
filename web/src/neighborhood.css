@@ -1,7 +1,7 @@
 .seq-neighborhood{padding:2px clamp(22px,4vw,64px) 54px;color:var(--seq-text)}
 .seq-neighborhood-head{display:flex;align-items:end;justify-content:space-between;gap:28px;margin:0 0 21px;padding-top:8px}
 .seq-neighborhood-head h2{font-size:clamp(24px,2.7vw,36px);font-weight:570;letter-spacing:-.03em;line-height:1.1}
-.seq-neighborhood-head p{color:var(--seq-muted);font-size:12px;line-height:1.55;margin-top:9px;max-width:60ch}
+.seq-neighborhood-head p{color:var(--seq-muted);font-size:12px;line-height:1.55;margin-top:9px;max-width:77ch}
 .seq-neighborhood-stats{display:grid;grid-template-columns:auto auto;align-items:baseline;column-gap:8px;row-gap:1px;white-space:nowrap}
 .seq-neighborhood-stats strong{font-size:17px;font-variant-numeric:tabular-nums;font-weight:600;color:var(--seq-accent)}
 .seq-neighborhood-stats span{font-size:10px;color:var(--seq-muted)}
@@ -24,7 +24,7 @@
 .seq-neighborhood-live-dot{display:block;width:6px;height:6px;border-radius:50%;background:#7bdbbe;box-shadow:0 0 0 4px #7bdbbe18}
 .seq-neighborhood-svg{display:block;position:relative;z-index:1;width:100%;flex:1;min-height:360px;overflow:visible;touch-action:manipulation}
 .seq-neighborhood-link{cursor:pointer;outline:none}
-.seq-neighborhood-visible-line{fill:none;stroke-width:1.2;opacity:.35;transition:opacity .2s ease}
+.seq-neighborhood-visible-line{fill:none;stroke-width:1.1;opacity:.20;transition:opacity .2s ease}
 .seq-neighborhood-link.reply .seq-neighborhood-visible-line{stroke:#7bbfdb}
 .seq-neighborhood-link.quote .seq-neighborhood-visible-line{stroke:#e3af76}
 .seq-neighborhood-link.semantic .seq-neighborhood-visible-line{stroke:#bda8e2;stroke-dasharray:4 4}
@@ -32,7 +32,7 @@
 .seq-neighborhood-link.is-selected .seq-neighborhood-visible-line{opacity:1;stroke-width:2.6}
 .seq-neighborhood-hit-line{fill:none;stroke:transparent;stroke-width:11}
 .seq-neighborhood-node{cursor:pointer;outline:none}
-.seq-neighborhood-node-core{fill:#a0b7c4;stroke:#213440;stroke-width:1;transition:fill .2s ease}
+.seq-neighborhood-node-core{fill:#87aabb;stroke:#213440;stroke-width:1;transition:fill .2s ease}
 .seq-neighborhood-node.is-focus .seq-neighborhood-node-core{fill:#eaf8ff;stroke:#7fb9d5;stroke-width:2.5}
 .seq-neighborhood-node.is-related:not(.is-focus) .seq-neighborhood-node-core{fill:#8bd5f1}
 .seq-neighborhood-node.is-selected .seq-neighborhood-node-core,.seq-neighborhood-node:hover .seq-neighborhood-node-core,.seq-neighborhood-node:focus-visible .seq-neighborhood-node-core{fill:#e6f8ff;stroke:#8bd5f1;stroke-width:2}
@@ -40,6 +40,11 @@
 .seq-neighborhood-node-ring{fill:none;stroke:#8bd5f1;stroke-width:1;opacity:.7;pointer-events:none}
 .seq-neighborhood-node-hit{fill:transparent}
 .seq-neighborhood-node-label{fill:#e8f3f8;font:600 11px 'Inter Variable',Inter,sans-serif;paint-order:stroke;stroke:#0c141b;stroke-width:3px;pointer-events:none}
+.seq-neighborhood-lane rect{fill:#15232b;opacity:.28;pointer-events:none}
+.seq-neighborhood-lane rect.alternate{fill:#1e3039;opacity:.25}
+.seq-neighborhood-lane line{stroke:#89afc016;stroke-width:1;pointer-events:none}
+.seq-neighborhood-lane text,.seq-neighborhood-axis{fill:#8aaab9;font:600 10px 'Inter Variable',Inter,sans-serif;letter-spacing:.07em;pointer-events:none}
+.seq-neighborhood-axis{fill:#adc8d4;font-size:11px}
 .seq-neighborhood-map-bottom{border-top:1px solid #2b394466;min-height:54px}
 .seq-neighborhood-map-bottom p{display:flex;align-items:center;gap:7px;color:var(--seq-muted);white-space:nowrap;flex-wrap:wrap;line-height:1.6}
 .seq-neighborhood-key{display:inline-block;vertical-align:middle;width:15px;height:0;border-top:2px solid #7bbfdb;margin-left:4px;flex-shrink:0}
@@ -76,12 +81,24 @@
 .seq-neighborhood-person strong{display:block;font-size:12px;line-height:1.3}
 .seq-neighborhood-person span{display:block;color:var(--seq-muted);font-size:10px;margin-top:2px}
 .seq-neighborhood-inspector time{display:block;color:var(--seq-dim);font-size:10px;margin:15px 0 0}
+.seq-neighborhood-role{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-top:11px;font-size:10px;color:#aac3cf}
+.seq-neighborhood-role strong{text-transform:capitalize;color:#bcdeed;background:#23404d;padding:4px 7px;border-radius:4px;font-weight:600}
 .seq-neighborhood-text{font-size:12px;line-height:1.62;color:#e0e8ed;white-space:pre-wrap;overflow-wrap:anywhere;margin:10px 0 15px;max-height:220px;overflow:auto}
 .seq-neighborhood-excerpt{color:#dfc597;font-size:10px;line-height:1.4;margin:-3px 0 12px}
 .seq-neighborhood-post-actions{display:flex;align-items:center;gap:15px;border-bottom:1px solid var(--seq-line);padding-bottom:17px;flex-wrap:wrap}
 .seq-neighborhood-post-actions button,.seq-neighborhood-post-actions a{display:inline-flex;align-items:center;gap:4px;font-size:10px;color:var(--seq-accent)}
 .seq-neighborhood-post-actions button:hover,.seq-neighborhood-post-actions a:hover{text-decoration:underline;text-underline-offset:3px}
 .seq-neighborhood-relations{margin-top:18px}
+.seq-neighborhood-relation-group{margin-top:15px}
+.seq-neighborhood-relation-group:first-child{margin-top:0}
+.seq-neighborhood-relation-group h4{display:flex;justify-content:space-between;color:#dce9ee;font-size:11px;font-weight:600;margin:0 0 6px}
+.seq-neighborhood-relation-group h4 span{color:var(--seq-accent);font-variant-numeric:tabular-nums}
+.seq-neighborhood-relation-group>button{width:100%;display:flex;align-items:center;gap:8px;text-align:left;padding:8px 0;border-bottom:1px solid #27323a;color:var(--seq-muted);font-size:10px}
+.seq-neighborhood-relation-group>button:hover{color:var(--seq-text)}
+.seq-neighborhood-relation-group>button .seq-neighborhood-key{margin-left:0;width:12px}
+.seq-neighborhood-relation-group>button span:nth-child(2){overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1}
+.seq-neighborhood-relation-group>button small{color:#83a5b7;margin-left:3px}
+.seq-neighborhood-relation-group p,.seq-neighborhood-relation-group>small{display:block;color:var(--seq-muted);font-size:10px;line-height:1.5;margin-top:5px}
 .seq-neighborhood-relations-head{display:flex;align-items:center;gap:7px;font-size:11px;color:#dce9ee;margin-bottom:8px}
 .seq-neighborhood-relations-head svg{color:var(--seq-accent)}
 .seq-neighborhood-relations>button{width:100%;display:flex;align-items:center;gap:8px;text-align:left;padding:8px 0;border-bottom:1px solid #27323a;color:var(--seq-muted);font-size:10px}

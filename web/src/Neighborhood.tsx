@@ -1,8 +1,8 @@
 import { useMemo, useState } from 'react'
-import { ArrowUpRight, Focus, Link2, MessageCircle, Minus, Plus, Search, X } from 'lucide-react'
+import { ArrowUpRight, Focus, Link2, Minus, Plus, Search, X } from 'lucide-react'
 import {
-  buildObservedEdges, buildSemanticEdges, connectedComponent, layoutNeighborhood,
-  type GraphEdge, type GraphPost, type SemanticEdge,
+  buildObservedEdges, buildSemanticEdges, layoutStory, STORY_LANES,
+  type GraphEdge, type GraphPost, type SemanticEdge, type StoryAnnotation,
 } from './graphData'
 import './neighborhood.css'
 
@@ -10,6 +10,10 @@ export type NeighborhoodProps = {
   posts: GraphPost[]
   seedId: string
   semanticEdges?: SemanticEdge[]
+  referencePosts?: GraphPost[]
+  selectedPostIds?: string[]
+  annotations?: Record<string, StoryAnnotation>
+  modelLabel?: string
   onOpenPost: (post: GraphPost) => void
 }
 
@@ -50,10 +54,10 @@ function edgeSentence(edge: GraphEdge, byId: Map<string, GraphPost>) {
   const target = byId.get(edge.target)?.author || edge.target
   if (edge.type === 'reply') return `${source} replied to ${target}. X records the referenced post ID.`
   if (edge.type === 'quote') return `${source} quoted ${target}. X records the referenced post ID.`
-  return `${source} and ${target} have a measured text similarity of ${edge.cosine?.toFixed(3)} (${edge.model}). This suggests related wording or topic, not agreement or influence.`
+  return `${source} and ${target} share wording (TF-IDF cosine ${edge.cosine?.toFixed(2)}). ${edge.sharedTerms?.length ? `Shared terms: ${edge.sharedTerms.join(', ')}. ` : ''}This is a navigation clue, not proof of influence.`
 }
 
-export default function Neighborhood({ posts, seedId, semanticEdges = [], onOpenPost }: NeighborhoodProps) {
+export default function Neighborhood({ posts, seedId, referencePosts, selectedPostIds, annotations = {}, semanticEdges = [], modelLabel, onOpenPost }: NeighborhoodProps) {
   const [layer, setLayer] = useState<Layer>('all')
   const [throughDay, setThroughDay] = useState('all')
   const [focusId, setFocusId] = useState(seedId)
@@ -63,51 +67,68 @@ export default function Neighborhood({ posts, seedId, semanticEdges = [], onOpen
   const [zoom, setZoom] = useState(1)
 
   const allPosts = useMemo(() => [...new Map(posts.map(post => [post.id, post])).values()], [posts])
+  const mapIds = useMemo(() => selectedPostIds ? new Set(selectedPostIds) : null, [selectedPostIds])
+  const reference = useMemo(() => [...new Map((referencePosts || posts).filter(post => !mapIds || mapIds.has(post.id)).map(post => [post.id, post])).values()], [referencePosts, posts, mapIds])
   const days = useMemo(() => [...new Set(allPosts.map(post => easternDay(post.publishedAt)).filter(Boolean))].sort(), [allPosts])
   const dayPosts = useMemo(() => throughDay === 'all' ? allPosts
     : allPosts.filter(post => easternDay(post.publishedAt) <= throughDay), [allPosts, throughDay])
   const byId = useMemo(() => new Map(dayPosts.map(post => [post.id, post])), [dayPosts])
-  const observed = useMemo(() => buildObservedEdges(dayPosts), [dayPosts])
-  const semantic = useMemo(() => buildSemanticEdges(dayPosts, semanticEdges), [dayPosts, semanticEdges])
+  const activeSelection = byId.has(selectedId) ? selectedId : byId.has(seedId) ? seedId : dayPosts[0]?.id
+  const mappedPosts = useMemo(() => dayPosts.filter(post => !mapIds || mapIds.has(post.id) || post.id === activeSelection), [dayPosts, mapIds, activeSelection])
+  const observed = useMemo(() => buildObservedEdges(mappedPosts), [mappedPosts])
+  const semantic = useMemo(() => buildSemanticEdges(mappedPosts, semanticEdges), [mappedPosts, semanticEdges])
   const shownEdges = useMemo(() => [...observed, ...semantic].filter(edge => layer === 'all' || edge.type === layer), [observed, semantic, layer])
-  const activeFocus = byId.has(focusId) ? focusId : byId.has(seedId) ? seedId : dayPosts[0]?.id
-  const activeSelection = byId.has(selectedId) ? selectedId : activeFocus
-  const componentIds = useMemo(() => activeFocus ? new Set(connectedComponent(activeFocus, shownEdges)) : new Set<string>(), [activeFocus, shownEdges])
-  const componentEdges = useMemo(() => shownEdges.filter(edge => componentIds.has(edge.source) && componentIds.has(edge.target)), [shownEdges, componentIds])
-  const nodes = useMemo(() => activeFocus ? layoutNeighborhood(activeFocus, componentEdges, dayPosts) : [], [activeFocus, componentEdges, dayPosts])
+  const basePositions = useMemo(() => layoutStory(reference, annotations, seedId), [reference, annotations, seedId])
+  const positions = useMemo(() => {
+    const result = new Map(basePositions.map(node => [node.id, node]))
+    for (const post of mappedPosts) {
+      if (!result.has(post.id)) {
+        const extra = layoutStory([...reference, post], annotations, seedId).find(node => node.id === post.id)
+        if (extra) result.set(post.id, extra)
+      }
+    }
+    return result
+  }, [basePositions, mappedPosts, reference, annotations, seedId])
+  const nodes = mappedPosts.map(post => positions.get(post.id)).filter(node => node !== undefined)
   const selected = activeSelection ? byId.get(activeSelection) : undefined
-  const selectedEdge = selectedEdgeId ? componentEdges.find(edge => edge.id === selectedEdgeId) : undefined
-  const relevant = useMemo(() => activeSelection ? componentEdges.filter(edge => edge.source === activeSelection || edge.target === activeSelection) : [], [activeSelection, componentEdges])
+  const selectedEdge = selectedEdgeId ? shownEdges.find(edge => edge.id === selectedEdgeId) : undefined
+  const relevant = useMemo(() => activeSelection ? shownEdges.filter(edge => edge.source === activeSelection || edge.target === activeSelection) : [], [activeSelection, shownEdges])
+  const directSeedLinks = shownEdges.filter(edge => edge.type !== 'semantic' && (edge.source === seedId || edge.target === seedId))
+  const drawnEdges = shownEdges.filter(edge => !directSeedLinks.includes(edge) || edge.id === selectedEdgeId || (activeSelection !== seedId && (edge.source === activeSelection || edge.target === activeSelection)))
+  const earlier = relevant.filter(edge => edge.type !== 'semantic' && edge.source === activeSelection)
+  const later = relevant.filter(edge => edge.type !== 'semantic' && edge.target === activeSelection)
+  const similar = relevant.filter(edge => edge.type === 'semantic')
   const matches = useMemo(() => {
     const query = search.trim().toLowerCase()
     if (!query) return []
     return dayPosts.filter(post => `${post.author} ${post.handle || ''} ${post.text}`.toLowerCase().includes(query))
       .sort((a, b) => (b.likes || 0) - (a.likes || 0)).slice(0, 8)
   }, [dayPosts, search])
-  const represented = new Set(observed.flatMap(edge => [edge.source, edge.target]))
-  const viewWidth = 1000 / zoom
-  const viewHeight = 640 / zoom
-  const viewX = 500 - viewWidth / 2
-  const viewY = 320 - viewHeight / 2
+  const represented = new Set([...observed, ...semantic].flatMap(edge => [edge.source, edge.target]))
+  const target = positions.get(focusId) || positions.get(activeSelection || '')
+  const viewWidth = 1200 / zoom
+  const viewHeight = 760 / zoom
+  const viewX = zoom === 1 ? 0 : Math.max(0, Math.min(1200 - viewWidth, (target?.x || 600) - viewWidth / 2))
+  const viewY = zoom === 1 ? 0 : Math.max(0, Math.min(760 - viewHeight, (target?.y || 380) - viewHeight / 2))
 
   function choosePost(id: string, center = false) {
     setSelectedId(id)
     setSelectedEdgeId(null)
-    if (center || !componentIds.has(id)) setFocusId(id)
+    if (center) { setFocusId(id); setZoom(value => Math.max(value, 1.7)) }
     setSearch('')
   }
 
   return <section className="seq-neighborhood" aria-label="Conversation neighborhood">
     <div className="seq-neighborhood-head">
-      <div><h2>Conversation neighborhood</h2><p>Observed replies and quotes inside this retrieved sample. Select any connection to see its source.</p></div>
-      <div className="seq-neighborhood-stats"><strong>{observed.length}</strong><span>recorded links</span><strong>{dayPosts.length}</strong><span>captured posts</span></div>
+      <div><h2>Follow the story through the crowd.</h2><p>Time runs left to right. Rows group how posts speak: reporting, response, critique, or humor. Follow recorded references and compare shared wording.</p></div>
+      <div className="seq-neighborhood-stats"><strong>{observed.length}</strong><span>recorded links</span><strong>{mappedPosts.length}</strong><span>mapped posts</span></div>
     </div>
     <div className="seq-neighborhood-controls">
       <div className="seq-neighborhood-layers" role="group" aria-label="Connection type">
-        {([['all', 'All links'], ['reply', 'Replies'], ['quote', 'Quotes'], ['semantic', 'Similar text']] as const).map(([value, label]) =>
+        {([['all', 'All links'], ['reply', 'Replies'], ['quote', 'Quotes'], ['semantic', 'Shared wording']] as const).map(([value, label]) =>
           <button key={value} type="button" aria-pressed={layer === value} className={layer === value ? 'active' : ''}
             disabled={value === 'semantic' && semantic.length === 0}
-            title={value === 'semantic' && semantic.length === 0 ? 'Similarity appears when embeddings are available' : undefined}
+            title={value === 'semantic' && semantic.length === 0 ? 'No measured wording links in this capture' : undefined}
             onClick={() => { setLayer(value); setSelectedEdgeId(null) }}>{label}</button>)}
       </div>
       <label className="seq-neighborhood-date"><span>Through</span><select value={throughDay} onChange={event => { setThroughDay(event.target.value); setSelectedEdgeId(null) }}>
@@ -116,28 +137,30 @@ export default function Neighborhood({ posts, seedId, semanticEdges = [], onOpen
     </div>
     <div className="seq-neighborhood-workspace">
       <div className="seq-neighborhood-map">
-        <div className="seq-neighborhood-map-top"><span><span className="seq-neighborhood-live-dot" /> {activeFocus === seedId ? 'Around Dario’s post' : `Around ${byId.get(activeFocus)?.author || 'selected post'}`}</span>
-          {activeFocus !== seedId && byId.has(seedId) && <button type="button" onClick={() => choosePost(seedId, true)}>Back to Dario</button>}
+        <div className="seq-neighborhood-map-top"><span><span className="seq-neighborhood-live-dot" /> Story map · {mappedPosts.length} posts</span>
+          <span>{directSeedLinks.length} direct seed links summarized in the inspector</span>
         </div>
-        {activeFocus ? <svg className="seq-neighborhood-svg" viewBox={`${viewX} ${viewY} ${viewWidth} ${viewHeight}`} role="img" aria-label={`Graph of ${nodes.length} posts connected by ${componentEdges.length} recorded links`}>
+        {nodes.length ? <svg className="seq-neighborhood-svg" viewBox={`${viewX} ${viewY} ${viewWidth} ${viewHeight}`} role="img" aria-label={`Chronological map of ${nodes.length} posts and ${drawnEdges.length} drawn links; direct seed links can be inspected individually`}>
           <defs><filter id="seq-node-glow"><feGaussianBlur stdDeviation="5" /></filter></defs>
-          {componentEdges.map(edge => {
-            const a = nodes.find(node => node.id === edge.source)
-            const b = nodes.find(node => node.id === edge.target)
+          {STORY_LANES.map((lane, index) => <g key={lane.label} className="seq-neighborhood-lane"><rect x="0" y={lane.y - 52} width="1200" height="104" className={index % 2 ? 'alternate' : ''} /><line x1="72" y1={lane.y + 52} x2="1200" y2={lane.y + 52} /><text x="17" y={lane.y - 31}>{lane.label}</text></g>)}
+          <text x="90" y="741" className="seq-neighborhood-axis">EARLIER</text><text x="1145" y="741" textAnchor="end" className="seq-neighborhood-axis">LATER →</text>
+          {drawnEdges.map(edge => {
+            const a = positions.get(edge.source)
+            const b = positions.get(edge.target)
             if (!a || !b) return null
-            const active = selectedEdgeId === edge.id || (!!activeSelection && (edge.source === activeSelection || edge.target === activeSelection))
+            const active = selectedEdgeId === edge.id || (relevant.length <= 12 && !!activeSelection && (edge.source === activeSelection || edge.target === activeSelection))
             return <g key={edge.id} className={`seq-neighborhood-link ${edge.type} ${active ? 'is-active' : ''} ${selectedEdgeId === edge.id ? 'is-selected' : ''}`}
               role="button" tabIndex={0} aria-label={edgeSentence(edge, byId)}
               onClick={() => setSelectedEdgeId(edge.id)} onKeyDown={event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); setSelectedEdgeId(edge.id) } }}>
-              <line x1={a.x} y1={a.y} x2={b.x} y2={b.y} className="seq-neighborhood-visible-line" />
-              <line x1={a.x} y1={a.y} x2={b.x} y2={b.y} className="seq-neighborhood-hit-line" />
+              <path d={`M ${a.x} ${a.y} Q ${(a.x + b.x) / 2} ${(a.y + b.y) / 2 - Math.min(45, Math.abs(a.x - b.x) / 7)} ${b.x} ${b.y}`} className="seq-neighborhood-visible-line" />
+              <path d={`M ${a.x} ${a.y} Q ${(a.x + b.x) / 2} ${(a.y + b.y) / 2 - Math.min(45, Math.abs(a.x - b.x) / 7)} ${b.x} ${b.y}`} className="seq-neighborhood-hit-line" />
             </g>
           })}
           {nodes.map(node => {
             const post = byId.get(node.id)
             if (!post) return null
             const isSelected = node.id === activeSelection
-            const isFocus = node.id === activeFocus
+            const isFocus = node.id === seedId
             const related = isSelected || relevant.some(edge => edge.source === node.id || edge.target === node.id)
             return <g key={node.id} className={`seq-neighborhood-node ${isSelected ? 'is-selected' : ''} ${isFocus ? 'is-focus' : ''} ${related ? 'is-related' : ''}`}
               role="button" tabIndex={0} aria-label={`${post.author}: ${post.text.slice(0, 110)}`}
@@ -145,15 +168,15 @@ export default function Neighborhood({ posts, seedId, semanticEdges = [], onOpen
               {isSelected && <circle cx={node.x} cy={node.y} r="17" className="seq-neighborhood-node-halo" filter="url(#seq-node-glow)" />}
               <circle cx={node.x} cy={node.y} r={nodeRadius(post, isSelected, isFocus)} className="seq-neighborhood-node-core" />
               {isSelected && <circle cx={node.x} cy={node.y} r="15" className="seq-neighborhood-node-ring" />}
-              {(isSelected || isFocus) && <text x={node.x > 790 ? node.x - 19 : node.x + 19} y={node.y + 4}
-                textAnchor={node.x > 790 ? 'end' : 'start'} className="seq-neighborhood-node-label">{post.author}</text>}
+              {(isSelected || isFocus) && <text x={node.x > 970 ? node.x - 19 : node.x + 19} y={node.y + 4}
+                textAnchor={node.x > 970 ? 'end' : 'start'} className="seq-neighborhood-node-label">{post.author}</text>}
               <circle cx={node.x} cy={node.y} r="13" className="seq-neighborhood-node-hit" />
             </g>
           })}
         </svg> : <div className="seq-neighborhood-empty">Posts appear here as the investigation streams in.</div>}
-        <div className="seq-neighborhood-map-bottom"><p><span className="seq-neighborhood-key reply" /> Reply <span className="seq-neighborhood-key quote" /> Quote {semantic.length > 0 && <><span className="seq-neighborhood-key semantic" /> Similar text</>}</p>
+        <div className="seq-neighborhood-map-bottom"><p><span className="seq-neighborhood-key reply" /> Reply <span className="seq-neighborhood-key quote" /> Quote {semantic.length > 0 && <><span className="seq-neighborhood-key semantic" /> Shared wording</>}</p>
           <div><button type="button" onClick={() => setZoom(value => Math.max(1, +(value / 1.3).toFixed(2)))} disabled={zoom <= 1} aria-label="Zoom out"><Minus size={16} /></button>
-            <button type="button" onClick={() => setZoom(1)} aria-label="Fit graph"><Focus size={16} /></button>
+            <button type="button" onClick={() => { setZoom(1); setFocusId(seedId) }} aria-label="Fit graph"><Focus size={16} /></button>
             <button type="button" onClick={() => setZoom(value => Math.min(2.7, +(value * 1.3).toFixed(2)))} disabled={zoom >= 2.7} aria-label="Zoom in"><Plus size={16} /></button></div>
         </div>
       </div>
@@ -167,24 +190,27 @@ export default function Neighborhood({ posts, seedId, semanticEdges = [], onOpen
             {selectedEdge.type === 'semantic' && <small>Similarity is a navigation signal; it does not show agreement, copying, or influence.</small>}</div> : null}
           <div className="seq-neighborhood-person"><div className="seq-neighborhood-avatar"><span>{initials(selected)}</span>{selected.avatar && <img src={selected.avatar} alt="" onError={event => { event.currentTarget.style.display = 'none' }} />}</div><div><strong>{selected.author}</strong>{selected.handle && <span>@{selected.handle}</span>}</div></div>
           <time dateTime={selected.publishedAt}>{localTime(selected.publishedAt)}</time>
+          {annotations[selected.id] && <div className="seq-neighborhood-role"><strong>{annotations[selected.id].role}</strong>{annotations[selected.id].focus && <span>{annotations[selected.id].focus}</span>}</div>}
           <p className="seq-neighborhood-text">{selected.text}</p>
           {selected.textIsExcerpt && <p className="seq-neighborhood-excerpt">Captured excerpt; the original may contain more text.</p>}
           <div className="seq-neighborhood-post-actions"><button type="button" onClick={() => onOpenPost(selected)}>Open post context <ArrowUpRight size={14} /></button>
             {selected.url && <a href={selected.url} target="_blank" rel="noopener noreferrer">View on X <ArrowUpRight size={14} /></a>}</div>
-          <div className="seq-neighborhood-relations"><div className="seq-neighborhood-relations-head"><MessageCircle size={14} /><strong>{relevant.length} visible connection{relevant.length === 1 ? '' : 's'}</strong></div>
-            {relevant.length ? relevant.slice(0, 7).map(edge => {
-              const other = byId.get(edge.source === selected.id ? edge.target : edge.source)
-              return <button key={edge.id} type="button" onClick={() => { setSelectedEdgeId(edge.id); if (other) setSelectedId(other.id) }}><span className={`seq-neighborhood-key ${edge.type}`} /><span>{edge.type === 'reply' ? 'Reply' : edge.type === 'quote' ? 'Quote' : 'Similar text'} · {other?.author || 'Post'}</span><ArrowUpRight size={13} /></button>
-            }) : <p>No captured link joins this post to the current view.</p>}
-            {relevant.length > 7 && <small>{relevant.length - 7} more links; select them on the map.</small>}
+          <div className="seq-neighborhood-relations">
+            {([['Earlier references', earlier], ['Later responses', later], ['Shared wording', similar]] as const).map(([title, edges]) => <div className="seq-neighborhood-relation-group" key={title}>
+              <h4>{title} <span>{edges.length}</span></h4>
+              {edges.length ? edges.slice(0, 4).map(edge => {
+                const other = byId.get(edge.source === selected.id ? edge.target : edge.source)
+                return <button key={edge.id} type="button" onClick={() => { setSelectedEdgeId(edge.id); if (other) setSelectedId(other.id) }}><span className={`seq-neighborhood-key ${edge.type}`} /><span>{other?.author || 'Post'} <small>{edge.type === 'semantic' ? 'similar wording' : edge.type}</small></span><ArrowUpRight size={13} /></button>
+              }) : <p>No captured {title.toLowerCase()} in this view.</p>}
+              {edges.length > 4 && <small>{edges.length - 4} more links on the map.</small>}
+            </div>)}
           </div>
-          {activeFocus !== selected.id && <button className="seq-neighborhood-center" type="button" onClick={() => { setFocusId(selected.id); setSelectedEdgeId(null) }}><Focus size={14} /> Center on this post</button>}
+          <button className="seq-neighborhood-center" type="button" onClick={() => { setFocusId(selected.id); setZoom(value => Math.max(value, 1.7)); setSelectedEdgeId(null) }}><Focus size={14} /> Focus on this post</button>
         </> : <p className="seq-neighborhood-empty-side">Select a post to inspect its connections.</p>}
       </aside>
     </div>
-    <div className="seq-neighborhood-foot"><span>{componentIds.size} post{componentIds.size === 1 ? '' : 's'} in this view · {represented.size} with a captured relationship across the sample</span>
-      <span>{dayPosts.length - represented.size} posts have no captured relationship. Search can still open them.</span>
-      {semantic.length === 0 && <span>Text similarity and personas will appear when those fields are measured; neither is inferred here.</span>}
-      <span>Position is for navigation; distance on this map is not a similarity score.</span></div>
+    <div className="seq-neighborhood-foot"><span>{mappedPosts.length} mapped from {dayPosts.length} captured · {represented.size} with visible links</span>
+      <span>Rows are {modelLabel ? `suggested by Baseten ${modelLabel}` : 'visual groupings'}; solid links are recorded X references, dashed links compare wording. Direct seed links are revealed when inspected.</span>
+      <span>Shared wording and timing do not prove copying, influence, or the original source.</span></div>
   </section>
 }
