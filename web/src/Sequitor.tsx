@@ -136,13 +136,14 @@ function shortNumber(value: number | null | undefined) {
 }
 function activityAnnotation(post: Post): StoryAnnotation {
   const kind = (post.basetenKind || '').toLowerCase()
-  if (post.scope === 'seed') return { role: 'announcement', focus: 'starting post' }
+  if (post.scope === 'seed' || post.id === 'seed-text' || post.author === 'Seed text') return { role: 'announcement', focus: 'starting post' }
   if (post.scope === 'humor branch' || /joke|humou?r|meme|riff/.test(kind)) return { role: 'humor', focus: 'humor or riff' }
   if (/criticism|critique|skeptic/.test(kind)) return { role: 'critique', focus: 'critical response' }
   if (/question|ask/.test(kind)) return { role: 'question', focus: 'question or uncertainty' }
   if (/same wording|report|explanation/.test(kind) || post.scope === 'wet-lab context' || post.scope === 'broader discovery') return { role: 'reporting', focus: 'event framing' }
   if (/reaction|response/.test(kind) || post.scope === 'direct conversation') return { role: 'adoption', focus: 'response' }
   if (post.scope === 'context expansion') return { role: 'explanation', focus: 'context expansion' }
+  if (post.scope === 'measured phrase') return { role: 'adoption', focus: 'measured response' }
   return { role: 'other', focus: 'not yet classified' }
 }
 function inferredAnnotations(posts: Post[]): Record<string, StoryAnnotation> {
