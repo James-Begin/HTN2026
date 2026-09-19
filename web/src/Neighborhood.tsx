@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { ArrowUpRight, Focus, Link2, Minus, Plus, Search, X } from 'lucide-react'
 import {
-  buildObservedEdges, buildSemanticEdges, layoutStory, STORY_LANES,
+  buildObservedEdges, buildSemanticEdges, laneForRole, layoutStory, STORY_LANES,
   type GraphEdge, type GraphPost, type SemanticEdge, type StoryAnnotation,
 } from './graphData'
 import './neighborhood.css'
@@ -18,6 +18,7 @@ export type NeighborhoodProps = {
 }
 
 type Layer = 'all' | 'reply' | 'quote' | 'semantic'
+const MAX_STORY_NODES = 42
 
 function easternDay(iso: string) {
   const date = new Date(iso)
@@ -57,7 +58,63 @@ function edgeSentence(edge: GraphEdge, byId: Map<string, GraphPost>) {
   return `${source} and ${target} share wording (TF-IDF cosine ${edge.cosine?.toFixed(2)}). ${edge.sharedTerms?.length ? `Shared terms: ${edge.sharedTerms.join(', ')}. ` : ''}This is a navigation clue, not proof of influence.`
 }
 
-export default function Neighborhood({ posts, seedId, referencePosts, selectedPostIds, annotations = {}, semanticEdges = [], modelLabel, onOpenPost }: NeighborhoodProps) {
+function postOrder(left: GraphPost, right: GraphPost) {
+  return Date.parse(left.publishedAt) - Date.parse(right.publishedAt) || left.id.localeCompare(right.id)
+}
+
+/**
+ * A neighbourhood is an explorable evidence sample, not a hairball containing
+ * every captured result. Keep the seed, its strongest direct responses, a few
+ * second-hop references, and representative posts from every role. Search and
+ * focus can bring any captured post into this stable, legible slice.
+ */
+function selectStoryPosts(posts: GraphPost[], edges: GraphEdge[], seedId: string,
+  annotations: Record<string, StoryAnnotation>, selectedId?: string): GraphPost[] {
+  if (posts.length <= MAX_STORY_NODES) return [...posts].sort(postOrder)
+  const byId = new Map(posts.map(post => [post.id, post]))
+  const chosen = new Set<string>()
+  const add = (id: string | undefined, limit = MAX_STORY_NODES) => {
+    if (id && byId.has(id) && chosen.size < limit) chosen.add(id)
+  }
+  const popularity = (id: string) => byId.get(id)?.likes || 0
+  const direct = edges.filter(edge => edge.source === seedId || edge.target === seedId)
+    .map(edge => edge.source === seedId ? edge.target : edge.source)
+    .sort((a, b) => popularity(b) - popularity(a) || a.localeCompare(b))
+  const directSet = new Set(direct)
+  const secondHop = edges.filter(edge => directSet.has(edge.source) || directSet.has(edge.target))
+    .flatMap(edge => [edge.source, edge.target]).filter(id => id !== seedId && !directSet.has(id))
+    .sort((a, b) => popularity(b) - popularity(a) || a.localeCompare(b))
+  const roleRepresentatives = Object.keys(STORY_LANES).flatMap((_, lane) => posts
+    .filter(post => laneForRole(annotations[post.id]?.role) === lane && post.id !== seedId)
+    .sort((a, b) => (b.likes || 0) - (a.likes || 0) || postOrder(a, b)).slice(0, 3).map(post => post.id))
+  add(seedId)
+  add(selectedId)
+  direct.slice(0, 15).forEach(id => add(id))
+  secondHop.slice(0, 9).forEach(id => add(id))
+  roleRepresentatives.forEach(id => add(id))
+  // Fill any remaining slots with popular posts so a quiet lane still has a
+  // readable timeline marker, while keeping a deterministic view between focus changes.
+  ;[...posts].sort((a, b) => (b.likes || 0) - (a.likes || 0) || postOrder(a, b)).forEach(post => add(post.id))
+  return [...chosen].map(id => byId.get(id)!).sort(postOrder)
+}
+
+function edgePath(a: { x: number; y: number }, b: { x: number; y: number }, edge: GraphEdge) {
+  const dx = b.x - a.x
+  const dy = b.y - a.y
+  const distance = Math.max(1, Math.hypot(dx, dy))
+  // Start and end just outside each marker. This keeps a line from visually
+  // cutting through a node, even when nearby points are highlighted.
+  const inset = Math.min(10, distance / 3)
+  const start = { x: a.x + dx / distance * inset, y: a.y + dy / distance * inset }
+  const end = { x: b.x - dx / distance * inset, y: b.y - dy / distance * inset }
+  let hash = 0
+  for (const char of edge.id) hash = (hash * 31 + char.charCodeAt(0)) >>> 0
+  const side = hash % 2 ? 1 : -1
+  const bend = side * Math.min(56, 14 + Math.abs(dx) * .075)
+  return `M ${start.x} ${start.y} Q ${(start.x + end.x) / 2} ${(start.y + end.y) / 2 + bend} ${end.x} ${end.y}`
+}
+
+export default function Neighborhood({ posts, seedId, selectedPostIds, annotations = {}, semanticEdges = [], modelLabel, onOpenPost }: NeighborhoodProps) {
   const [layer, setLayer] = useState<Layer>('all')
   const [throughDay, setThroughDay] = useState('all')
   const [focusId, setFocusId] = useState(seedId)
@@ -68,7 +125,6 @@ export default function Neighborhood({ posts, seedId, referencePosts, selectedPo
 
   const allPosts = useMemo(() => [...new Map(posts.map(post => [post.id, post])).values()], [posts])
   const mapIds = useMemo(() => selectedPostIds ? new Set(selectedPostIds) : null, [selectedPostIds])
-  const reference = useMemo(() => [...new Map((referencePosts || posts).filter(post => !mapIds || mapIds.has(post.id)).map(post => [post.id, post])).values()], [referencePosts, posts, mapIds])
   const days = useMemo(() => [...new Set(allPosts.map(post => easternDay(post.publishedAt)).filter(Boolean))].sort(), [allPosts])
   const dayPosts = useMemo(() => throughDay === 'all' ? allPosts
     : allPosts.filter(post => easternDay(post.publishedAt) <= throughDay), [allPosts, throughDay])
@@ -78,23 +134,16 @@ export default function Neighborhood({ posts, seedId, referencePosts, selectedPo
   const observed = useMemo(() => buildObservedEdges(mappedPosts), [mappedPosts])
   const semantic = useMemo(() => buildSemanticEdges(mappedPosts, semanticEdges), [mappedPosts, semanticEdges])
   const shownEdges = useMemo(() => [...observed, ...semantic].filter(edge => layer === 'all' || edge.type === layer), [observed, semantic, layer])
-  const basePositions = useMemo(() => layoutStory(reference, annotations, seedId), [reference, annotations, seedId])
-  const positions = useMemo(() => {
-    const result = new Map(basePositions.map(node => [node.id, node]))
-    for (const post of mappedPosts) {
-      if (!result.has(post.id)) {
-        const extra = layoutStory([...reference, post], annotations, seedId).find(node => node.id === post.id)
-        if (extra) result.set(post.id, extra)
-      }
-    }
-    return result
-  }, [basePositions, mappedPosts, reference, annotations, seedId])
-  const nodes = mappedPosts.map(post => positions.get(post.id)).filter(node => node !== undefined)
+  const storyPosts = useMemo(() => selectStoryPosts(mappedPosts, shownEdges, seedId, annotations, activeSelection), [mappedPosts, shownEdges, seedId, annotations, activeSelection])
+  const storyIds = useMemo(() => new Set(storyPosts.map(post => post.id)), [storyPosts])
+  const positions = useMemo(() => new Map(layoutStory(storyPosts, annotations, seedId).map(node => [node.id, node])), [storyPosts, annotations, seedId])
+  const nodes = storyPosts.map(post => positions.get(post.id)).filter(node => node !== undefined)
   const selected = activeSelection ? byId.get(activeSelection) : undefined
   const selectedEdge = selectedEdgeId ? shownEdges.find(edge => edge.id === selectedEdgeId) : undefined
   const relevant = useMemo(() => activeSelection ? shownEdges.filter(edge => edge.source === activeSelection || edge.target === activeSelection) : [], [activeSelection, shownEdges])
   const directSeedLinks = shownEdges.filter(edge => edge.type !== 'semantic' && (edge.source === seedId || edge.target === seedId))
-  const drawnEdges = shownEdges.filter(edge => !directSeedLinks.includes(edge) || edge.id === selectedEdgeId || (activeSelection !== seedId && (edge.source === activeSelection || edge.target === activeSelection)))
+  const drawnEdges = shownEdges.filter(edge => storyIds.has(edge.source) && storyIds.has(edge.target)
+    && (!directSeedLinks.includes(edge) || edge.id === selectedEdgeId || (activeSelection !== seedId && (edge.source === activeSelection || edge.target === activeSelection))))
   const earlier = relevant.filter(edge => edge.type !== 'semantic' && edge.source === activeSelection)
   const later = relevant.filter(edge => edge.type !== 'semantic' && edge.target === activeSelection)
   const similar = relevant.filter(edge => edge.type === 'semantic')
@@ -138,7 +187,7 @@ export default function Neighborhood({ posts, seedId, referencePosts, selectedPo
     <div className="seq-neighborhood-workspace">
       <div className="seq-neighborhood-map">
         <div className="seq-neighborhood-map-top"><span><span className="seq-neighborhood-live-dot" /> Story map · {mappedPosts.length} posts</span>
-          <span>{directSeedLinks.length} direct seed links summarized in the inspector</span>
+          <span>{storyPosts.length} of {mappedPosts.length} mapped posts shown · direct seed links live in the inspector</span>
         </div>
         {nodes.length ? <svg className="seq-neighborhood-svg" viewBox={`${viewX} ${viewY} ${viewWidth} ${viewHeight}`} role="img" aria-label={`Chronological map of ${nodes.length} posts and ${drawnEdges.length} drawn links; direct seed links can be inspected individually`}>
           <defs><filter id="seq-node-glow"><feGaussianBlur stdDeviation="5" /></filter></defs>
@@ -152,8 +201,8 @@ export default function Neighborhood({ posts, seedId, referencePosts, selectedPo
             return <g key={edge.id} className={`seq-neighborhood-link ${edge.type} ${active ? 'is-active' : ''} ${selectedEdgeId === edge.id ? 'is-selected' : ''}`}
               role="button" tabIndex={0} aria-label={edgeSentence(edge, byId)}
               onClick={() => setSelectedEdgeId(edge.id)} onKeyDown={event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); setSelectedEdgeId(edge.id) } }}>
-              <path d={`M ${a.x} ${a.y} Q ${(a.x + b.x) / 2} ${(a.y + b.y) / 2 - Math.min(45, Math.abs(a.x - b.x) / 7)} ${b.x} ${b.y}`} className="seq-neighborhood-visible-line" />
-              <path d={`M ${a.x} ${a.y} Q ${(a.x + b.x) / 2} ${(a.y + b.y) / 2 - Math.min(45, Math.abs(a.x - b.x) / 7)} ${b.x} ${b.y}`} className="seq-neighborhood-hit-line" />
+              <path d={edgePath(a, b, edge)} className="seq-neighborhood-visible-line" />
+              <path d={edgePath(a, b, edge)} className="seq-neighborhood-hit-line" />
             </g>
           })}
           {nodes.map(node => {

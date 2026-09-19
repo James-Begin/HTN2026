@@ -245,11 +245,15 @@ export default function Sequitor() {
   const streamRef = useRef<EventSource | null>(null)
   const streamRunId = useRef<string | null>(null)
   const replayTimer = useRef<number | null>(null)
+  const postQueue = useRef<Post[]>([])
+  const postQueueTimer = useRef<number | null>(null)
+  const pendingCompletion = useRef<Record<string, unknown> | null>(null)
   const lastSequence = useRef(0)
 
   useEffect(() => () => {
     streamRef.current?.close()
     if (replayTimer.current !== null) window.clearInterval(replayTimer.current)
+    if (postQueueTimer.current !== null) window.clearTimeout(postQueueTimer.current)
   }, [])
 
   useEffect(() => {
@@ -275,10 +279,55 @@ export default function Sequitor() {
     streamRef.current = null
     if (replayTimer.current !== null) window.clearInterval(replayTimer.current)
     replayTimer.current = null
+    if (postQueueTimer.current !== null) window.clearTimeout(postQueueTimer.current)
+    postQueueTimer.current = null
+    postQueue.current = []
+    pendingCompletion.current = null
     if (streamRunId.current) {
       fetch(`/api/runs/${streamRunId.current}/cancel`, { method: 'POST' }).catch(() => {})
       streamRunId.current = null
     }
+  }
+
+  function completeStream(payload: Record<string, unknown>) {
+    setRun(previous => ({ ...previous, model: payload.model as Run['model'] || previous.model,
+      xSpend: typeof payload.xSpend === 'number' ? payload.xSpend : previous.xSpend,
+      ...(previous.streamSource === 'recorded' && previous.id === fallback.id
+        ? { posts: fallback.posts, savedPeriods: fallback.savedPeriods, buckets: fallback.buckets } : {}) }))
+    setRankingCoverage(String(payload.rankingCoverage || 'Retrieved posts'))
+    setBusy('')
+    streamRef.current?.close()
+    streamRunId.current = null
+  }
+
+  function drainPostQueue(id: number) {
+    if (id !== requestId.current) return
+    const queue = postQueue.current
+    if (!queue.length) {
+      postQueueTimer.current = null
+      if (pendingCompletion.current) {
+        const payload = pendingCompletion.current
+        pendingCompletion.current = null
+        completeStream(payload)
+      }
+      return
+    }
+    // The server can return whole X pages in the same event-loop turn. Paint a
+    // few at a time so the feed and the map visibly grow instead of jumping.
+    const amount = queue.length > 72 ? 3 : queue.length > 28 ? 2 : 1
+    const next = queue.splice(0, amount)
+    setPeriodPosts(previous => mergePosts(previous, next))
+    postQueueTimer.current = window.setTimeout(() => drainPostQueue(id), 145)
+  }
+
+  function queueStreamPosts(posts: Post[], id: number) {
+    const queue = postQueue.current
+    for (const post of posts) {
+      const index = queue.findIndex(item => item.id === post.id)
+      if (index === -1) queue.push(post)
+      else queue[index] = { ...queue[index], ...post }
+    }
+    if (postQueueTimer.current === null) drainPostQueue(id)
   }
 
   function replayExample() {
@@ -299,9 +348,10 @@ export default function Sequitor() {
       if (id !== requestId.current) return
       const bucket = fallback.buckets[tick]
       if (bucket) setRun(previous => ({ ...previous, buckets: previous.buckets.map(item => item.day === bucket.day ? bucket : item) }))
-      const batch = index < 10
-        ? tick % 6 === 0 ? posts.slice(index, index + 1) : []
-        : posts.slice(index, index + 3)
+      // A recorded replay should feel like a retrieval session: the first
+      // evidence arrives one post at a time, then the map fills in faster.
+      const amount = index < 12 ? 1 : index < 48 ? 2 : 4
+      const batch = posts.slice(index, index + amount)
       index += batch.length
       tick += 1
       setPeriodPosts(previous => mergePosts(previous, batch))
@@ -312,7 +362,7 @@ export default function Sequitor() {
         setRankingCoverage(fallback.rankingCoverage)
         setBusy('')
       }
-    }, 140)
+    }, 170)
   }
 
   async function explore(event?: FormEvent) {
@@ -331,6 +381,8 @@ export default function Sequitor() {
       note: mode === 'recorded' ? fallback.note : 'The measured scope and retrieved posts will appear as they arrive.',
       rankingCoverage: 'Posts will appear as they arrive' })
     setPeriodPosts([])
+    postQueue.current = []
+    pendingCompletion.current = null
     setRankingCoverage('Posts will appear as they arrive')
     setBusy('Starting the investigation…')
     setError('')
@@ -357,12 +409,14 @@ export default function Sequitor() {
           setRun({ ...ready, posts: [], savedPeriods: undefined })
           setSelectedDay(ready.selectedDay)
           setPeriodPosts([])
+          postQueue.current = []
+          pendingCompletion.current = null
           setRankingCoverage(ready.rankingCoverage || 'Posts arriving…')
           setBusy(ready.streamSource === 'cache' ? 'Loading cached results…' : 'Retrieving posts…')
         }
         if (message.type === 'posts.upsert') {
           const posts = payload.posts as Post[]
-          setPeriodPosts(previous => mergePosts(previous, posts))
+          queueStreamPosts(posts, id)
         }
         if (message.type === 'buckets.upsert') {
           const bucket = payload.bucket as Bucket
@@ -370,14 +424,8 @@ export default function Sequitor() {
         }
         if (message.type === 'model.ready') setRun(previous => ({ ...previous, model: { ...previous.model, baseten: payload.model as NonNullable<Run['model']>['baseten'] } }))
         if (message.type === 'run.completed') {
-          setRun(previous => ({ ...previous, model: payload.model as Run['model'] || previous.model,
-            xSpend: typeof payload.xSpend === 'number' ? payload.xSpend : previous.xSpend,
-            ...(previous.streamSource === 'recorded' && previous.id === fallback.id
-              ? { posts: fallback.posts, savedPeriods: fallback.savedPeriods, buckets: fallback.buckets } : {}) }))
-          setRankingCoverage(String(payload.rankingCoverage || 'Retrieved posts'))
-          setBusy('')
-          stream.close()
-          streamRunId.current = null
+          if (postQueue.current.length || postQueueTimer.current !== null) pendingCompletion.current = payload
+          else completeStream(payload)
         }
         if (message.type === 'run.failed' || message.type === 'run.stopped') {
           setBusy('')
@@ -422,7 +470,11 @@ export default function Sequitor() {
 
   const visible = useMemo(() => {
     const dayPosts = periodPosts.filter(post => post.publishedAt?.startsWith(selectedDay))
-    return (busy ? dayPosts : [...dayPosts].sort((a, b) => sort === 'popular'
+    // A first X page can contain a reply from just outside the selected UTC
+    // day. Keep that evidence visible while the selected-day page is arriving
+    // instead of showing an empty feed beneath a live activity chart.
+    const arriving = busy && dayPosts.length === 0 ? periodPosts : dayPosts
+    return (busy ? arriving : [...dayPosts].sort((a, b) => sort === 'popular'
       ? (b.likes ?? -1) - (a.likes ?? -1) || a.id.localeCompare(b.id)
       : sort === 'recent' ? b.publishedAt.localeCompare(a.publishedAt)
       : (b.rankingScore ?? -1) - (a.rankingScore ?? -1) || (b.likes ?? -1) - (a.likes ?? -1))).slice(0, 10)

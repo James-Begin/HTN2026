@@ -31,7 +31,7 @@
 .seq-neighborhood-link.is-active .seq-neighborhood-visible-line,.seq-neighborhood-link:hover .seq-neighborhood-visible-line,.seq-neighborhood-link:focus-visible .seq-neighborhood-visible-line{opacity:.8;stroke-width:1.8}
 .seq-neighborhood-link.is-selected .seq-neighborhood-visible-line{opacity:1;stroke-width:2.6}
 .seq-neighborhood-hit-line{fill:none;stroke:transparent;stroke-width:11}
-.seq-neighborhood-node{cursor:pointer;outline:none}
+.seq-neighborhood-node{cursor:pointer;outline:none;transform-box:fill-box;transform-origin:center;animation:seq-node-arrive .32s cubic-bezier(.16,1,.3,1) both}
 .seq-neighborhood-node-core{fill:#87aabb;stroke:#213440;stroke-width:1;transition:fill .2s ease}
 .seq-neighborhood-node.is-focus .seq-neighborhood-node-core{fill:#eaf8ff;stroke:#7fb9d5;stroke-width:2.5}
 .seq-neighborhood-node.is-related:not(.is-focus) .seq-neighborhood-node-core{fill:#8bd5f1}
@@ -110,6 +110,7 @@
 .seq-neighborhood-empty-side{font-size:11px;color:var(--seq-muted);line-height:1.5}
 .seq-neighborhood-foot{display:flex;gap:12px 22px;flex-wrap:wrap;margin-top:13px;font-size:10px;line-height:1.5;color:var(--seq-dim)}
 .seq-neighborhood-foot span:first-child{color:var(--seq-muted)}
+@keyframes seq-node-arrive{from{opacity:0;transform:scale(.58)}to{opacity:1;transform:scale(1)}}
 @media(max-width:900px){.seq-neighborhood-workspace{grid-template-columns:minmax(0,1fr);min-height:0}.seq-neighborhood-map{min-height:490px}.seq-neighborhood-inspector{border-left:0;border-top:1px solid var(--seq-line);max-height:none}.seq-neighborhood-text{max-height:none}}
 @media(max-width:600px){.seq-neighborhood-head{align-items:start;flex-direction:column;gap:14px}.seq-neighborhood-stats{display:flex;gap:7px}.seq-neighborhood-stats strong:not(:first-child){margin-left:8px}.seq-neighborhood-controls{align-items:stretch;flex-direction:column}.seq-neighborhood-layers{overflow:auto}.seq-neighborhood-layers button{flex:1;padding:8px}.seq-neighborhood-date{justify-content:space-between}.seq-neighborhood-date select{flex:1;max-width:220px}.seq-neighborhood-map{min-height:405px}.seq-neighborhood-svg{min-height:285px}.seq-neighborhood-map-top,.seq-neighborhood-map-bottom{padding:11px 13px}.seq-neighborhood-map-bottom{align-items:start}.seq-neighborhood-map-bottom p{max-width:190px}}
-@media(prefers-reduced-motion:reduce){.seq-neighborhood-visible-line,.seq-neighborhood-node-core,.seq-neighborhood-layers button{transition:none}}
+@media(prefers-reduced-motion:reduce){.seq-neighborhood-visible-line,.seq-neighborhood-node-core,.seq-neighborhood-layers button{transition:none}.seq-neighborhood-node{animation:none}}
