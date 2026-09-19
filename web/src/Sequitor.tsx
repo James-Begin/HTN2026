@@ -251,7 +251,7 @@ export default function Sequitor() {
     setRankingCoverage('Recorded posts arriving…')
     setBusy('Replaying the recorded investigation…')
     setError('')
-    const posts = fallback.posts
+    const posts = [...fallback.posts].sort((a, b) => (b.likes ?? -1) - (a.likes ?? -1))
     let index = 0
     replayTimer.current = window.setInterval(() => {
       if (id !== requestId.current) return
