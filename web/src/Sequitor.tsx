@@ -208,9 +208,9 @@ export default function Sequitor() {
     <a className="seq-skip" href="#seq-main">Skip to posts</a>
     <header className="seq-topbar"><Wordmark /><span className="seq-topbar-right"><span className={`seq-live-dot ${run.kind === 'saved' ? 'is-saved' : ''}`} />{run.kind === 'saved' ? 'Recorded X activity' : 'Live X activity'}<button onClick={() => setShowData(true)} aria-label="About the data"><Info size={17} /></button></span></header>
     <div className="seq-intro"><div><h1>Follow the conversation.</h1><p>See when a post took off, what people said, and where it went next.</p></div>
-      <form className="seq-search" onSubmit={explore}><Link2 size={17} aria-hidden="true" /><input aria-label="X post URL or topic" value={seed} onChange={event => setSeed(event.target.value)} placeholder="Paste an X post URL or topic" /><button type="submit" disabled={Boolean(busy) || health === false}>{busy ? <LoaderCircle size={16} className="seq-spin" /> : <Search size={16} />}<span>Explore live</span></button></form>
+      {health === true ? <form className="seq-search" onSubmit={explore}><Link2 size={17} aria-hidden="true" /><input aria-label="X post URL or topic" value={seed} onChange={event => setSeed(event.target.value)} placeholder="Paste an X post URL or topic" /><button type="submit" disabled={Boolean(busy)}>{busy ? <LoaderCircle size={16} className="seq-spin" /> : <Search size={16} />}<span>Explore live</span></button></form>
+        : <a className="seq-recorded-cta" href="#seq-main">Explore the recorded run <ArrowRight size={17} /></a>}
     </div>
-    {health === false && <div className="seq-local-note" role="status">Showing a recorded run. Live exploration is available in the local demo with provider access.</div>}
     {error && <div className="seq-error" role="alert">{error} <button onClick={() => setError('')}>Dismiss</button></div>}
     <div className="seq-investigation-head"><div><span className="seq-investigation-caption">CURRENT CONVERSATION</span><h2>{run.title.split(':')[0]}</h2><p>{run.kind === 'saved' ? 'A recorded conversation you can explore offline.' : 'Measured search, with original posts kept in view.'}</p></div><button className="seq-data-button" onClick={() => setShowData(true)}>About this data <ArrowUpRight size={15} /></button></div>
     <main id="seq-main" className="seq-layout">
