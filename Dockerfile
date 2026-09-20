@@ -1,7 +1,9 @@
 FROM node:22-alpine AS frontend
 WORKDIR /app
 COPY web/package*.json ./web/
-RUN cd web && npm ci
+# The checked-in lockfile records a developer-only registry. Railway must build
+# from the public registry without rewriting that local artifact.
+RUN cd web && npm install --package-lock=false --ignore-scripts --registry=https://registry.npmjs.org/
 COPY web/ ./web/
 COPY demo/ ./demo/
 RUN cd web && npm run build
