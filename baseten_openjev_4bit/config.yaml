@@ -2,13 +2,16 @@
 model_name: sequitor-openjev-4bit-reranker
 python_version: py311
 requirements:
+  - torch==2.6.0
   - transformers==5.17.0
   - peft>=0.14.0
   - bitsandbytes>=0.45.0
   - sentencepiece==0.2.1
   - accelerate>=1.3.0
 resources:
-  accelerator: L4
+  # The older L4 deployment could not acquire its two-GPU SKU. H100 capacity
+  # has provisioned successfully in this workspace and easily fits this NF4 model.
+  accelerator: H100
   cpu: "4"
   memory: 16Gi
   use_gpu: true

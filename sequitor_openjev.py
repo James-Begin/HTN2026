@@ -20,7 +20,7 @@ class OpenJevReranker:
             raise ValueError("OpenJev key or endpoint unavailable")
         parsed = urlsplit(endpoint)
         if (parsed.scheme != "https" or not re.fullmatch(r"model-[a-z0-9]+\.api\.baseten\.co", parsed.hostname or "")
-                or parsed.path not in {"/production/predict", "/deployment/predict"}
+                or not re.fullmatch(r"/(?:production|deployment/[a-z0-9]+)/predict", parsed.path)
                 or parsed.query or parsed.fragment):
             raise ValueError("Invalid OpenJev Baseten endpoint")
         self._key = api_key
