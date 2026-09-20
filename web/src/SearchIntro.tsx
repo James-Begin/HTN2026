@@ -46,10 +46,10 @@ const GOLDEN = 2.399963229728653
 const CRUISE_MS = 6500
 const FLY_MS = 1800
 const CRUISE_START = 0
-const CRUISE_TRAVEL = 980
-const FLY_TRAVEL = 4200
-const FOCAL = 720
-const PASS_AT = 70
+const CRUISE_TRAVEL = 160
+const FLY_TRAVEL = 2600
+const FOCAL = 760
+const PASS_AT = 110
 
 const clamp = (value: number, low: number, high: number) => Math.min(high, Math.max(low, value))
 const easeInCubic = (value: number) => value * value * value
@@ -74,7 +74,7 @@ function placeField(): PlacedCard[] {
     const source = CARDS[index % CARDS.length]
     const ring = index / FIELD_SIZE
     const angle = index * GOLDEN
-    const z = -180 - ring * 2100 - (index % 5) * 18
+    const z = -260 - ring * 1680 - (index % 5) * 14
     const radius = 160 + (index % 11) * 42 + ring * 90
     return {
       ...source,
