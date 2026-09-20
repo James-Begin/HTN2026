@@ -197,16 +197,23 @@ textarea:focus-visible { outline: none; }
 
 /* Keep one full-bleed graph slot. Chrome overlays instead of collapsing
    grid tracks, so the WebGL viewer never remounts, resizes to 0, or fades. */
-main.dario-demo {
+main.dario-demo,
+main.dario-demo.is-cinematic,
+main.dario-demo.is-exploring {
   position: relative;
-  min-height: 100vh;
+  height: 100dvh;
+  max-height: 100dvh;
+  min-height: 0;
   padding: 0;
+  overflow: hidden;
   background: #000;
 }
 
 main.dario-demo .dario-header,
 main.dario-demo .dario-activity,
 main.dario-demo .conversation-sidebar {
+  opacity: 0;
+  pointer-events: none;
   transition: none;
 }
 
@@ -225,8 +232,9 @@ main.dario-demo .dario-workspace,
 main.dario-demo.is-cinematic .dario-workspace,
 main.dario-demo.is-exploring .dario-workspace {
   position: relative;
-  height: 100vh;
-  min-height: 100vh;
+  height: 100%;
+  min-height: 0;
+  max-height: 100%;
   grid-template-columns: minmax(0, 1fr);
   overflow: hidden;
   border: 0;
@@ -248,6 +256,7 @@ main.dario-demo .space-canvas,
 main.dario-demo .space-canvas canvas {
   opacity: 1 !important;
   animation: none !important;
+  transition: none !important;
 }
 
 main.dario-demo .space-shell-compact,
@@ -263,29 +272,39 @@ main.dario-demo.is-cinematic .dario-activity {
   left: 0;
   right: 370px;
   bottom: 0;
-  z-index: 4;
+  z-index: 6;
   display: grid;
-  grid-template-rows: auto 48px auto;
+  grid-template-rows: auto 52px auto;
   gap: 10px;
-  min-height: 138px;
+  isolation: isolate;
+  min-height: 184px;
   max-height: none;
-  padding: 16px 22px 22px;
+  padding: 16px 22px calc(28px + env(safe-area-inset-bottom, 0px));
   overflow: visible;
   border-top: 1px solid #253844;
-  background: linear-gradient(0deg, #000 0%, #000000f0 72%, #0000);
+  background: linear-gradient(0deg, #000 0%, #000 38%, #000000f2 72%, #0000);
+  transform: translateZ(0);
 }
 
 main.dario-demo .dario-activity-axis {
-  min-height: 16px;
-  padding-bottom: 4px;
+  display: flex;
+  align-items: flex-end;
+  min-height: 22px;
+  padding: 2px 0 8px;
   overflow: visible;
   line-height: 1.45;
   color: #8aa0ae;
 }
 
+main.dario-demo .dario-activity-axis span {
+  display: inline-block;
+  padding-bottom: 0;
+  line-height: 1.4;
+}
+
 main.dario-demo .dario-skip {
   right: 388px;
-  bottom: 158px;
+  bottom: 188px;
 }
 
 main.dario-demo .conversation-sidebar,
@@ -307,6 +326,7 @@ main.dario-demo.is-cinematic .conversation-sidebar {
   visibility: visible;
   opacity: 0;
   pointer-events: none;
+  transition: none;
 }
 
 main.dario-demo.is-cinematic .dario-activity {
@@ -323,33 +343,21 @@ main.dario-demo.is-exploring .space-view-caption {
 }
 
 main.dario-demo.is-exploring .dario-header {
+  opacity: 1;
   pointer-events: auto;
-  animation: dario-chrome-in 5.6s cubic-bezier(.23, .15, .18, 1) .2s both;
+  transition: opacity 6.4s cubic-bezier(.22, .12, .2, 1) .45s;
 }
 
 main.dario-demo.is-exploring .dario-activity {
+  opacity: 1;
   pointer-events: auto;
-  animation: dario-chrome-in 6s cubic-bezier(.23, .15, .18, 1) 1.6s both;
+  transition: opacity 7.2s cubic-bezier(.22, .12, .2, 1) 1.8s;
 }
 
 main.dario-demo.is-exploring .conversation-sidebar {
+  opacity: 1;
   pointer-events: auto;
-  animation: dario-chrome-in 6.4s cubic-bezier(.23, .15, .18, 1) 3.1s both;
-}
-
-@keyframes dario-chrome-in {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-@keyframes dario-interface-reveal {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-@keyframes dario-interface-in {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  transition: opacity 7.8s cubic-bezier(.22, .12, .2, 1) 3.4s;
 }
 
 @media (max-width: 680px) {
@@ -366,6 +374,7 @@ main.dario-demo.is-exploring .conversation-sidebar {
   main.dario-demo.is-exploring .dario-activity,
   main.dario-demo.is-exploring .conversation-sidebar {
     animation: none !important;
+    transition: none !important;
     opacity: 1;
     pointer-events: auto;
   }

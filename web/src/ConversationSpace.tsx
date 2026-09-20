@@ -116,10 +116,11 @@ function createScene(host: HTMLDivElement, frame: Frame, seedId: string, initial
   let hovered: string | null = null
   let signature = ''
   let initiallyFitted = false
-  let lastAutoFit = 0
   let cameraTouched = false
+  let cinematicMode = cinematic
   let hideGuides = cinematic
   let cameraTween: { start: number; from: THREE.Vector3; to: THREE.Vector3; fromTarget: THREE.Vector3; toTarget: THREE.Vector3 } | null = null
+  if (!births.has(seedId)) births.set(seedId, performance.now() - 4000)
   const dummy = new THREE.Object3D()
   const baseGeometry = new THREE.IcosahedronGeometry(1, 1)
   const baseMaterial = new THREE.MeshBasicMaterial({ color: '#ffffff' })
@@ -207,6 +208,15 @@ function createScene(host: HTMLDivElement, frame: Frame, seedId: string, initial
     moveCamera(center.clone().add(new THREE.Vector3(.08, .30, 1).normalize().multiplyScalar(distance)), center)
   }
   function reset() { cameraTouched = false; fit() }
+  function cloudFrame() {
+    const bounds = new THREE.Box3().setFromPoints(points.map(point => point.position))
+    const center = bounds.getCenter(new THREE.Vector3())
+    const size = bounds.getSize(new THREE.Vector3())
+    const span = Math.max(size.x, size.y * camera.aspect, size.z)
+    const tangent = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2))
+    const distance = Math.max(30, span * .7 / tangent)
+    return { center, position: center.clone().add(new THREE.Vector3(0, .08, 1).normalize().multiplyScalar(distance)) }
+  }
   if (cinematic) {
     camera.position.set(0, 0, 30); controls.target.set(0, 0, 0)
   } else {
@@ -218,7 +228,7 @@ function createScene(host: HTMLDivElement, frame: Frame, seedId: string, initial
     let animating = false
     const screenScale = 2 * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) / Math.max(1, host.clientHeight)
     points.forEach((point, slot) => {
-      const progress = reduced ? 1 : Math.min(1, (now - (births.get(point.post.id) ?? now)) / 320)
+      const progress = reduced || point.post.id === seedId ? 1 : Math.min(1, (now - (births.get(point.post.id) ?? now)) / 320)
       if (progress < 1) animating = true
       const active = point.post.id === selected || point.post.id === hovered
       const size = point.post.id === seedId ? .55 : active ? .42 : .22 + Math.min(.15, Math.log1p(Math.max(0, point.post.likes ?? 0)) * .014)
@@ -240,9 +250,12 @@ function createScene(host: HTMLDivElement, frame: Frame, seedId: string, initial
     }
     return animating
   }
+  let lastFrame = performance.now()
   function render(now: number) {
     raf = null
     if (disposed) return
+    const dt = Math.min(.05, (now - lastFrame) / 1000)
+    lastFrame = now
     if (cameraTween) {
       const t = Math.min(1, (now - cameraTween.start) / 850)
       const eased = 1 - (1 - t) ** 3
@@ -250,10 +263,18 @@ function createScene(host: HTMLDivElement, frame: Frame, seedId: string, initial
       controls.target.lerpVectors(cameraTween.fromTarget, cameraTween.toTarget, eased)
       if (t === 1) cameraTween = null
     }
+    let tracking = false
+    if (points.length && !cameraTouched && !cameraTween) {
+      const { position, center } = cloudFrame()
+      const follow = reduced ? 1 : 1 - Math.exp((cinematicMode ? .85 : .45) * -dt)
+      camera.position.lerp(position, follow)
+      controls.target.lerp(center, follow)
+      tracking = camera.position.distanceTo(position) > .08 || controls.target.distanceTo(center) > .08
+    }
     const moving = controls.update()
     const animating = updateMatrices(now)
     renderer.render(scene, camera)
-    if (moving || animating || cameraTween) invalidate()
+    if (moving || animating || cameraTween || tracking) invalidate()
   }
   controls.addEventListener('change', invalidate)
   controls.addEventListener('start', () => { cameraTween = null; cameraTouched = true })
@@ -325,8 +346,10 @@ function createScene(host: HTMLDivElement, frame: Frame, seedId: string, initial
       invalidate()
     },
     showGuides() {
+      cinematicMode = false
       if (!hideGuides) return
       hideGuides = false
+      initiallyFitted = true
       drawGuides()
       invalidate()
     },
@@ -335,7 +358,10 @@ function createScene(host: HTMLDivElement, frame: Frame, seedId: string, initial
       if (key === signature) return
       signature = key; points = next; selected = selection
       const now = performance.now()
-      for (const point of next) if (!births.has(point.post.id)) births.set(point.post.id, now)
+      for (const point of next) {
+        if (births.has(point.post.id)) continue
+        births.set(point.post.id, point.post.id === seedId ? now - 4000 : now)
+      }
       if (!nodes || next.length > capacity) {
         if (nodes) { scene.remove(nodes); nodes.dispose() }
         capacity = Math.max(64, 2 ** Math.ceil(Math.log2(Math.max(1, next.length))))
@@ -373,8 +399,10 @@ function createScene(host: HTMLDivElement, frame: Frame, seedId: string, initial
       linksGeometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3))
       linksGeometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3))
       linksGeometry.computeBoundingSphere()
-      const shouldAutoFit = !cameraTouched && next.length && (!initiallyFitted || next.length <= 4 || next.length >= lastAutoFit + Math.max(5, Math.ceil(lastAutoFit * .45)))
-      if (shouldAutoFit) { initiallyFitted = true; lastAutoFit = next.length; fit() }
+      if (!cinematicMode && !cameraTouched && next.length && !initiallyFitted) {
+        initiallyFitted = true
+        fit()
+      }
       invalidate()
     },
     focus(id) {
@@ -403,7 +431,7 @@ function createScene(host: HTMLDivElement, frame: Frame, seedId: string, initial
       })
       baseGeometry.dispose(); baseMaterial.dispose(); linksGeometry.dispose(); linksMaterial.dispose(); nodes?.dispose()
       renderer.domElement.removeEventListener('webglcontextlost', contextLost)
-      renderer.dispose(); renderer.forceContextLoss(); renderer.domElement.remove()
+      renderer.dispose(); renderer.domElement.remove()
     },
   }
 }
@@ -531,7 +559,6 @@ export default function ConversationSpace({ posts, seedId, referencePosts, onOpe
 
   if (compact) return <section className={`space-shell space-shell-compact${cinematic ? ' space-shell-cinematic' : ''}`} aria-label="Conversation Space">
     <div className="space-toolbar space-toolbar-compact">
-      <div className="space-segment" role="group" aria-label="Visible connections">{[['selected', 'Lineage'], ['none', 'No links']].map(([value, label]) => <button key={value} aria-pressed={links === value} onClick={() => setLinks(value)}>{label}</button>)}</div>
       <div className="space-camera"><button onClick={() => api.current?.fit()} aria-label="Fit conversation"><Maximize2 size={15} /></button><button onClick={() => api.current?.reset()} aria-label="Reset camera"><RotateCcw size={15} /></button></div>
     </div>
     <div className="space-workspace space-workspace-compact">

@@ -24,13 +24,11 @@ export type ConversationRevealState<TPost extends RevealablePost> = {
   reset: () => void
 }
 
-const FIRST_POST_DELAY_MS = 260
 const SLOW_REVEAL_COUNT = 7
 const SLOW_REVEAL_DELAY_MS = 760
 const FASTEST_REVEAL_DELAY_MS = 165
 
 function delayForReveal(revealedCount: number, backlogCount: number) {
-  if (revealedCount === 0) return FIRST_POST_DELAY_MS
   if (revealedCount < SLOW_REVEAL_COUNT) return SLOW_REVEAL_DELAY_MS
 
   // The queue becomes more energetic as evidence accumulates, while preserving
@@ -82,6 +80,24 @@ export function useConversationReveal<TPost extends RevealablePost>(posts: reado
     }
 
     setPhase('revealing')
+
+    // Present the first known post in this turn so [] → posts never flashes empty.
+    if (revealedCount.current === 0) {
+      const id = queuedIds.current.shift()
+      if (id && !presentedIdSet.current.has(id)) {
+        presentedIdSet.current.add(id)
+        presentedOrder.current.push(id)
+        revealedCount.current += 1
+        publishPresented()
+      }
+      if (revealedCount.current === 0) {
+        setPhase(presentedOrder.current.length === 0 ? 'idle' : 'complete')
+        return
+      }
+      schedule.current()
+      return
+    }
+
     const run = generation.current
     const delay = delayForReveal(revealedCount.current, queuedIds.current.length)
     timer.current = window.setTimeout(() => {
@@ -157,10 +173,19 @@ export function useConversationReveal<TPost extends RevealablePost>(posts: reado
     presentedIdSet.current.clear()
     presentedOrder.current = []
     revealedCount.current = 0
-    publishPresented()
     setPhase(queuedIds.current.length === 0 ? 'idle' : 'revealing')
-    if (reducedMotion) skip()
-    else schedule.current()
+    if (reducedMotion) {
+      skip()
+      return
+    }
+    const first = queuedIds.current.shift()
+    if (first) {
+      presentedIdSet.current.add(first)
+      presentedOrder.current.push(first)
+      revealedCount.current = 1
+    }
+    publishPresented()
+    schedule.current()
   }, [clearTimer, publishPresented, reducedMotion, skip])
 
   const presentedPosts = useMemo(

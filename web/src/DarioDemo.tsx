@@ -13,7 +13,7 @@ import './landing.css'
 
 type DarioPost = GraphPost & ConversationSidebarPost & { textIsExcerpt?: boolean }
 type DarioRun = { seed: string; buckets: { day: string; count: number | null }[]; posts: DarioPost[]; seedPost?: DarioPost; savedPeriods?: Record<string, { posts: DarioPost[] }>; searchPlan?: { contextLabel?: string; entities?: string[] } }
-type DemoStage = 'landing' | 'departing' | 'searching' | 'resolving' | 'anchor' | 'forming' | 'exploring'
+type DemoStage = 'landing' | 'departing' | 'searching' | 'resolving' | 'blackout' | 'anchor' | 'forming' | 'exploring'
 const capture = liveCapture as DarioRun
 const humor = humorCapture.posts as DarioPost[]
 const seed = capture.seedPost || capture.posts.find(post => post.id === '2098773920774074715')!
@@ -36,7 +36,7 @@ const addUnit = (stamp: number, unit: 'hour' | 'day' | 'month') => {
   return stamp + (unit === 'hour' ? 3600000 : 86400000)
 }
 const labelTime = (stamp: number, unit: 'hour' | 'day' | 'month') => new Intl.DateTimeFormat('en-CA', unit === 'hour' ? { month: 'short', day: 'numeric', hour: 'numeric', timeZone: 'UTC' } : unit === 'month' ? { month: 'short', year: 'numeric', timeZone: 'UTC' } : { day: 'numeric', month: 'short', timeZone: 'UTC' }).format(new Date(stamp))
-const LAUNCH_AT = { searching: 1500, resolving: 8000, anchor: 9800, forming: 11000, exploring: 16000, reducedSearching: 400 }
+const LAUNCH_AT = { searching: 1500, resolving: 8000, blackout: 9800, anchor: 10600, forming: 11800, exploring: 17200, reducedSearching: 400 }
 
 function ActivityStrip({ posts }: { posts: DarioPost[] }) {
   const [scale, setScale] = useState<'hour' | 'day' | 'month'>('day')
@@ -63,7 +63,7 @@ export default function DarioDemo() {
   const stageRef = useRef(stage)
   stageRef.current = stage
   const revealing = stage === 'forming' || stage === 'exploring'
-  const reveal = useConversationReveal(revealing ? allPosts : [])
+  const reveal = useConversationReveal(revealing ? allPosts : stage === 'anchor' ? [seed] : [])
   const presented = useMemo(() => {
     if (stage === 'anchor') return [seed]
     const posts = reveal.presentedPosts as DarioPost[]
@@ -95,6 +95,7 @@ export default function DarioDemo() {
     clearTimers(); setInput(value); setSelectedId(seed.id); setStage('departing')
     timers.current.push(window.setTimeout(() => setStage('searching'), reduced ? LAUNCH_AT.reducedSearching : LAUNCH_AT.searching))
     timers.current.push(window.setTimeout(() => setStage('resolving'), LAUNCH_AT.resolving))
+    timers.current.push(window.setTimeout(() => setStage('blackout'), LAUNCH_AT.blackout))
     timers.current.push(window.setTimeout(() => setStage('anchor'), LAUNCH_AT.anchor))
     timers.current.push(window.setTimeout(() => setStage('forming'), LAUNCH_AT.forming))
     timers.current.push(window.setTimeout(() => setStage('exploring'), LAUNCH_AT.exploring))
@@ -137,6 +138,7 @@ export default function DarioDemo() {
     <button className="dario-example" type="button" onClick={() => launch(capture.seed)} disabled={stage === 'departing'}>Try Dario’s post</button>
   </main>
   if (stage === 'searching' || stage === 'resolving') return <main className="dario-transition is-intro-enter" data-demo-stage={stage}><SearchIntro phase={stage === 'searching' ? 'searching' : 'resolving'} /></main>
+  if (stage === 'blackout') return <main className="dario-transition" data-demo-stage="blackout" />
   const cinematic = stage === 'anchor' || stage === 'forming'
   return <main className={`dario-demo${cinematic ? ' is-cinematic' : ' is-exploring'}`} data-demo-stage={stage} data-presented-count={presented.length}><header className="dario-header"><div className="dario-wordmark">sequitor<span>.</span></div></header><section className="dario-workspace" aria-label="Dario conversation"><div className="dario-viewer-column"><ConversationSpace posts={presented as GraphPost[]} seedId={seed.id} referencePosts={allPosts as GraphPost[]} compact cinematic={cinematic} onOpenPost={() => undefined} onSelectPost={selectPost} /><ActivityStrip posts={presented} />{stage === 'exploring' && !reveal.isComplete && <button type="button" className="dario-skip" onClick={reveal.skip}>Show all <SkipForward size={14} /></button>}</div><ConversationSidebar posts={sidebarPosts} selectedPost={sidebarSelected} referenceId={seed.id} onSelect={setSelectedId} context={context} status={status} /></section></main>
 }
