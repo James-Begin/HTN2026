@@ -4,7 +4,7 @@ import './search-intro.css'
 
 export type SearchIntroPhase = 'idle' | 'searching' | 'resolving'
 export type SearchIntroPost = { author?: string; handle?: string; text: string; publishedAt?: string }
-export type SearchIntroProps = { phase: SearchIntroPhase; className?: string; posts?: SearchIntroPost[] }
+export type SearchIntroProps = { phase: SearchIntroPhase; className?: string; posts?: SearchIntroPost[]; onFinished?: () => void }
 
 type Card = { author: string; handle: string; text: string; accent: string; year: string }
 type PlacedCard = Card & {
@@ -116,7 +116,7 @@ function placeField(deck: Card[]): PlacedCard[] {
   })
 }
 
-export default function SearchIntro({ phase, className = '', posts = [] }: SearchIntroProps) {
+export default function SearchIntro({ phase, className = '', posts = [], onFinished }: SearchIntroProps) {
   const fieldRef = useRef<HTMLDivElement>(null)
   const phaseRef = useRef(phase)
   const deck = useMemo(() => {
@@ -128,6 +128,10 @@ export default function SearchIntro({ phase, className = '', posts = [] }: Searc
   useEffect(() => {
     phaseRef.current = phase
   }, [phase])
+
+  useEffect(() => {
+    if (phase === 'resolving' && window.matchMedia('(prefers-reduced-motion: reduce)').matches) onFinished?.()
+  }, [phase, onFinished])
 
   useEffect(() => {
     const field = fieldRef.current
@@ -173,22 +177,28 @@ export default function SearchIntro({ phase, className = '', posts = [] }: Searc
       field.style.setProperty('--sway-x', `${Math.sin(t * 0.28) * 8}px`)
       field.style.setProperty('--sway-y', `${Math.cos(t * 0.22) * 5}px`)
 
+      let remaining = 0
       cards.forEach((card, index) => {
         const origin = exitOrigins?.[index] ?? origins[index]
         const next = project(origin.x, origin.y, origin.z, origin.rx, origin.ry, resolving ? exitTravel : travel, !resolving)
         card.classList.toggle('is-passed', next.passed)
         if (next.passed) return
+        remaining += 1
         card.style.opacity = String(next.opacity)
         card.style.zIndex = String(next.zIndex)
         card.style.transform = next.transform
       })
 
+      if (resolving && remaining === 0) {
+        onFinished?.()
+        return
+      }
       frame = requestAnimationFrame(tick)
     }
 
     frame = requestAnimationFrame(tick)
     return () => cancelAnimationFrame(frame)
-  }, [items])
+  }, [items, onFinished])
 
   return (
     <section

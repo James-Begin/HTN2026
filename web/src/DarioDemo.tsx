@@ -61,7 +61,7 @@ const addUnit = (stamp: number, unit: 'hour' | 'day' | 'month') => {
   return stamp + (unit === 'hour' ? 3600000 : 86400000)
 }
 const labelTime = (stamp: number, unit: 'hour' | 'day' | 'month') => new Intl.DateTimeFormat('en-CA', unit === 'hour' ? { month: 'short', day: 'numeric', hour: 'numeric', timeZone: 'UTC' } : unit === 'month' ? { month: 'short', year: 'numeric', timeZone: 'UTC' } : { day: 'numeric', month: 'short', timeZone: 'UTC' }).format(new Date(stamp))
-const LAUNCH_AT = { searching: 380, resolving: 5600, blackout: 8200, anchor: 8900, forming: 10000, exploring: 14200, reducedSearching: 180 }
+const LAUNCH_AT = { searching: 380, resolving: 5600, forming: 10000, exploring: 14200, reducedSearching: 180 }
 
 function ActivityStrip({ buckets, posts }: { buckets: Bucket[]; posts: DarioPost[] }) {
   const [scale, setScale] = useState<'hour' | 'day' | 'month'>('day')
@@ -97,7 +97,8 @@ export default function DarioDemo() {
   const [runMode, setRunMode] = useState<RunMode | null>(null)
   const [entryId, setEntryId] = useState('')
   const [fallbackRun, setFallbackRun] = useState<DarioRun | null>(null)
-  const [timerReady, setTimerReady] = useState({ searching: false, resolving: false, blackout: false, anchor: false, forming: false, exploring: false })
+  const [timerReady, setTimerReady] = useState({ searching: false, resolving: false, anchor: false, forming: false, exploring: false })
+  const [introFinished, setIntroFinished] = useState(false)
   const [sidebarActive, setSidebarActive] = useState(false)
   const timers = useRef<number[]>([])
   const stageRef = useRef(stage)
@@ -127,6 +128,7 @@ export default function DarioDemo() {
   const sidebarPosts = sidebarReveal.presentedPosts as DarioPost[]
   const sidebarSelected = sidebarPosts.find(post => post.id === selectedId) || sidebarPosts.find(post => post.id === seedPost?.id)
   const clearTimers = useCallback(() => { timers.current.forEach(timer => window.clearTimeout(timer)); timers.current = [] }, [])
+  const finishIntro = useCallback(() => setIntroFinished(true), [])
   const selectPost = useCallback((post: GraphPost) => setSelectedId(post.id), [])
   useEffect(() => clearTimers, [clearTimers])
   useEffect(() => {
@@ -138,11 +140,17 @@ export default function DarioDemo() {
     const resolved = investigation.milestones.seedResolved || investigation.milestones.planReady || recordedReady
     if (stage === 'departing' && timerReady.searching && started) setStage('searching')
     else if (stage === 'searching' && timerReady.resolving && resolved) setStage('resolving')
-    else if (stage === 'resolving' && timerReady.blackout) setStage('blackout')
+    else if (stage === 'resolving' && introFinished) setStage('blackout')
     else if (stage === 'blackout' && timerReady.anchor && seedPost) setStage('anchor')
     else if (stage === 'anchor' && timerReady.forming && seedPost) setStage('forming')
     else if (stage === 'forming' && timerReady.exploring) setStage('exploring')
-  }, [fallbackRun, investigation.milestones, runMode, seedPost, stage, timerReady])
+  }, [fallbackRun, investigation.milestones, introFinished, runMode, seedPost, stage, timerReady])
+  useEffect(() => {
+    if (stage !== 'blackout') return
+    const delay = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 1000
+    const timer = window.setTimeout(() => setTimerReady(previous => ({ ...previous, anchor: true })), delay)
+    return () => window.clearTimeout(timer)
+  }, [stage])
   useEffect(() => {
     if (stage !== 'exploring') {
       setSidebarActive(false)
@@ -161,14 +169,12 @@ export default function DarioDemo() {
     const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
     const statusId = value.match(/\/(?:status|statuses)\/(\d+)/i)?.[1] || ''
     const mode: RunMode = RECORDED_IDS.has(statusId) ? 'recorded' : 'live'
-    clearTimers(); setInput(value); setSelectedId(''); setEntryId(statusId); setRunMode(mode); setFallbackRun(null)
-    setTimerReady({ searching: false, resolving: false, blackout: false, anchor: false, forming: false, exploring: false })
+    clearTimers(); setInput(value); setSelectedId(''); setEntryId(statusId); setRunMode(mode); setFallbackRun(null); setIntroFinished(false)
+    setTimerReady({ searching: false, resolving: false, anchor: false, forming: false, exploring: false })
     setStage('departing')
     const mark = (key: keyof typeof timerReady) => setTimerReady(previous => ({ ...previous, [key]: true }))
     timers.current.push(window.setTimeout(() => mark('searching'), reduced ? LAUNCH_AT.reducedSearching : LAUNCH_AT.searching))
     timers.current.push(window.setTimeout(() => mark('resolving'), LAUNCH_AT.resolving))
-    timers.current.push(window.setTimeout(() => mark('blackout'), LAUNCH_AT.blackout))
-    timers.current.push(window.setTimeout(() => mark('anchor'), LAUNCH_AT.anchor))
     timers.current.push(window.setTimeout(() => mark('forming'), LAUNCH_AT.forming))
     timers.current.push(window.setTimeout(() => mark('exploring'), LAUNCH_AT.exploring))
     void investigation.start({ seed: value, mode }).then(started => {
@@ -224,7 +230,7 @@ export default function DarioDemo() {
     </div>
     {error && <p className="dario-run-error" role="alert">{error}</p>}
   </main>
-  if (stage === 'searching' || stage === 'resolving') return <main className="dario-transition is-intro-enter" data-demo-stage={stage}><SearchIntro key={entryId || 'live'} phase={stage === 'searching' ? 'searching' : 'resolving'} posts={introPosts} />{error && <p className="dario-run-error" role="alert">{error}</p>}</main>
+  if (stage === 'searching' || stage === 'resolving') return <main className="dario-transition is-intro-enter" data-demo-stage={stage}><SearchIntro key={entryId || 'live'} phase={stage === 'searching' ? 'searching' : 'resolving'} posts={introPosts} onFinished={finishIntro} />{error && <p className="dario-run-error" role="alert">{error}</p>}</main>
   if (stage === 'blackout') return <main className="dario-transition" data-demo-stage="blackout">{error && <p className="dario-run-error" role="alert">{error}</p>}</main>
   const cinematic = stage === 'anchor' || stage === 'forming'
   const seedId = seedPost?.id || ''
