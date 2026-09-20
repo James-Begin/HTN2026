@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 /** The smallest contract the reveal scheduler needs from an investigation post. */
-export type RevealablePost = { id: string }
+export type RevealablePost = { id: string; publishedAt?: string }
 
 export type ConversationRevealPhase = 'idle' | 'revealing' | 'complete'
 
 export type ConversationRevealState<TPost extends RevealablePost> = {
-  /** Posts in their original arrival order that have been released to the UI. */
+  /** Posts in presentation order (chronological when `publishedAt` is available). */
   presentedPosts: TPost[]
   /** Useful when a graph stores post data independently from the lineage list. */
   presentedIds: readonly string[]
@@ -24,13 +24,26 @@ export type ConversationRevealState<TPost extends RevealablePost> = {
   reset: () => void
 }
 
-const FIRST_POST_DELAY_MS = 260
 const SLOW_REVEAL_COUNT = 7
 const SLOW_REVEAL_DELAY_MS = 760
 const FASTEST_REVEAL_DELAY_MS = 165
 
+function chronologicalKey(post: RevealablePost | undefined) {
+  const time = post?.publishedAt ? Date.parse(post.publishedAt) : NaN
+  return Number.isFinite(time) ? time : Number.POSITIVE_INFINITY
+}
+
+function compareRevealOrder(a: string, b: string, posts: Map<string, RevealablePost>) {
+  const delta = chronologicalKey(posts.get(a)) - chronologicalKey(posts.get(b))
+  if (delta !== 0) return delta
+  return a.localeCompare(b)
+}
+
+function sortQueuedChronologically(queue: string[], posts: Map<string, RevealablePost>) {
+  queue.sort((a, b) => compareRevealOrder(a, b, posts))
+}
+
 function delayForReveal(revealedCount: number, backlogCount: number) {
-  if (revealedCount === 0) return FIRST_POST_DELAY_MS
   if (revealedCount < SLOW_REVEAL_COUNT) return SLOW_REVEAL_DELAY_MS
 
   // The queue becomes more energetic as evidence accumulates, while preserving
@@ -82,6 +95,24 @@ export function useConversationReveal<TPost extends RevealablePost>(posts: reado
     }
 
     setPhase('revealing')
+
+    // Present the first known post in this turn so [] → posts never flashes empty.
+    if (revealedCount.current === 0) {
+      const id = queuedIds.current.shift()
+      if (id && !presentedIdSet.current.has(id)) {
+        presentedIdSet.current.add(id)
+        presentedOrder.current.push(id)
+        revealedCount.current += 1
+        publishPresented()
+      }
+      if (revealedCount.current === 0) {
+        setPhase(presentedOrder.current.length === 0 ? 'idle' : 'complete')
+        return
+      }
+      schedule.current()
+      return
+    }
+
     const run = generation.current
     const delay = delayForReveal(revealedCount.current, queuedIds.current.length)
     timer.current = window.setTimeout(() => {
@@ -141,7 +172,10 @@ export function useConversationReveal<TPost extends RevealablePost>(posts: reado
       }
     }
 
-    if (added) setTotalCount(knownOrder.current.length)
+    if (added) {
+      setTotalCount(knownOrder.current.length)
+      sortQueuedChronologically(queuedIds.current, knownPosts.current)
+    }
     if (changed) setPostVersion(version => version + 1)
     if (queuedIds.current.length > 0) {
       if (reducedMotion) skip()
@@ -154,13 +188,23 @@ export function useConversationReveal<TPost extends RevealablePost>(posts: reado
   const reset = useCallback(() => {
     clearTimer()
     queuedIds.current = [...knownOrder.current]
+    sortQueuedChronologically(queuedIds.current, knownPosts.current)
     presentedIdSet.current.clear()
     presentedOrder.current = []
     revealedCount.current = 0
-    publishPresented()
     setPhase(queuedIds.current.length === 0 ? 'idle' : 'revealing')
-    if (reducedMotion) skip()
-    else schedule.current()
+    if (reducedMotion) {
+      skip()
+      return
+    }
+    const first = queuedIds.current.shift()
+    if (first) {
+      presentedIdSet.current.add(first)
+      presentedOrder.current.push(first)
+      revealedCount.current = 1
+    }
+    publishPresented()
+    schedule.current()
   }, [clearTimer, publishPresented, reducedMotion, skip])
 
   const presentedPosts = useMemo(

@@ -1,10 +1,21 @@
-import { useEffect, useRef } from 'react'
-import * as THREE from 'three'
+import { useEffect, useMemo, useRef } from 'react'
+import type { CSSProperties } from 'react'
 import './search-intro.css'
 
 export type SearchIntroPhase = 'idle' | 'searching' | 'resolving'
-export type SearchIntroProps = { phase: SearchIntroPhase; className?: string }
+export type SearchIntroPost = { author?: string; handle?: string; text: string; publishedAt?: string }
+export type SearchIntroProps = { phase: SearchIntroPhase; className?: string; posts?: SearchIntroPost[]; onFinished?: () => void }
+
 type Card = { author: string; handle: string; text: string; accent: string; year: string }
+type PlacedCard = Card & {
+  key: string
+  x: number
+  y: number
+  z: number
+  rx: number
+  ry: number
+  width: number
+}
 
 const CARDS: Card[] = [
   { author: 'Jack Dorsey', handle: '@jack', text: 'just setting up my twttr', accent: '#94cfee', year: '2006' },
@@ -31,125 +42,235 @@ const CARDS: Card[] = [
   { author: 'Elon Musk', handle: '@elonmusk', text: 'the bird is freed', accent: '#e0c39d', year: '2022' },
 ]
 
-const CRUISE_MS = 6500
-const FLY_MS = 1800
-const CLONES = 8
+const FIELD_SIZE = 220
+const LOOP = 2100
+const PASS_AT = 90
+const FOCAL = 720
+const VISIBLE_DEPTH = 760
 const READ_MS = 4200
-const READ_DEPTH = 1.4
-const CRUISE_DEPTH = 12
-const FLY_DEPTH = 90
-const TUNNEL = 58
-const GOLDEN = 2.399963229728653
-
-type CardObject = {
-  mesh: THREE.Mesh<THREE.PlaneGeometry, THREE.MeshBasicMaterial>
-  base: THREE.Vector3
-  rotation: THREE.Euler
-  phase: number
-  index: number
-  scale: number
-  passed: boolean
-}
+const ACCELERATE_MS = 1700
+const READ_SPEED = 0.025
+const RUSH_SPEED = 1.22
+const ACCENTS = ['#94cfee', '#e8c58d', '#a8d8b9', '#9dbce9', '#f1b4ce', '#bfbcf4', '#dcad9e', '#d8d499', '#c9b1f2', '#e1a7d7', '#78c8e2', '#b9a9f3']
 
 const clamp = (value: number, low: number, high: number) => Math.min(high, Math.max(low, value))
-const easeInQuad = (value: number) => value * value
-function rounded(context: CanvasRenderingContext2D, x: number, y: number, width: number, height: number, radius: number) { context.beginPath(); context.roundRect(x, y, width, height, radius); context.fill() }
-function wrap(context: CanvasRenderingContext2D, text: string, width: number) { const words = text.split(' '), rows: string[] = []; let row = ''; for (const word of words) { const next = row ? `${row} ${word}` : word; if (context.measureText(next).width > width && row) { rows.push(row); row = word } else row = next } if (row) rows.push(row); return rows }
-function drawText(context: CanvasRenderingContext2D, text: string) {
-  let size = 33, rows: string[] = []
-  do { context.font = `500 ${size}px system-ui`; rows = wrap(context, text, 610); size-- } while (rows.length > 5 && size >= 25)
-  const lineHeight = Math.round((size + 1) * 1.3)
-  rows.slice(0, 5).forEach((line, index) => context.fillText(line, 48, 165 + index * lineHeight))
-}
-function textureFor(card: Card) {
-  const canvas = document.createElement('canvas'); canvas.width = 720; canvas.height = 470
-  const context = canvas.getContext('2d')!
-  context.fillStyle = '#000000'; rounded(context, 4, 4, 712, 462, 28)
-  context.strokeStyle = '#2f3336'; context.lineWidth = 2; context.beginPath(); context.roundRect(4, 4, 712, 462, 28); context.stroke()
-  context.fillStyle = card.accent; context.beginPath(); context.arc(70, 76, 29, 0, Math.PI * 2); context.fill()
-  context.fillStyle = '#0c151d'; context.font = '700 27px system-ui'; context.textAlign = 'center'; context.textBaseline = 'middle'; context.fillText(card.author[0].toUpperCase(), 70, 79)
-  context.textAlign = 'left'; context.fillStyle = '#f3f7fa'; context.font = '650 27px system-ui'; context.fillText(card.author, 118, 68)
-  context.fillStyle = '#91a3b1'; context.font = '20px system-ui'; context.fillText(card.handle, 118, 96)
-  context.fillStyle = '#e7edf2'; drawText(context, card.text)
-  context.fillStyle = '#6f8291'; context.font = '20px system-ui'; context.fillText('◌   ◌   ♡   ↗', 48, 410); context.textAlign = 'right'; context.fillText(card.year, 667, 410)
-  const texture = new THREE.CanvasTexture(canvas); texture.colorSpace = THREE.SRGBColorSpace; texture.minFilter = THREE.LinearFilter; return texture
+
+function randomUnit(seed: string) {
+  let hash = 2166136261
+  for (let index = 0; index < seed.length; index += 1) {
+    hash ^= seed.charCodeAt(index)
+    hash = Math.imul(hash, 16777619)
+  }
+  hash += hash << 13
+  hash ^= hash >>> 7
+  hash += hash << 3
+  hash ^= hash >>> 17
+  hash += hash << 5
+  return (hash >>> 0) / 4294967296
 }
 
-export default function SearchIntro({ phase, className = '' }: SearchIntroProps) {
-  const hostRef = useRef<HTMLDivElement>(null), phaseRef = useRef(phase), journeySince = useRef(performance.now()), phaseSince = useRef(performance.now())
-  useEffect(() => { phaseRef.current = phase; phaseSince.current = performance.now() }, [phase])
+function wrapZ(z: number, travel: number, recycle: boolean) {
+  let zWorld = z + travel
+  if (!recycle) return zWorld
+  const start = PASS_AT - LOOP
+  let offset = (zWorld - start) % LOOP
+  if (offset < 0) offset += LOOP
+  return start + offset
+}
+
+function projectWorld(x: number, y: number, zWorld: number, rx: number, ry: number) {
+  const denom = FOCAL - zWorld
+  const passed = zWorld > PASS_AT || denom <= 36
+  const scale = passed ? 0 : clamp(FOCAL / denom, 0.08, 2.8)
+  const fadeNear = zWorld > 8 ? clamp(1 - (zWorld - 8) / (PASS_AT - 8), 0, 1) : 1
+  const fadeFar = clamp((zWorld - (PASS_AT - VISIBLE_DEPTH)) / 180, 0, 1)
+  return {
+    passed,
+    opacity: passed ? 0 : fadeNear * fadeFar,
+    zIndex: Math.round(4000 + zWorld),
+    transform: `translate3d(calc(-50% + ${x * scale}px), calc(-50% + ${y * scale}px), 0) rotateY(${ry}deg) rotateX(${rx}deg) scale(${scale})`,
+  }
+}
+
+function project(x: number, y: number, z: number, rx: number, ry: number, travel = 0, recycle = true) {
+  return projectWorld(x, y, wrapZ(z, travel, recycle), rx, ry)
+}
+
+function cardsFromPosts(posts: SearchIntroPost[]): Card[] {
+  return posts.flatMap(post => {
+    const text = post.text?.trim()
+    if (!text) return []
+    const handle = (post.handle || '').replace(/^@/, '')
+    const author = (post.author || handle || 'Post').replace(/^@/, '').split('·')[0].trim() || 'Post'
+    const published = post.publishedAt ? Date.parse(post.publishedAt) : NaN
+    return [{
+      author,
+      handle: handle ? `@${handle}` : '',
+      text,
+      accent: ACCENTS[Math.abs(Array.from(text).reduce((sum, char) => sum + char.charCodeAt(0), 0)) % ACCENTS.length],
+      year: Number.isFinite(published) ? String(new Date(published).getUTCFullYear()) : '',
+    }]
+  })
+}
+
+function placeField(deck: Card[]): PlacedCard[] {
+  // Keep the fallback field visually dense, but never truncate a real capture:
+  // every captured post must get one opportunity to fly past before completion.
+  const fieldSize = Math.max(FIELD_SIZE, deck.length)
+  return Array.from({ length: fieldSize }, (_, index) => {
+    const source = deck[index % deck.length]
+    const seed = `${source.handle}|${source.text}|${index}`
+    const depth = (index + randomUnit(`${seed}|depth`)) / fieldSize
+    const z = PASS_AT - 70 - depth * (LOOP - 180)
+    return {
+      ...source,
+      key: `${source.handle}-${index}`,
+      x: (randomUnit(`${seed}|x`) * 2 - 1) * 940,
+      y: (randomUnit(`${seed}|y`) * 2 - 1) * 510,
+      z,
+      rx: (randomUnit(`${seed}|rx`) * 2 - 1) * 6,
+      ry: (randomUnit(`${seed}|ry`) * 2 - 1) * 10,
+      width: 292 + Math.floor(randomUnit(`${seed}|width`) * 6) * 10,
+    }
+  })
+}
+
+export default function SearchIntro({ phase, className = '', posts = [], onFinished }: SearchIntroProps) {
+  const fieldRef = useRef<HTMLDivElement>(null)
+  const phaseRef = useRef(phase)
+  const deck = useMemo(() => {
+    const fromPosts = cardsFromPosts(posts)
+    return fromPosts.length >= 6 ? fromPosts : CARDS
+  }, [posts])
+  const items = useMemo(() => placeField(deck), [deck])
+
   useEffect(() => {
-    const host = hostRef.current; if (!host) return
-    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
-    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false }); renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.75)); renderer.setClearColor('#000000'); renderer.outputColorSpace = THREE.SRGBColorSpace; renderer.domElement.className = 'search-intro-canvas'; host.appendChild(renderer.domElement)
-    const scene = new THREE.Scene(); scene.fog = new THREE.FogExp2('#000000', .012); const camera = new THREE.PerspectiveCamera(52, 1, .1, 300); const group = new THREE.Group(); scene.add(group)
-    const geometry = new THREE.PlaneGeometry(5.7, 3.72), textures = CARDS.map(textureFor), objects: CardObject[] = []
-    const total = CARDS.length * CLONES
-    for (let index = 0; index < total; index++) {
-      const source = index % CARDS.length, clone = Math.floor(index / CARDS.length)
-      const angle = (index * GOLDEN + clone * .73) % (Math.PI * 2)
-      const radius = 2.7 + (index % 6) * .72 + (clone % 4) * .28 + (source % 3) * .1
-      const depth = -6.2 - index * (TUNNEL / total) - ((source * 13 + clone * 7) % 10) * .12
-      const mesh = new THREE.Mesh(geometry, new THREE.MeshBasicMaterial({ map: textures[source], transparent: true, opacity: .98, side: THREE.DoubleSide, depthWrite: false }))
-      const base = new THREE.Vector3(
-        Math.cos(angle) * radius * 1.2 + Math.sin(index * 2.05) * .24,
-        Math.sin(angle) * radius * .78 + Math.cos(index * 1.61) * .22,
-        depth,
-      )
-      const rotation = new THREE.Euler(Math.sin(index * 1.7) * .12, Math.cos(index * 2.3 + clone) * .2, Math.sin(index * 1.31) * .08)
-      const scale = .4 + (index % 8) * .042 + (clone % 3) * .03
-      mesh.position.copy(base); mesh.rotation.copy(rotation); mesh.scale.setScalar(scale); group.add(mesh)
-      objects.push({ mesh, base, rotation, phase: index * .37 + clone * .13, index, scale, passed: false })
-    }
-    const resize = () => { const { width, height } = host.getBoundingClientRect(); renderer.setSize(Math.max(1, width), Math.max(1, height), false); camera.aspect = Math.max(1, width) / Math.max(1, height); camera.updateProjectionMatrix() }; const observer = new ResizeObserver(resize); observer.observe(host); resize()
-    journeySince.current = performance.now()
-    let request = 0, disposed = false, flyAmount = 0
-    const render = (now: number) => {
-      if (disposed) return
-      const journeyAge = now - journeySince.current, phaseAge = now - phaseSince.current, resolving = phaseRef.current === 'resolving'
-      const cruiseAge = journeyAge - (resolving ? phaseAge : 0)
-      // Give fully rendered tweet cards a reading interval, then accelerate.
-      const reading = clamp(cruiseAge / READ_MS, 0, 1)
-      const acceleration = clamp((cruiseAge - READ_MS) / (CRUISE_MS - READ_MS), 0, 1)
-      const travel = reduced ? 0 : READ_DEPTH * reading
-        + READ_DEPTH / READ_MS * (CRUISE_MS - READ_MS) * acceleration
-        + (CRUISE_DEPTH - READ_DEPTH - READ_DEPTH / READ_MS * (CRUISE_MS - READ_MS)) * acceleration ** 3
-      if (resolving) flyAmount = Math.max(flyAmount, clamp(phaseAge / FLY_MS, 0, 1))
-      const fly = reduced ? 0 : easeInQuad(flyAmount)
-      camera.position.set(reduced ? 0 : Math.sin(now * .00017) * .16, reduced ? 0 : Math.cos(now * .00013) * .1, 5 - travel)
-      camera.lookAt(0, 0, camera.position.z - 31)
-      const fadeOut = reduced ? (resolving ? flyAmount : 0) : clamp((flyAmount - .78) / .22, 0, 1)
-      objects.forEach(item => {
-        if (item.passed) { item.mesh.visible = false; return }
-        const drift = reduced ? 0 : Math.sin(now * .00055 + item.phase) * .28
-        const rise = reduced ? 0 : Math.cos(now * .00041 + item.phase) * .18
-        const bob = reduced ? 0 : Math.sin(now * .00033 + item.phase) * .55
-        const flare = fly * fly
-        const side = Math.sign(item.base.x) || Math.sign(Math.sin(item.index + 1)) || 1
-        const x = (item.base.x + drift) * (1 + flare * 1.7) + side * flare * 2.4
-        const y = (item.base.y + rise) * (1 + flare * 1.35)
-        const z = item.base.z + bob + fly * (FLY_DEPTH + (item.index % 7) * 6)
-        item.mesh.position.set(x, y, z)
-        item.mesh.rotation.set(
-          item.rotation.x + (reduced ? 0 : Math.sin(now * .0004 + item.phase) * .04),
-          item.rotation.y + (reduced ? 0 : Math.cos(now * .00031 + item.phase) * .05) + fly * .32 * side,
-          item.rotation.z + (reduced ? 0 : Math.sin(now * .00045 + item.phase) * .045),
-        )
-        item.mesh.scale.setScalar(item.scale)
-        item.mesh.material.opacity = (1 - fadeOut) * .98
-        const behind = z > camera.position.z + 1.4
-        const throughLens = z > camera.position.z - 1.05 && Math.hypot(x - camera.position.x, y - camera.position.y) < 1.35
-        if (behind || throughLens) { item.passed = true; item.mesh.visible = false } else item.mesh.visible = fadeOut < .997
+    phaseRef.current = phase
+  }, [phase])
+
+  useEffect(() => {
+    if (phase === 'resolving' && window.matchMedia('(prefers-reduced-motion: reduce)').matches) onFinished?.()
+  }, [phase, onFinished])
+
+  useEffect(() => {
+    const field = fieldRef.current
+    if (!field) return
+
+    const cards = Array.from(field.querySelectorAll<HTMLElement>('.search-intro-card'))
+    const origins = cards.map(card => ({
+      x: Number(card.dataset.x),
+      y: Number(card.dataset.y),
+      z: Number(card.dataset.z),
+      rx: Number(card.dataset.rx),
+      ry: Number(card.dataset.ry),
+    }))
+    const motion = window.matchMedia('(prefers-reduced-motion: reduce)')
+    if (motion.matches) return
+
+    let travel = 220
+    let last = performance.now()
+    const started = last
+    let speed = READ_SPEED
+    let resolvingStarted: number | null = null
+    let exitTravel = 0
+    let exitOrigins: typeof origins | null = null
+    let frame = 0
+
+    const tick = (now: number) => {
+      const dt = Math.min(48, now - last)
+      last = now
+      const resolving = phaseRef.current === 'resolving'
+      if (resolving && resolvingStarted === null) {
+        resolvingStarted = now
+        exitOrigins = origins.map(origin => ({ ...origin, z: wrapZ(origin.z, travel, true) }))
+      }
+      // Read at a crawl; only the final resolved phase accelerates into a one-way fly-past.
+      const rushStart = Math.max(started + READ_MS, resolvingStarted ?? Infinity)
+      const acceleration = clamp((now - rushStart) / ACCELERATE_MS, 0, 1)
+      const eased = acceleration * acceleration * acceleration
+      const targetSpeed = READ_SPEED + (RUSH_SPEED - READ_SPEED) * eased
+      speed += (targetSpeed - speed) * (1 - Math.exp(-dt / 180))
+      if (resolving) exitTravel += dt * speed
+      else travel += dt * speed
+      const t = now * 0.001
+      field.style.setProperty('--sway-x', `${Math.sin(t * 0.28) * 8}px`)
+      field.style.setProperty('--sway-y', `${Math.cos(t * 0.22) * 5}px`)
+
+      let remaining = 0
+      cards.forEach((card, index) => {
+        const origin = exitOrigins?.[index] ?? origins[index]
+        const next = project(origin.x, origin.y, origin.z, origin.rx, origin.ry, resolving ? exitTravel : travel, !resolving)
+        if (next.passed) {
+          if (!card.classList.contains('is-passed')) card.classList.add('is-passed')
+          card.dataset.visible = 'false'
+          return
+        }
+        remaining += 1
+        if (card.classList.contains('is-passed')) card.classList.remove('is-passed')
+        if (next.opacity <= 0.001) {
+          if (card.dataset.visible !== 'false') {
+            card.dataset.visible = 'false'
+            card.style.opacity = '0'
+          }
+          return
+        }
+        card.dataset.visible = 'true'
+        card.style.opacity = String(next.opacity)
+        card.style.zIndex = String(next.zIndex)
+        card.style.transform = next.transform
       })
-      renderer.render(scene, camera); request = requestAnimationFrame(render)
+
+      if (resolving && remaining === 0) {
+        onFinished?.()
+        return
+      }
+      frame = requestAnimationFrame(tick)
     }
-    request = requestAnimationFrame(render)
-    return () => {
-      disposed = true; cancelAnimationFrame(request); observer.disconnect()
-      objects.forEach(item => item.mesh.material.dispose())
-      textures.forEach(texture => texture.dispose()); geometry.dispose()
-      scene.clear(); renderer.renderLists.dispose(); renderer.dispose(); renderer.forceContextLoss(); renderer.domElement.remove()
-    }
-  }, [])
-  return <section className={`search-intro${phase === 'resolving' ? ' is-resolving' : ''}${className ? ` ${className}` : ''}`.trim()} aria-label="Tracing the public conversation"><div className="search-intro-stage" ref={hostRef} /></section>
+
+    frame = requestAnimationFrame(tick)
+    return () => cancelAnimationFrame(frame)
+  }, [items, onFinished])
+
+  return (
+    <section
+      className={`search-intro${phase === 'resolving' ? ' is-resolving' : ''}${className ? ` ${className}` : ''}`.trim()}
+      aria-label="Tracing the public conversation"
+    >
+      <div className="search-intro-stage">
+        <div className="search-intro-field" ref={fieldRef}>
+          {items.map(item => {
+            const start = project(item.x, item.y, item.z, item.rx, item.ry, 220)
+            return (
+            <article
+              key={item.key}
+              className="search-intro-card"
+              data-x={item.x}
+              data-y={item.y}
+              data-z={item.z}
+              data-rx={item.rx}
+              data-ry={item.ry}
+              style={{
+                '--w': `${item.width}px`,
+                '--accent': item.accent,
+                opacity: start.opacity,
+                zIndex: start.zIndex,
+                transform: start.transform,
+              } as CSSProperties}
+            >
+              <header className="search-intro-card-head">
+                <span className="search-intro-card-avatar" aria-hidden="true">{item.author[0].toUpperCase()}</span>
+                <div className="search-intro-card-names">
+                  <strong>{item.author}</strong>
+                  <span>{item.handle}</span>
+                </div>
+              </header>
+              <p>{item.text}</p>
+              <footer>{item.year}</footer>
+            </article>
+            )
+          })}
+        </div>
+      </div>
+    </section>
+  )
 }

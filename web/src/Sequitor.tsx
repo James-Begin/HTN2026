@@ -7,37 +7,14 @@ import darioHumorCapture from '../../demo/recordings/dario-humor.json'
 import storyCapture from '../../demo/recordings/sequitor-story.json'
 import ConversationSpace from './ConversationSpace'
 import type { GraphPost } from './graphData'
+import { mergePosts, normalizePost as normalizeStreamPost, validBucket } from './investigation/stream'
+import type { Bucket, PeriodResult, Post, Run, RunStatus } from './investigation/types'
+import { useInvestigationRun } from './investigation/useInvestigationRun'
 import './sequitor.css'
 
-type Post = {
-  id: string; text: string; publishedAt: string; author: string; handle?: string
-  avatar?: string; likes?: number | null; reposts?: number | null; replies?: number | null
-  url?: string; parentId?: string | null; quotedPostId?: string | null
-  scope?: string; captureTime?: string; textIsExcerpt?: boolean; sourceType?: 'input'
-  basetenKind?: string; sameClaimScore?: number; sameClaimRegister?: string; rerankerScore?: number; rerankerModel?: string
-  basetenPick?: boolean; semanticScore?: number; lexicalScore?: number
-  rankingScore?: number; rankingMethod?: string
-  spaceScore?: number; spaceY?: number; spaceZ?: number; spaceDirectionQuality?: number; spaceMethod?: string
-}
-type Bucket = { day: string; count: number | null; coverage: 'complete' | 'partial' | 'sample' | 'unavailable'; pending?: boolean }
-type RunStatus = 'running' | 'reconnecting' | 'completed' | 'stopped' | 'failed'
 type HourlyState = { key: string; buckets: Bucket[] | null; loading: boolean; error?: string }
 type ActivityScale = 'day' | 'hour' | 'month'
 type ActivityResult = { granularity: 'hour'; day: string; query: string; buckets: Bucket[]; xSpend: number }
-type Run = {
-  id: string; seed: string; title: string; kind: 'live' | 'saved'; capturedAt?: string
-  scope: string; query?: string | null; buckets: Bucket[]; posts: Post[]; selectedDay: string
-  rankingCoverage: string; searchPlan?: { contextLabel?: string; entities?: string[]; angles?: string[]; uncertainties?: string[]; volumePhrase?: string; volumeFallback?: string; discoveryPhrase?: string | null; discoveryQueries?: string[]; expansionQueries?: string[]; expansionReason?: string; whyDiscovery?: string; model?: string | null; error?: string } | null
-  model?: { openai?: string | null; baseten?: { status?: string; model?: string | null; classified?: number; retrieval?: { status?: string; semantic?: string; reranker?: string } } | string }
-  note: string; xSpend?: number
-  savedPeriods?: Record<string, PeriodResult>
-  streamSource?: 'live' | 'cache' | 'recorded'
-  activityScaleMax?: number
-  seedPost?: Post
-}
-type PeriodResult = { day: string; posts: Post[]; rankingCoverage: string; partial: boolean; xSpend: number; model: Run['model'] }
-type StreamEvent = { runId: string; sequence: number; type: string; payload: Record<string, unknown> }
-type StartedRun = { runId: string; eventsUrl: string }
 type XWidgets = { widgets: { createTweet: (id: string, element: HTMLElement, options: Record<string, string | boolean>) => Promise<HTMLElement | null> } }
 declare global { interface Window { twttr?: XWidgets } }
 let widgetsLoad: Promise<XWidgets> | null = null
@@ -53,23 +30,6 @@ function loadXWidgets(): Promise<XWidgets> {
     document.head.appendChild(script)
   })
   return widgetsLoad
-}
-
-function mergePosts(existing: Post[], incoming: Post[]): Post[] {
-  const positions = new Map(existing.map((post, index) => [post.id, index]))
-  const merged = [...existing]
-  for (const post of incoming) {
-    const index = positions.get(post.id)
-    if (index === undefined) {
-      positions.set(post.id, merged.length)
-      merged.push(normalizePost(post))
-    } else {
-      const prior = merged[index]
-      merged[index] = normalizePost({ ...prior, ...post,
-        textIsExcerpt: prior.text === post.text && prior.textIsExcerpt ? true : post.textIsExcerpt })
-    }
-  }
-  return merged
 }
 
 const defaultSeed = 'https://x.com/DarioAmodei/status/2098773920774074715'
@@ -109,9 +69,10 @@ function isInput(post: Post) {
   return post.sourceType === 'input' || post.id === 'seed-text' || post.author === 'Seed text'
 }
 function normalizePost(post: Post): Post {
-  if (isInput(post)) return { ...post, sourceType: 'input', author: 'Search input', publishedAt: '', url: undefined }
-  const knownExcerpt = sourcePosts.some(source => source.id === post.id && source.text === post.text && source.textIsExcerpt)
-  const normalized = knownExcerpt ? { ...post, textIsExcerpt: true } : post
+  const streamPost = normalizeStreamPost(post)
+  if (isInput(streamPost)) return streamPost
+  const knownExcerpt = sourcePosts.some(source => source.id === streamPost.id && source.text === streamPost.text && source.textIsExcerpt)
+  const normalized = knownExcerpt ? { ...streamPost, textIsExcerpt: true } : streamPost
   const avatar = normalized.avatar || recordedAvatars[normalized.id]
   return avatar ? { ...normalized, avatar } : normalized
 }
@@ -190,46 +151,13 @@ function activityLabel(value: string, scale: ActivityScale) {
   if (scale === 'month') return new Intl.DateTimeFormat('en-CA', { month: 'short', year: 'numeric', timeZone: 'UTC' }).format(new Date(value))
   return formatDay(value)
 }
-function record(value: unknown): value is Record<string, unknown> {
-  return value !== null && typeof value === 'object' && !Array.isArray(value)
-}
 function validPost(value: unknown): value is Post {
-  return record(value) && ['id', 'text', 'publishedAt', 'author'].every(key => typeof value[key] === 'string')
-    && ['handle', 'avatar', 'url', 'scope', 'captureTime', 'basetenKind', 'rankingMethod', 'spaceMethod', 'parentId', 'quotedPostId'].every(key => value[key] == null || typeof value[key] === 'string')
-    && ['likes', 'reposts', 'replies', 'rankingScore', 'sameClaimScore', 'semanticScore', 'lexicalScore', 'spaceScore', 'spaceY', 'spaceZ', 'spaceDirectionQuality'].every(key => value[key] == null || typeof value[key] === 'number' && Number.isFinite(value[key]))
-}
-function validBucket(value: unknown): value is Bucket {
-  return record(value) && typeof value.day === 'string' && !Number.isNaN(Date.parse(value.day))
-    && (value.count === null || typeof value.count === 'number' && Number.isFinite(value.count) && value.count >= 0)
-    && ['complete', 'partial', 'sample', 'unavailable'].includes(String(value.coverage))
-}
-function validPlan(value: unknown) {
-  return value === null || record(value)
-    && ['contextLabel', 'volumePhrase', 'volumeFallback', 'discoveryPhrase', 'expansionReason', 'whyDiscovery', 'model', 'error'].every(key => value[key] == null || typeof value[key] === 'string')
-    && ['entities', 'angles', 'uncertainties', 'discoveryQueries', 'expansionQueries'].every(key => value[key] == null || Array.isArray(value[key]) && value[key].every(item => typeof item === 'string'))
-}
-function validCuration(value: unknown): boolean {
-  return value == null || typeof value === 'string' || record(value)
-    && ['status', 'model'].every(key => value[key] == null || typeof value[key] === 'string')
-}
-function validModel(value: unknown): boolean {
-  return value == null || record(value) && (value.openai == null || typeof value.openai === 'string') && validCuration(value.baseten)
-}
-function validateEvent(message: StreamEvent) {
-  const payload = message.payload
-  let valid = true
-  if (message.type === 'run.ready') valid = ['id', 'seed', 'title', 'scope', 'selectedDay', 'rankingCoverage', 'note'].every(key => typeof payload[key] === 'string')
-    && ['live', 'saved'].includes(String(payload.kind)) && Array.isArray(payload.posts) && payload.posts.every(validPost)
-    && Array.isArray(payload.buckets) && payload.buckets.every(validBucket) && (payload.seedPost == null || validPost(payload.seedPost))
-    && (payload.searchPlan == null || validPlan(payload.searchPlan)) && validModel(payload.model)
-  if (message.type === 'model.ready') valid = validCuration(payload.model)
-  if (message.type === 'run.completed') valid = validModel(payload.model)
-  if (payload.xSpend != null) valid = valid && typeof payload.xSpend === 'number' && Number.isFinite(payload.xSpend)
-  if (message.type === 'posts.upsert') valid = Array.isArray(payload.posts) && payload.posts.every(validPost)
-  if (message.type === 'buckets.upsert') valid = validBucket(payload.bucket)
-  if (message.type === 'seed.resolved') valid = typeof payload.text === 'string' && (payload.post == null || validPost(payload.post))
-  if (message.type === 'plan.ready' || message.type === 'context.expanded') valid = validPlan(payload.plan)
-  if (!valid) throw new Error('Invalid investigation event received; partial results retained')
+  return value !== null && typeof value === 'object' && !Array.isArray(value)
+    && ['id', 'text', 'publishedAt', 'author'].every(key => typeof (value as Record<string, unknown>)[key] === 'string')
+    && ['handle', 'avatar', 'url', 'scope', 'captureTime', 'basetenKind', 'rankingMethod', 'spaceMethod', 'parentId', 'quotedPostId'].every(key => {
+      const item = (value as Record<string, unknown>)[key]
+      return item == null || typeof item === 'string'
+    })
 }
 async function getJson<T>(url: string, signal?: AbortSignal): Promise<T> {
   const response = await fetch(url, { signal })
@@ -374,6 +302,7 @@ function Context({ post, posts, onClose }: { post: Post; posts: Post[]; onClose:
 }
 
 export default function Sequitor() {
+  const investigation = useInvestigationRun()
   const [run, setRun] = useState<Run>(fallback)
   const [seed, setSeed] = useState('')
   const [selectedDay, setSelectedDay] = useState(fallback.selectedDay)
@@ -401,13 +330,7 @@ export default function Sequitor() {
   const hourlyBuckets = currentHourly?.buckets ?? null
   const activityLoading = hourlyEnabled && (!currentHourly || currentHourly.loading)
   const activityError = hourlyEnabled ? currentHourly?.error : undefined
-  const streamRef = useRef<EventSource | null>(null)
-  const streamRunId = useRef<string | null>(null)
   const replayTimer = useRef<number | null>(null)
-  const postQueue = useRef<Post[]>([])
-  const postQueueTimer = useRef<number | null>(null)
-  const pendingCompletion = useRef<Record<string, unknown> | null>(null)
-  const lastSequence = useRef(0)
 
   useEffect(() => () => {
     ++requestId.current
@@ -446,36 +369,39 @@ export default function Sequitor() {
     return () => controller.abort()
   }, [])
 
-  function cancelJob(id: string) {
-    fetch(`/api/runs/${encodeURIComponent(id)}/cancel`, { method: 'POST' }).catch(() => {})
-  }
-
-  function flushPosts() {
-    if (postQueueTimer.current !== null) window.clearTimeout(postQueueTimer.current)
-    postQueueTimer.current = null
-    const received = postQueue.current.splice(0)
-    if (received.length) {
-      setPeriodPosts(previous => mergePosts(previous, received))
-      setRun(previous => ({ ...previous, posts: mergePosts(previous.posts, received) }))
+  useEffect(() => {
+    if (!investigation.sequence) {
+      if (investigation.status === 'failed') {
+        setRunStatus('failed')
+        setBusy('')
+        setError(investigation.error)
+        setRankingCoverage('Investigation failed · no complete results')
+      }
+      return
     }
-    pendingCompletion.current = null
-  }
+    const streamPosts = investigation.posts.map(normalizePost)
+    if (investigation.run) {
+      const streamed = hydrateRecordedContext({ ...investigation.run, posts: streamPosts })
+      setRun(streamed)
+      if (investigation.lastEventType === 'run.ready') setSelectedDay(streamed.selectedDay)
+      setRankingCoverage(streamed.rankingCoverage)
+    } else if (investigation.seedPost) {
+      const resolved = normalizePost(investigation.seedPost)
+      setRun(previous => ({ ...previous, seedPost: resolved, title: resolved.text.split('\n')[0].slice(0, 110) }))
+    }
+    setPeriodPosts(streamPosts)
+    setRunStatus(investigation.status === 'idle' ? 'running' : investigation.status)
+    setBusy(investigation.activity)
+    setError(investigation.error)
+    if (investigation.status === 'failed' || investigation.status === 'stopped') setRankingCoverage('Partial retrieved results retained')
+  }, [investigation.activity, investigation.error, investigation.lastEventType, investigation.posts, investigation.run, investigation.seedPost, investigation.sequence, investigation.status])
 
   function stopCurrent() {
-    streamRef.current?.close()
-    streamRef.current = null
+    investigation.stop()
     periodController.current?.abort()
     activityController.current?.abort()
     if (replayTimer.current !== null) window.clearInterval(replayTimer.current)
     replayTimer.current = null
-    if (postQueueTimer.current !== null) window.clearTimeout(postQueueTimer.current)
-    postQueueTimer.current = null
-    postQueue.current = []
-    pendingCompletion.current = null
-    if (streamRunId.current) {
-      cancelJob(streamRunId.current)
-      streamRunId.current = null
-    }
   }
 
   function resetRequests() {
@@ -492,56 +418,12 @@ export default function Sequitor() {
   function stopInvestigation() {
     ++requestId.current
     ++periodRequestId.current
-    flushPosts()
     stopCurrent()
     setPeriodLoading(false)
     setHourlyActivity(previous => previous?.loading ? { ...previous, loading: false, error: 'Measurement stopped' } : previous)
     setBusy('')
     setRunStatus('stopped')
     setRankingCoverage('Stopped · partial retrieved results retained')
-  }
-
-  function completeStream(payload: Record<string, unknown>) {
-    setRun(previous => ({ ...previous, model: payload.model as Run['model'] || previous.model,
-      xSpend: typeof payload.xSpend === 'number' ? payload.xSpend : previous.xSpend,
-      ...(previous.streamSource === 'recorded' && previous.id === fallback.id
-        ? { posts: fallback.posts, savedPeriods: fallback.savedPeriods, buckets: fallback.buckets } : {}) }))
-    setRankingCoverage(String(payload.rankingCoverage || 'Retrieved posts'))
-    setBusy('')
-    setRunStatus('completed')
-    streamRef.current?.close()
-    streamRunId.current = null
-  }
-
-  function drainPostQueue(id: number) {
-    if (id !== requestId.current) return
-    const queue = postQueue.current
-    if (!queue.length) {
-      postQueueTimer.current = null
-      if (pendingCompletion.current) {
-        const payload = pendingCompletion.current
-        pendingCompletion.current = null
-        completeStream(payload)
-      }
-      return
-    }
-    // The server can return whole X pages in the same event-loop turn. Paint a
-    // few at a time so the feed and the map visibly grow instead of jumping.
-    const amount = queue.length > 72 ? 3 : queue.length > 28 ? 2 : 1
-    const next = queue.splice(0, amount)
-    setPeriodPosts(previous => mergePosts(previous, next))
-    setRun(previous => ({ ...previous, posts: mergePosts(previous.posts, next) }))
-    postQueueTimer.current = window.setTimeout(() => drainPostQueue(id), 145)
-  }
-
-  function queueStreamPosts(posts: Post[], id: number) {
-    const queue = postQueue.current
-    for (const post of posts) {
-      const index = queue.findIndex(item => item.id === post.id)
-      if (index === -1) queue.push(post)
-      else queue[index] = { ...queue[index], ...post }
-    }
-    if (postQueueTimer.current === null) drainPostQueue(id)
   }
 
   function replayExample() {
@@ -590,7 +472,6 @@ export default function Sequitor() {
   async function startStreaming(seedInput: string, mode: 'live' | 'recorded') {
     const id = ++requestId.current
     resetRequests()
-    lastSequence.current = 0
     setRun({ id: `pending-${id}`, seed: seedInput,
       title: mode === 'recorded' ? fallback.title : seedInput || 'Starting investigation',
       kind: mode === 'recorded' ? 'saved' : 'live', buckets: [], posts: [],
@@ -604,119 +485,19 @@ export default function Sequitor() {
     setRankingCoverage('Posts will appear as they arrive')
     setBusy('Starting the investigation…')
     setError('')
-    try {
-      const response = await fetch('/api/runs', { method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ seed: seedInput, mode }) })
-      const data = await response.json() as StartedRun & { error?: string }
-      if (!response.ok) throw new Error(data.error || 'Live exploration failed')
-      if (typeof data.runId !== 'string' || typeof data.eventsUrl !== 'string') throw new Error('Invalid investigation response')
-      // Do not abort creation and lose the job ID: a late response must still
-      // cancel the server job when Stop or another search has superseded it.
-      if (id !== requestId.current) { cancelJob(data.runId); return }
-      streamRunId.current = data.runId
-      const stream = new EventSource(data.eventsUrl)
-      let terminal = false
-      streamRef.current = stream
-      stream.addEventListener('sequitor', (raw) => {
-        if (id !== requestId.current || terminal) return
-        try {
-        const decoded: unknown = JSON.parse((raw as MessageEvent).data)
-        if (!record(decoded)) throw new Error('Invalid investigation event')
-        if (typeof decoded.runId === 'string' && decoded.runId !== data.runId) return
-        if (decoded.runId !== data.runId || !Number.isInteger(decoded.sequence) || Number(decoded.sequence) < 1 || typeof decoded.type !== 'string' || !record(decoded.payload)) throw new Error('Invalid investigation event')
-        const message = decoded as unknown as StreamEvent
-        if (message.sequence <= lastSequence.current) return
-        validateEvent(message)
-        lastSequence.current = message.sequence
-        setRunStatus('running')
-        const payload = message.payload
-        if (message.type === 'stage') setBusy(String(payload.name || 'Investigating…'))
-        if (message.type === 'plan.ready' || message.type === 'context.expanded') setRun(previous => ({ ...previous, searchPlan: payload.plan as Run['searchPlan'] }))
-        if (message.type === 'seed.resolved') setRun(previous => ({ ...previous,
-          title: String(payload.text || previous.title).split('\n')[0].slice(0, 110),
-          seedPost: payload.post ? normalizePost(payload.post as Post) : { id: 'seed-text', sourceType: 'input', author: 'Search input', publishedAt: '', text: String(payload.text) } }))
-        if (message.type === 'run.ready') {
-          const ready = hydrateRecordedContext(payload as unknown as Run)
-          setRun({ ...ready, posts: [], savedPeriods: undefined })
-          setSelectedDay(ready.selectedDay)
-          setPeriodPosts([])
-          if (postQueueTimer.current !== null) window.clearTimeout(postQueueTimer.current)
-          postQueueTimer.current = null
-          postQueue.current = []
-          pendingCompletion.current = null
-          setRankingCoverage(ready.rankingCoverage || 'Posts arriving…')
-          setBusy(ready.streamSource === 'cache' ? 'Loading cached results…' : 'Retrieving posts…')
-        }
-        if (message.type === 'posts.upsert') {
-          const posts = payload.posts as Post[]
-          queueStreamPosts(posts.map(normalizePost), id)
-        }
-        if (message.type === 'buckets.upsert') {
-          const bucket = payload.bucket as Bucket
-          setRun(previous => ({ ...previous, buckets: [...new Map([...previous.buckets, normalizeBucket(bucket, previous.capturedAt)].map(item => [item.day, item])).values()].sort((a, b) => a.day.localeCompare(b.day)) }))
-        }
-        if (message.type === 'model.ready') setRun(previous => ({ ...previous, model: { ...previous.model, baseten: payload.model as NonNullable<Run['model']>['baseten'] } }))
-        if (message.type === 'run.completed') {
-          terminal = true
-          stream.close()
-          streamRef.current = null
-          streamRunId.current = null
-          if (postQueue.current.length || postQueueTimer.current !== null) {
-            pendingCompletion.current = payload
-            setBusy('Showing received posts…')
-          } else completeStream(payload)
-        }
-        if (message.type === 'run.failed' || message.type === 'run.stopped') {
-          terminal = true
-          flushPosts()
-          setBusy('')
-          setRunStatus(message.type === 'run.stopped' ? 'stopped' : 'failed')
-          setRankingCoverage('Partial retrieved results retained')
-          if (message.type === 'run.failed') setError(String(payload.message || 'Investigation failed'))
-          stream.close()
-          streamRef.current = null
-          streamRunId.current = null
-        }
-        } catch (cause) {
-          terminal = true
-          flushPosts()
-          stopCurrent()
-          setBusy('')
-          setRunStatus('failed')
-          setRankingCoverage('Invalid stream · partial retrieved results retained')
-          setError(cause instanceof Error ? cause.message : 'Invalid investigation event')
-        }
-      })
-      stream.onerror = () => {
-        if (id !== requestId.current || terminal) return
-        // EventSource reconnects with Last-Event-ID; a closed stream cannot resume.
-        if (stream.readyState === EventSource.CLOSED) {
-          terminal = true
-          flushPosts()
-          stopCurrent()
-          setBusy('')
-          setRunStatus('failed')
-          setError('Investigation stream closed; partial results retained')
-          setRankingCoverage('Partial retrieved results retained')
-        } else {
-          setRunStatus('reconnecting')
-          setBusy('Reconnecting to the investigation…')
-        }
-      }
-      setHealth(true)
-    } catch (cause) {
-      if (id !== requestId.current) return
-      stopCurrent()
+    const started = await investigation.start({ seed: seedInput, mode })
+    if (id !== requestId.current) return
+    if (started) setHealth(true)
+    else {
       setRunStatus('failed')
       setRankingCoverage('Investigation failed · no complete results')
-      setBusy(''); setError(cause instanceof Error ? cause.message : 'Live exploration failed')
+      setBusy('')
     }
   }
 
   async function chooseDay(day: string) {
     const id = ++periodRequestId.current
     const runId = ++requestId.current
-    flushPosts()
     stopCurrent()
     setBusy('')
     if (runStatus === 'running' || runStatus === 'reconnecting') setRunStatus('stopped')
@@ -817,7 +598,7 @@ export default function Sequitor() {
         <div className="seq-feed-bottom"><span>{run.id === sevenPostFallback.id ? 'Selected source capture' : typeof run.xSpend === 'number' ? `${run.kind === 'saved' ? 'Estimated X spend at capture' : 'Estimated X spend in this server'}: $${run.xSpend.toFixed(2)}` : 'Estimated X spend not reported'}</span><span>Likes reflect collection time, not the selected day.</span></div>
       </section>
     </main> : <main id="seq-main"><ConversationSpace key={run.id} posts={graphPosts} seedId={graphSeedId}
-      referencePosts={graphSeedId === storyCapture.seedId ? recordedReferencePosts : undefined}
+      referencePosts={run.streamSource === 'recorded' && graphSeedId === storyCapture.seedId ? recordedReferencePosts : undefined}
       onOpenPost={setInspect} /></main>}
     <footer className="seq-footer"><Wordmark /><span>Explore the posts. Keep the limits in view.</span><button onClick={() => setShowData(true)}>Method and sources <ArrowUpRight size={13} /></button></footer>
     {inspect && <Context key={`${run.id}:${inspect.id}`} post={graphPosts.find(post => post.id === inspect.id) || inspect} posts={graphPosts} onClose={() => setInspect(null)} />}

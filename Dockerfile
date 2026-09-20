@@ -12,7 +12,7 @@ FROM python:3.12-slim
 WORKDIR /app
 ENV PYTHONUNBUFFERED=1
 COPY claimtrace/ ./claimtrace/
-COPY sequitor_server.py sequitor_baseten_chain.py sequitor_openjev.py ./
+COPY sequitor_server.py sequitor_baseten_chain.py sequitor_openjev.py sequitor_anchor.py ./
 COPY demo/ ./demo/
 COPY --from=frontend /app/web/dist/ ./web/dist/
 CMD ["python", "sequitor_server.py"]

@@ -39,6 +39,9 @@ class Resolved:
     text: str = ""
     handle: str = ""
     author_id: str = ""
+    quoted_id: str = ""
+    parent_id: str = ""
+    conversation_id: str = ""
     created_at: datetime = None
     likes: int = 0
     avatar: str = ""
@@ -62,6 +65,12 @@ class Resolved:
 
 def tweet_id_from_url(url: str) -> str:
     return url.rstrip("/").split("/")[-1].split("?")[0]
+
+
+def _related_id(value) -> str:
+    if isinstance(value, dict):
+        value = value.get("id_str") or value.get("rest_id") or value.get("id")
+    return str(value) if value is not None else ""
 
 
 def resolve(tweet_id_or_url: str, timeout: int = 10) -> Resolved:
@@ -103,6 +112,7 @@ def resolve(tweet_id_or_url: str, timeout: int = 10) -> Resolved:
         return Resolved(tid, state, created_at=embedded_time, tombstone=note[:200])
 
     user = d.get("user") or {}
+    quoted = d.get("quoted_tweet") or d.get("quoted_status")
     created = None
     if d.get("created_at"):
         created = datetime.fromisoformat(d["created_at"].replace("Z", "+00:00"))
@@ -115,6 +125,11 @@ def resolve(tweet_id_or_url: str, timeout: int = 10) -> Resolved:
         # @thededsouls, so every citation in the literature points at a dead handle
         # while the id still resolves.
         author_id=str(user.get("id_str") or user.get("id") or ""),
+        quoted_id=_related_id(quoted),
+        parent_id=_related_id(d.get("in_reply_to_status_id_str")
+                              or d.get("in_reply_to_status_id")
+                              or d.get("parent")),
+        conversation_id=_related_id(d.get("conversation_id_str") or d.get("conversation_id")),
         created_at=created or embedded_time,
         likes=d.get("favorite_count") or 0,
         avatar=user.get("profile_image_url_https") or "",

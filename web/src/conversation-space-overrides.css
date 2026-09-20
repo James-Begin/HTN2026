@@ -24,6 +24,8 @@
 .space-shell-compact,
 .space-shell-compact .space-workspace,
 .space-shell-compact .space-view {
+  position: relative;
+  z-index: 0;
   height: 100%;
   min-height: 0;
   opacity: 1;
@@ -32,19 +34,21 @@
 .space-shell-compact .space-view,
 .space-shell-compact .space-canvas,
 .space-shell-compact .space-canvas canvas {
-  animation: none;
-  opacity: 1;
+  animation: none !important;
+  transition: none !important;
+  opacity: 1 !important;
 }
 
 .space-shell-compact .space-toolbar-compact,
 .space-shell-compact .space-view-caption {
   opacity: 1;
-  transition: opacity 5.4s cubic-bezier(.23, .15, .18, 1) 1.1s;
+  transition: opacity 6.8s cubic-bezier(.22, .12, .2, 1) 1.4s;
 }
 
 .space-shell-cinematic .space-toolbar-compact,
 .space-shell-cinematic .space-view-caption {
   opacity: 0;
+  pointer-events: none;
   transition: none;
 }
 
