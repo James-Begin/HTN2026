@@ -14,7 +14,6 @@ type PlacedCard = Card & {
   rx: number
   ry: number
   width: number
-  delay: number
 }
 
 const CARDS: Card[] = [
@@ -42,39 +41,50 @@ const CARDS: Card[] = [
   { author: 'Elon Musk', handle: '@elonmusk', text: 'the bird is freed', accent: '#e0c39d', year: '2022' },
 ]
 
-const FIELD_SIZE = 110
-const NEAR_COUNT = 64
+const FIELD_SIZE = 120
 const GOLDEN = 2.399963229728653
 const CRUISE_MS = 6500
 const FLY_MS = 1800
-const CRUISE_START = 20
-const CRUISE_TRAVEL = 820
-const FLY_TRAVEL = 3800
-const PASS_Z = 120
+const CRUISE_START = 0
+const CRUISE_TRAVEL = 980
+const FLY_TRAVEL = 4200
+const FOCAL = 720
+const PASS_AT = 70
 
 const clamp = (value: number, low: number, high: number) => Math.min(high, Math.max(low, value))
 const easeInCubic = (value: number) => value * value * value
 
+function project(x: number, y: number, z: number, rx: number, ry: number, travel = 0, spread = 1, fly = 0) {
+  const zWorld = z + travel
+  const denom = FOCAL - zWorld
+  const passed = zWorld > PASS_AT || denom <= 36
+  const scale = passed ? 0 : clamp(FOCAL / denom, 0.08, 2.8)
+  const fadeNear = zWorld > 8 ? clamp(1 - (zWorld - 8) / (PASS_AT - 8), 0, 1) : 1
+  const fadeFar = clamp((2100 + z + travel) / 420, 0, 1)
+  return {
+    passed,
+    opacity: passed ? 0 : fadeNear * fadeFar,
+    zIndex: Math.round(4000 + zWorld),
+    transform: `translate3d(calc(-50% + ${x * spread * scale}px), calc(-50% + ${y * spread * scale}px), 0) rotateY(${ry * (1 + fly * 0.4)}deg) rotateX(${rx}deg) scale(${scale})`,
+  }
+}
+
 function placeField(): PlacedCard[] {
   return Array.from({ length: FIELD_SIZE }, (_, index) => {
     const source = CARDS[index % CARDS.length]
-    const near = index < NEAR_COUNT
-    const local = near ? index / Math.max(NEAR_COUNT - 1, 1) : (index - NEAR_COUNT) / Math.max(FIELD_SIZE - NEAR_COUNT - 1, 1)
+    const ring = index / FIELD_SIZE
     const angle = index * GOLDEN
-    const z = near ? -200 - local * 780 : -1040 - local * 1680
-    const radius = near
-      ? 92 + (index % 8) * 22 + local * 64
-      : 84 + (index % 6) * 16
+    const z = -180 - ring * 2100 - (index % 5) * 18
+    const radius = 160 + (index % 11) * 42 + ring * 90
     return {
       ...source,
       key: `${source.handle}-${index}`,
-      x: Math.cos(angle) * radius * 1.18,
-      y: Math.sin(angle) * radius * 0.72,
+      x: Math.cos(angle) * radius * 1.45,
+      y: Math.sin(angle) * radius * 0.82,
       z,
-      rx: Math.sin(angle) * -6,
-      ry: Math.cos(angle) * 10,
-      width: 300 + (index % 7) * 10,
-      delay: 0,
+      rx: Math.sin(angle) * -7,
+      ry: Math.cos(angle) * 11,
+      width: 292 + (index % 6) * 10,
     }
   })
 }
@@ -93,15 +103,15 @@ export default function SearchIntro({ phase, className = '' }: SearchIntroProps)
     if (!field) return
 
     const cards = Array.from(field.querySelectorAll<HTMLElement>('.search-intro-card'))
+    const origins = cards.map(card => ({
+      x: Number(card.dataset.x),
+      y: Number(card.dataset.y),
+      z: Number(card.dataset.z),
+      rx: Number(card.dataset.rx),
+      ry: Number(card.dataset.ry),
+    }))
     const motion = window.matchMedia('(prefers-reduced-motion: reduce)')
-    if (motion.matches) {
-      field.style.setProperty('--travel', '0px')
-      field.style.setProperty('--spread', '1')
-      field.style.setProperty('--sway-x', '0px')
-      field.style.setProperty('--sway-y', '0px')
-      field.style.setProperty('--fly', '0')
-      return
-    }
+    if (motion.matches) return
 
     const mountedAt = performance.now()
     let flyStartedAt = 0
@@ -110,7 +120,7 @@ export default function SearchIntro({ phase, className = '' }: SearchIntroProps)
 
     const tick = (now: number) => {
       const resolving = phaseRef.current === 'resolving'
-      let travel = 0
+      let travel = CRUISE_START
       let spread = 1
       let fly = 0
 
@@ -121,24 +131,23 @@ export default function SearchIntro({ phase, className = '' }: SearchIntroProps)
         }
         fly = easeInCubic(clamp((now - flyStartedAt) / FLY_MS, 0, 1))
         travel = travelWhenFly + fly * FLY_TRAVEL
-        spread = 1 + fly * 2.15
-        field.style.setProperty('--sway-x', '0px')
-        field.style.setProperty('--sway-y', '0px')
-      } else if (phaseRef.current === 'searching') {
+        spread = 1 + fly * 1.8
+      } else {
         travel = CRUISE_START + clamp((now - mountedAt) / CRUISE_MS, 0, 1) * CRUISE_TRAVEL
         const t = now * 0.001
-        field.style.setProperty('--sway-x', `${Math.sin(t * 0.17) * 14}px`)
-        field.style.setProperty('--sway-y', `${Math.cos(t * 0.13) * 9}px`)
+        field.style.setProperty('--sway-x', `${Math.sin(t * 0.17) * 18}px`)
+        field.style.setProperty('--sway-y', `${Math.cos(t * 0.13) * 11}px`)
       }
 
-      field.style.setProperty('--travel', `${travel}px`)
-      field.style.setProperty('--spread', String(spread))
-      field.style.setProperty('--fly', String(fly))
-
-      for (const card of cards) {
-        const depth = Number(card.dataset.z)
-        card.classList.toggle('is-passed', depth + travel > PASS_Z)
-      }
+      cards.forEach((card, index) => {
+        const origin = origins[index]
+        const next = project(origin.x, origin.y, origin.z, origin.rx, origin.ry, travel, spread, fly)
+        card.classList.toggle('is-passed', next.passed)
+        if (next.passed) return
+        card.style.opacity = String(next.opacity)
+        card.style.zIndex = String(next.zIndex)
+        card.style.transform = next.transform
+      })
 
       frame = requestAnimationFrame(tick)
     }
@@ -154,20 +163,23 @@ export default function SearchIntro({ phase, className = '' }: SearchIntroProps)
     >
       <div className="search-intro-stage">
         <div className="search-intro-field" ref={fieldRef}>
-          {items.map(item => (
+          {items.map(item => {
+            const start = project(item.x, item.y, item.z, item.rx, item.ry)
+            return (
             <article
               key={item.key}
               className="search-intro-card"
+              data-x={item.x}
+              data-y={item.y}
               data-z={item.z}
+              data-rx={item.rx}
+              data-ry={item.ry}
               style={{
-                '--x': `${item.x}px`,
-                '--y': `${item.y}px`,
-                '--z': `${item.z}px`,
-                '--rx': `${item.rx}deg`,
-                '--ry': `${item.ry}deg`,
                 '--w': `${item.width}px`,
-                '--delay': `${item.delay}ms`,
                 '--accent': item.accent,
+                opacity: start.opacity,
+                zIndex: start.zIndex,
+                transform: start.transform,
               } as CSSProperties}
             >
               <header className="search-intro-card-head">
@@ -180,7 +192,8 @@ export default function SearchIntro({ phase, className = '' }: SearchIntroProps)
               <p>{item.text}</p>
               <footer>{item.year}</footer>
             </article>
-          ))}
+            )
+          })}
         </div>
       </div>
     </section>

@@ -12,21 +12,15 @@
   inset: 0;
   overflow: hidden;
   background: #000;
-  perspective: 1200px;
-  perspective-origin: 50% 46%;
 }
 
 .search-intro-field {
   position: absolute;
   inset: 0;
-  transform-style: preserve-3d;
-  --travel: 20px;
-  --spread: 1;
   --sway-x: 0px;
   --sway-y: 0px;
-  --fly: 0;
+  transform: translate3d(var(--sway-x), var(--sway-y), 0);
   will-change: transform;
-  transform: translate3d(var(--sway-x), var(--sway-y), var(--travel));
 }
 
 .search-intro-card {
@@ -42,17 +36,8 @@
   opacity: 1;
   pointer-events: none;
   user-select: none;
-  backface-visibility: hidden;
-  -webkit-backface-visibility: hidden;
   transform-origin: center center;
-  transform:
-    translate3d(
-      calc(-50% + (var(--x) * var(--spread))),
-      calc(-50% + (var(--y) * var(--spread))),
-      var(--z)
-    )
-    rotateY(calc(var(--ry) * (1 + var(--fly) * 0.35)))
-    rotateX(var(--rx));
+  will-change: transform, opacity;
 }
 
 .search-intro-card-head {
@@ -120,7 +105,6 @@
 .search-intro-card.is-passed {
   opacity: 0 !important;
   visibility: hidden;
-  animation: none;
 }
 
 @keyframes search-intro-card-in {
@@ -134,10 +118,6 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .search-intro-stage {
-    perspective: none;
-  }
-
   .search-intro-field {
     display: grid;
     align-content: center;
