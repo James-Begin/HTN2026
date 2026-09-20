@@ -12,7 +12,7 @@ import './dario-demo.css'
 
 type DarioPost = GraphPost & ConversationSidebarPost & { textIsExcerpt?: boolean }
 type DarioRun = { seed: string; buckets: { day: string; count: number | null }[]; posts: DarioPost[]; seedPost?: DarioPost; savedPeriods?: Record<string, { posts: DarioPost[] }>; searchPlan?: { contextLabel?: string; entities?: string[] } }
-type DemoStage = 'landing' | 'searching' | 'resolving' | 'exploring'
+type DemoStage = 'landing' | 'searching' | 'resolving' | 'anchor' | 'forming' | 'exploring'
 const capture = liveCapture as DarioRun
 const humor = humorCapture.posts as DarioPost[]
 const seed = capture.seedPost || capture.posts.find(post => post.id === '2098773920774074715')!
@@ -57,17 +57,23 @@ function ActivityStrip({ posts }: { posts: DarioPost[] }) {
 export default function DarioDemo() {
   const [stage, setStage] = useState<DemoStage>('landing'), [input, setInput] = useState(capture.seed), [selectedId, setSelectedId] = useState(seed.id)
   const timers = useRef<number[]>([])
-  const reveal = useConversationReveal(stage === 'exploring' ? allPosts : [])
-  const presented = reveal.presentedPosts as DarioPost[]
+  const reveal = useConversationReveal(stage === 'forming' || stage === 'exploring' ? allPosts : [])
+  const presented = (stage === 'anchor' ? [seed] : reveal.presentedPosts) as DarioPost[]
   const selected = presented.find(post => post.id === selectedId) || seed
   const clearTimers = useCallback(() => { timers.current.forEach(timer => window.clearTimeout(timer)); timers.current = [] }, [])
   const selectPost = useCallback((post: GraphPost) => setSelectedId(post.id), [])
   useEffect(() => clearTimers, [clearTimers])
-  const begin = useCallback((event?: FormEvent) => { event?.preventDefault(); clearTimers(); setSelectedId(seed.id); setStage('searching'); timers.current.push(window.setTimeout(() => setStage('resolving'), 900)); timers.current.push(window.setTimeout(() => { setStage('exploring'); window.setTimeout(reveal.reset, 0) }, 1900)) }, [clearTimers, reveal.reset])
-  const skipIntro = useCallback(() => { clearTimers(); setStage('exploring'); window.setTimeout(reveal.reset, 0) }, [clearTimers, reveal.reset])
+  const begin = useCallback((event?: FormEvent) => {
+    event?.preventDefault(); clearTimers(); setSelectedId(seed.id); setStage('searching')
+    timers.current.push(window.setTimeout(() => setStage('resolving'), 5400))
+    timers.current.push(window.setTimeout(() => setStage('anchor'), 6350))
+    timers.current.push(window.setTimeout(() => { setStage('forming'); window.setTimeout(reveal.reset, 0) }, 7600))
+    timers.current.push(window.setTimeout(() => setStage('exploring'), 12000))
+  }, [clearTimers, reveal.reset])
   const context = useMemo(() => ({ title: capture.searchPlan?.contextLabel || 'AI industry pacing and independent evaluation', entities: capture.searchPlan?.entities || ['Anthropic'] }), [])
   const status = stage === 'searching' || stage === 'resolving' ? 'searching' : reveal.isComplete ? 'complete' : 'building'
   if (stage === 'landing') return <main className="dario-landing"><div className="dario-landing-orbit" aria-hidden="true" /><div className="dario-landing-card"><div className="dario-wordmark">sequitor<span>.</span></div><h1>Follow the conversation.</h1><p>Start with a post. Watch the discussion take shape.</p><form onSubmit={begin} className="dario-search"><Search size={17} aria-hidden="true" /><input aria-label="Dario example post URL" value={input} onChange={event => setInput(event.target.value)} /><button type="submit">Explore</button></form><button className="dario-example" type="button" onClick={() => begin()}>Try Dario’s post</button></div></main>
-  if (stage === 'searching' || stage === 'resolving') return <main className="dario-transition"><header className="dario-mini-header"><div className="dario-wordmark">sequitor<span>.</span></div><button onClick={() => begin()}>New search</button></header><SearchIntro phase={stage === 'searching' ? 'searching' : 'resolving'} onSkip={skipIntro} /></main>
-  return <main className="dario-demo"><header className="dario-header"><div className="dario-wordmark">sequitor<span>.</span></div><form onSubmit={begin} className="dario-header-search"><Search size={15} aria-hidden="true" /><input aria-label="Dario example post URL" value={input} onChange={event => setInput(event.target.value)} /><button type="submit">New search</button></form></header><section className="dario-workspace" aria-label="Dario conversation"><div className="dario-viewer-column"><ConversationSpace posts={presented as GraphPost[]} seedId={seed.id} referencePosts={allPosts as GraphPost[]} compact onOpenPost={() => undefined} onSelectPost={selectPost} /><ActivityStrip posts={presented} />{!reveal.isComplete && <button type="button" className="dario-skip" onClick={reveal.skip}>Show all <SkipForward size={14} /></button>}</div><ConversationSidebar posts={presented} selectedPost={selected} referenceId={seed.id} onSelect={setSelectedId} context={context} status={status} /></section></main>
+  if (stage === 'searching' || stage === 'resolving') return <main className="dario-transition"><SearchIntro phase={stage === 'searching' ? 'searching' : 'resolving'} /></main>
+  const cinematic = stage === 'anchor' || stage === 'forming'
+  return <main className={`dario-demo${cinematic ? ' is-cinematic' : ' is-exploring'}`}><header className="dario-header"><div className="dario-wordmark">sequitor<span>.</span></div><form onSubmit={begin} className="dario-header-search"><Search size={15} aria-hidden="true" /><input aria-label="Dario example post URL" value={input} onChange={event => setInput(event.target.value)} /><button type="submit">New search</button></form></header><section className="dario-workspace" aria-label="Dario conversation"><div className="dario-viewer-column"><ConversationSpace posts={presented as GraphPost[]} seedId={seed.id} referencePosts={allPosts as GraphPost[]} compact cinematic={cinematic} onOpenPost={() => undefined} onSelectPost={selectPost} /><ActivityStrip posts={presented} />{stage === 'exploring' && !reveal.isComplete && <button type="button" className="dario-skip" onClick={reveal.skip}>Show all <SkipForward size={14} /></button>}</div><ConversationSidebar posts={presented} selectedPost={selected} referenceId={seed.id} onSelect={setSelectedId} context={context} status={status} /></section></main>
 }

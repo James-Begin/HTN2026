@@ -60,6 +60,7 @@ function elapsed(ms: number) {
 }
 
 type Point = { post: GraphPost; position: THREE.Vector3; feature?: Feature; pending: boolean; estimated: boolean }
+type HoveredPoint = { id: string; x: number; y: number }
 type Frame = { origin: number; end: number; scale: number; times: number[]; flow: number[] }
 function makeFrame(origin: number, end: number, posts: GraphPost[]): Frame {
   // Calibrate once against the reference capture, not the changing replay subset.
@@ -86,7 +87,7 @@ const radiusAt = (x: number, display: Display) => RADIUS * display.spread * (dis
 type SceneAPI = { configure: (display: Display) => void; update: (points: Point[], selected: string, links: string) => void; focus: (id: string) => void; fit: () => void; reset: () => void; preset: (view: 'side' | 'end') => void; dispose: () => void }
 
 /** Frozen placement transforms; camera gestures never run a layout simulation. */
-function createScene(host: HTMLDivElement, frame: Frame, seedId: string, initialDisplay: Display, onSelect: (id: string) => void, onHover: (id: string | null) => void): SceneAPI {
+function createScene(host: HTMLDivElement, frame: Frame, seedId: string, initialDisplay: Display, onSelect: (id: string) => void, onHover: (hover: HoveredPoint | null) => void, cinematic: boolean): SceneAPI {
   let display = initialDisplay
   const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false })
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.8))
@@ -115,6 +116,7 @@ function createScene(host: HTMLDivElement, frame: Frame, seedId: string, initial
   let hovered: string | null = null
   let signature = ''
   let initiallyFitted = false
+  let lastAutoFit = 0
   let cameraTouched = false
   let entered = new Map<string, number>()
   let cameraTween: { start: number; from: THREE.Vector3; to: THREE.Vector3; fromTarget: THREE.Vector3; toTarget: THREE.Vector3 } | null = null
@@ -188,7 +190,7 @@ function createScene(host: HTMLDivElement, frame: Frame, seedId: string, initial
     label(display.timeMode === 'flow' ? 'PUBLICATION ORDER · GAPS COMPRESSED →' : 'ELAPSED PUBLICATION TIME →', AXIS_LENGTH * .55, -(radiusAt(AXIS_LENGTH * .55, display) * .8 + 20), 0)
     sizeLabels()
   }
-  drawGuides()
+  if (!cinematic) drawGuides()
 
   function moveCamera(to: THREE.Vector3, target: THREE.Vector3) {
     if (reduced) { camera.position.copy(to); controls.target.copy(target); controls.update() }
@@ -205,7 +207,12 @@ function createScene(host: HTMLDivElement, frame: Frame, seedId: string, initial
     moveCamera(center.clone().add(new THREE.Vector3(.08, .30, 1).normalize().multiplyScalar(distance)), center)
   }
   function reset() { cameraTouched = false; fit() }
-  camera.position.set(49, 31, 94); controls.target.set(40, 0, 0); controls.update()
+  if (cinematic) {
+    camera.position.set(0, 0, 30); controls.target.set(0, 0, 0)
+  } else {
+    camera.position.set(49, 31, 94); controls.target.set(40, 0, 0)
+  }
+  controls.update()
   function updateMatrices(now: number) {
     if (!nodes) return false
     let animating = false
@@ -237,7 +244,7 @@ function createScene(host: HTMLDivElement, frame: Frame, seedId: string, initial
     raf = null
     if (disposed) return
     if (cameraTween) {
-      const t = Math.min(1, (now - cameraTween.start) / 450)
+      const t = Math.min(1, (now - cameraTween.start) / 850)
       const eased = 1 - (1 - t) ** 3
       camera.position.lerpVectors(cameraTween.from, cameraTween.to, eased)
       controls.target.lerpVectors(cameraTween.fromTarget, cameraTween.toTarget, eased)
@@ -287,7 +294,15 @@ function createScene(host: HTMLDivElement, frame: Frame, seedId: string, initial
   function pointerMove(event: PointerEvent) {
     if (dragging) return
     const id = pick(event)
-    if (id !== hovered) { hovered = id; onHover(id); renderer.domElement.style.cursor = id ? 'pointer' : 'grab'; invalidate() }
+    if (id !== hovered) {
+      hovered = id
+      const point = id ? points.find(item => item.post.id === id) : undefined
+      if (point && id) {
+        const projected = point.position.clone().project(camera)
+        onHover({ id, x: Math.min(90, Math.max(10, (projected.x + 1) * 50)), y: Math.min(82, Math.max(15, (1 - projected.y) * 50)) })
+      } else onHover(null)
+      renderer.domElement.style.cursor = id ? 'pointer' : 'grab'; invalidate()
+    }
   }
   function pointerUp(event: PointerEvent) {
     dragging = false
@@ -353,7 +368,8 @@ function createScene(host: HTMLDivElement, frame: Frame, seedId: string, initial
       linksGeometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3))
       linksGeometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3))
       linksGeometry.computeBoundingSphere()
-      if (!initiallyFitted && next.length) { initiallyFitted = true; fit() }
+      const shouldAutoFit = !cameraTouched && next.length && (!initiallyFitted || next.length <= 4 || next.length >= lastAutoFit + Math.max(5, Math.ceil(lastAutoFit * .45)))
+      if (shouldAutoFit) { initiallyFitted = true; lastAutoFit = next.length; fit() }
       invalidate()
     },
     focus(id) {
@@ -387,9 +403,9 @@ function createScene(host: HTMLDivElement, frame: Frame, seedId: string, initial
   }
 }
 
-export default function ConversationSpace({ posts, seedId, referencePosts, onOpenPost, compact = false, onSelectPost }: {
+export default function ConversationSpace({ posts, seedId, referencePosts, onOpenPost, compact = false, cinematic = false, onSelectPost }: {
   posts: GraphPost[]; seedId: string; referencePosts?: GraphPost[]; onOpenPost: (post: GraphPost) => void
-  compact?: boolean; onSelectPost?: (post: GraphPost) => void
+  compact?: boolean; cinematic?: boolean; onSelectPost?: (post: GraphPost) => void
 }) {
   const corpus = useMemo(() => [...new Map(posts.filter(post => Number.isFinite(stamp(post)) && post.id !== 'seed-text').map(post => [post.id, post])).values()].sort(order), [posts])
   const referenceCorpus = referencePosts?.length ? referencePosts : corpus
@@ -399,9 +415,9 @@ export default function ConversationSpace({ posts, seedId, referencePosts, onOpe
   const candidateLayout = reference ? layouts[reference.id] : undefined
   const layout = reference && candidateLayout?.features[reference.id]?.text === reference.text ? candidateLayout : undefined
   const [selectedId, setSelectedId] = useState(seedId)
-  const [hoveredId, setHoveredId] = useState<string | null>(null)
+  const [hovered, setHovered] = useState<HoveredPoint | null>(null)
   const [query, setQuery] = useState('')
-  const [links, setLinks] = useState(compact ? 'none' : 'selected')
+  const [links, setLinks] = useState('selected')
   const [timeMode, setTimeMode] = useState<TimeMode>('flow')
   const [cone, setCone] = useState(true)
   const [spread, setSpread] = useState(1.2)
@@ -455,20 +471,20 @@ export default function ConversationSpace({ posts, seedId, referencePosts, onOpe
   const visibleNeighbors = showAllConnections ? neighbors : neighbors.slice(0, 10)
   const capturedIds = new Set(corpus.map(post => post.id))
   const missingReferences = selected ? [selected.parentId, selected.quotedPostId].filter(id => id && !capturedIds.has(id)) : []
-  const hover = corpus.find(post => post.id === hoveredId)
+  const hoverPost = corpus.find(post => post.id === hovered?.id)
   const onSelectRef = useRef(setSelectedId)
   onSelectRef.current = setSelectedId
 
   useEffect(() => {
     if (!host.current || !frame || !reference) return
     try {
-      const instance = createScene(host.current, frame, reference.id, display, id => onSelectRef.current(id), setHoveredId)
+      const instance = createScene(host.current, frame, reference.id, display, id => onSelectRef.current(id), setHovered, cinematic)
       api.current = instance; setFailure('')
       return () => { instance.dispose(); api.current = null }
     } catch {
       setFailure('3D rendering is unavailable in this browser. The post list and original source cards remain available.')
     }
-  }, [frame, reference?.id])
+  }, [frame, reference?.id, cinematic])
   useEffect(() => { api.current?.configure(display) }, [display, frame])
   useEffect(() => { api.current?.update(points, activeId, links) }, [points, activeId, links, frame])
   useEffect(() => { api.current?.fit() }, [earlier, timeMode, cone])
@@ -495,7 +511,7 @@ export default function ConversationSpace({ posts, seedId, referencePosts, onOpe
   }
   function replay() { setCursor(start); setPlaying(true); setSelectedId(reference?.id || ''); api.current?.reset() }
 
-  if (compact) return <section className="space-shell space-shell-compact" aria-label="Conversation Space">
+  if (compact) return <section className={`space-shell space-shell-compact${cinematic ? ' space-shell-cinematic' : ''}`} aria-label="Conversation Space">
     <div className="space-toolbar space-toolbar-compact">
       <div className="space-segment" role="group" aria-label="Visible connections">{[['selected', 'Lineage'], ['none', 'No links']].map(([value, label]) => <button key={value} aria-pressed={links === value} onClick={() => setLinks(value)}>{label}</button>)}</div>
       <label className="space-earlier"><input type="checkbox" checked={cone} onChange={event => setCone(event.target.checked)} /> Expand with time</label>
@@ -506,7 +522,7 @@ export default function ConversationSpace({ posts, seedId, referencePosts, onOpe
         {!reference && <div className="space-canvas-note">Preparing the conversation.</div>}
         {failure && <div className="space-canvas-note" role="status">Posts remain available in the reading column.</div>}
         <div className="space-view-caption"><span className="space-status-dot" /> {points.length ? `${points.length} posts in view` : 'Waiting for the starting post'}</div>
-        {hover && <div className="space-hover" aria-hidden="true"><strong>{authorName(hover)}</strong><span>{hover.text.slice(0, 110)}{hover.text.length > 110 ? '…' : ''}</span></div>}
+        {hoverPost && hovered && <div className="space-hover" aria-hidden="true" style={{ left: `${hovered.x}%`, top: `${hovered.y}%` }}><strong>{authorName(hoverPost)}</strong><span>{hoverPost.text.slice(0, 150)}{hoverPost.text.length > 150 ? '…' : ''}</span></div>}
       </div>
     </div>
   </section>
@@ -529,7 +545,7 @@ export default function ConversationSpace({ posts, seedId, referencePosts, onOpe
         {!reference && <div className="space-canvas-note">Waiting for a captured reference post.</div>}
         {failure && <div className="space-canvas-note" role="status">{failure}</div>}
         <div className="space-view-caption"><span className="space-status-dot" /> {cursor === null ? 'Captured scene · updates as posts arrive' : playing ? 'Replaying publication order' : 'Publication-time replay paused'}</div>
-        {hover && <div className="space-hover" aria-hidden="true"><strong>{authorName(hover)}</strong><small>{dateLabel(stamp(hover))} UTC</small><span>{hover.text.slice(0, 110)}{hover.text.length > 110 ? '…' : ''}</span></div>}
+        {hoverPost && hovered && <div className="space-hover" aria-hidden="true" style={{ left: `${hovered.x}%`, top: `${hovered.y}%` }}><strong>{authorName(hoverPost)}</strong><small>{dateLabel(stamp(hoverPost))} UTC</small><span>{hoverPost.text.slice(0, 110)}{hoverPost.text.length > 110 ? '…' : ''}</span></div>}
         <div className="space-view-bottom"><span>Drag to orbit · scroll to zoom · click a post</span><span><i className="quote" />Quote <i className="reply" />Reply</span></div>
       </div>
       <aside className="space-inspector" aria-label="Selected space post">
