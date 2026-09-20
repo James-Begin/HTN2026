@@ -234,11 +234,26 @@ MAX_POSTS = optional_x_cap("SEQUITOR_X_POST_CAP", MAX_POSTS)
 MAX_COUNTS = optional_x_cap("SEQUITOR_X_COUNTS_CAP", MAX_COUNTS)
 
 
+def demo_post_budget_message() -> str:
+    cap = MAX_POSTS
+    read = APP.x.posts_read if APP.x else 0
+    if cap is None:
+        return "Sequitor post read cap is disabled; check X Developer Console billing."
+    return (f"Sequitor's demo server hit its cumulative X post read cap ({read}/{cap} on this Railway volume). "
+            "That counter is separate from your X account balance. Set SEQUITOR_X_POST_CAP=0 on Railway to "
+            "use X billing only, or raise the cap and redeploy.")
+
+
 def public_run_error(exc: Exception) -> str:
     message = str(exc)
-    if isinstance(exc, BudgetExceeded) and message.startswith("X credits depleted:"):
-        return ("X has reached its account-level price limit. Sequitor's own testing cap is disabled; "
-                "raise the spend limit in the X Developer Console to run another uncached live search.")
+    if message == "X post budget reached for this demo server":
+        return demo_post_budget_message()
+    if isinstance(exc, BudgetExceeded):
+        if message.startswith("X credits depleted:"):
+            return ("X returned a billing error (HTTP 402). Raise the spend limit in the X Developer Console, "
+                    "then retry. If billing is fine, Sequitor may still be blocking on SEQUITOR_X_POST_CAP.")
+        if message.startswith("would exceed post budget:"):
+            return demo_post_budget_message()
     return message
 
 
@@ -1729,10 +1744,15 @@ class Handler(BaseHTTPRequestHandler):
         url = urlsplit(self.path)
         try:
             if url.path == "/api/health" and method == "GET":
+                posts_read = APP.x.posts_read if APP.x else 0
+                post_cap = MAX_POSTS
                 self._send(200, {"ok": True, "openai": bool(os.environ.get("OPENAI_API_KEY")),
                                  "baseten": bool(os.environ.get("BASETEN_API_KEY")),
                                  "x": bool(APP.x), "xSpend": round(APP.x.spend, 3) if APP.x else 0,
-                                 "xPostCap": MAX_POSTS, "xCountsCap": MAX_COUNTS})
+                                 "xPostsRead": posts_read,
+                                 "xPostCap": post_cap,
+                                 "xPostCapRemaining": None if post_cap is None else max(0, post_cap - posts_read),
+                                 "xCountsCap": MAX_COUNTS})
                 return
             if url.path == "/api/demo" and method == "GET":
                 recorded = recorded_demo()
