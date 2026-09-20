@@ -833,16 +833,20 @@ class Sequitor:
             has_openjev = status == "openjev" or (isinstance(embedded_openjev, dict)
                                                    and embedded_openjev.get("status") == "openjev")
             wants_openjev = bool(os.environ.get("SEQUITOR_JEV_RERANK_URL")) and not has_openjev
+            refreshed_model = False
             if status == "unavailable" or wants_openjev or (os.environ.get("SEQUITOR_BASETEN_CHAIN_URL") and status != "baseten chain"):
                 cached_period["model"] = self.classify(run["seedPost"]["text"], cached_period["posts"], emit=emit)
                 run["posts"] = cached_period["posts"]
                 run["model"] = {"openai": run["searchPlan"].get("model"), "baseten": cached_period["model"]}
+                refreshed_model = True
                 self.save()
                 if run.get("seed") == DEFAULT_SEED:
                     write_json(CAPTURE_FILE, run)
-            if any("rankingScore" not in post or "spaceY" not in post or "spaceZ" not in post for post in cached_period["posts"]):
+            if refreshed_model or any("rankingScore" not in post or "spaceY" not in post or "spaceZ" not in post for post in cached_period["posts"]):
                 retrieval = self.rank_posts(run["seedPost"], cached_period["posts"])
                 cached_period["model"] = {**cached_period.get("model", {}), "retrieval": retrieval}
+                if emit:
+                    emit_post_batches(emit, cached_period["posts"], size=16, pause=0.035)
                 self.save()
             current_spend = round(self.x.spend, 3) if self.x else 0
             cached_period["xSpend"] = current_spend
@@ -1027,6 +1031,10 @@ class Sequitor:
             if wants_openjev or (os.environ.get("SEQUITOR_BASETEN_CHAIN_URL") and current_status != "baseten chain"):
                 model = self.classify(cached["seedPost"]["text"], cached["posts"], emit=emit)
                 cached["model"] = {**cached.get("model", {}), "baseten": model}
+                retrieval = self.rank_posts(cached["seedPost"], cached["posts"])
+                cached["model"] = {**cached.get("model", {}), "retrieval": retrieval}
+                if emit:
+                    emit_post_batches(emit, cached["posts"], size=16, pause=0.035)
                 self.save()
             return source_metadata(cached)
         if not self.x:
