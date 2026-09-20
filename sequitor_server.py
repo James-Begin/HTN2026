@@ -41,6 +41,7 @@ PLAN_VERSION = 7
 ANCHOR_VERSION = 5
 PERIOD_SCHEMA = 6
 FEED_TARGET = 500
+MIN_FEED_CACHE = 12
 CLASSIFY_LIMIT = 128
 ANCHOR_RECORDINGS = {
     "2098435855857668156": ROOT / "demo" / "recordings" / "anchor-tomdale.json",
@@ -265,6 +266,23 @@ def emit_progressive_posts(emit, posts: list[dict]) -> None:
 
 def feed_room(unique: dict, target: int = FEED_TARGET) -> int:
     return max(0, target - len(unique))
+
+
+def period_cache_usable(cached_period: dict, run: dict) -> bool:
+    """Ignore period snapshots that predate anchor fixes or stopped mid-collect."""
+    posts = cached_period.get("posts") or []
+    if len(posts) < MIN_FEED_CACHE:
+        return False
+    seed_id = str(run.get("seedPost", {}).get("id") or "")
+    if seed_id and cached_period.get("seedPostId") and cached_period.get("seedPostId") != seed_id:
+        return False
+    if seed_id and not any(str(post.get("id")) == seed_id for post in posts):
+        return False
+    return True
+
+
+def run_cache_usable(run: dict) -> bool:
+    return len(run.get("posts") or []) >= MIN_FEED_CACHE
 
 
 def cap_feed(posts: list[dict], seed: dict | None = None, entry: dict | None = None,
@@ -1126,8 +1144,10 @@ class Sequitor:
         if not re.fullmatch(r"\d{4}-\d{2}-\d{2}", day):
             raise ValueError("Invalid UTC day")
         key = run_id + ":" + day
-        if key in self.cache["periods"] and self.cache["periods"][key].get("schemaVersion") == PERIOD_SCHEMA and self.cache["periods"][key].get("discoveryQuery") == run["searchPlan"].get("discoveryPhrase"):
-            cached_period = self.cache["periods"][key]
+        cached_period = self.cache["periods"].get(key)
+        if (cached_period and cached_period.get("schemaVersion") == PERIOD_SCHEMA
+                and cached_period.get("discoveryQuery") == run["searchPlan"].get("discoveryPhrase")
+                and period_cache_usable(cached_period, run)):
             if emit:
                 emit("stage", {"name": "Loading cached posts", "source": "cache"})
                 ordered = sorted(cached_period["posts"], key=lambda post: -(post.get("likes") or 0))
@@ -1164,6 +1184,10 @@ class Sequitor:
             if run.get("seed") == DEFAULT_SEED:
                 write_json(CAPTURE_FILE, run)
             return source_metadata(cached_period)
+        stale_period = self.cache["periods"].get(key)
+        if stale_period and not period_cache_usable(stale_period, run):
+            self.cache["periods"].pop(key, None)
+            self.save()
         prior = self.cache["periods"].get(key)
         if prior:
             primary = [p for p in prior["posts"] if p.get("scope") == "measured phrase"]
@@ -1288,8 +1312,9 @@ class Sequitor:
             emit_post_batches(emit, updates, size=12, pause=0)
             emit("model.ready", {"model": {**model, "retrieval": retrieval}})
         truncated = partial or extra_partial or len(posts) >= FEED_TARGET
+        seed_id = str(run.get("seedPost", {}).get("id") or "")
         result = {"schemaVersion": PERIOD_SCHEMA, "discoveryQuery": run["searchPlan"].get("discoveryPhrase"),
-                  "day": day, "posts": posts, "feedTarget": FEED_TARGET,
+                  "seedPostId": seed_id or None, "day": day, "posts": posts, "feedTarget": FEED_TARGET,
                   "rankingCoverage": f"up to {FEED_TARGET} retrieved posts; search may be truncated" if truncated
                   else f"up to {FEED_TARGET} retrieved posts; phrase scope plus related searches",
                   "partial": partial or extra_partial, "model": {**model, "retrieval": retrieval},
@@ -1429,6 +1454,12 @@ class Sequitor:
         cache_key = re.sub(r"[^a-z0-9]+", "-", seed.lower())[:100]
         stale = self.cache["runs"].get(cache_key)
         if stale and stale.get("anchorVersion") != ANCHOR_VERSION:
+            self.cache["runs"].pop(cache_key, None)
+            for period_key in [key for key in self.cache["periods"] if key.startswith(cache_key + ":")]:
+                self.cache["periods"].pop(period_key, None)
+            self.save()
+        stale = self.cache["runs"].get(cache_key)
+        if stale and not run_cache_usable(stale):
             self.cache["runs"].pop(cache_key, None)
             for period_key in [key for key in self.cache["periods"] if key.startswith(cache_key + ":")]:
                 self.cache["periods"].pop(period_key, None)

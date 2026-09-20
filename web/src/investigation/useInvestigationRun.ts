@@ -118,9 +118,11 @@ export function useInvestigationRun() {
             }
             if (message.type === 'run.ready') {
               milestones.runReady = true
-              run = normalizeRun(payload as unknown as Run)
-              posts = run.posts
-              seedPost = run.seedPost || seedPost
+              const incoming = normalizeRun(payload as unknown as Run)
+              run = incoming
+              // run.ready intentionally ships empty posts while buckets fill; keep seed/entry from earlier events.
+              posts = incoming.posts.length ? mergePosts(posts, incoming.posts) : posts
+              seedPost = incoming.seedPost || seedPost
               if (seedPost && !run.seedPost) run = { ...run, seedPost }
               activity = run.streamSource === 'cache' ? 'Loading cached results…' : 'Retrieving posts…'
             }
