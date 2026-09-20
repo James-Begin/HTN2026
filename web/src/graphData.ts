@@ -11,6 +11,11 @@ export type GraphPost = {
   quotedPostId?: string | null
   scope?: string
   textIsExcerpt?: boolean
+  spaceScore?: number
+  spaceY?: number
+  spaceZ?: number
+  spaceDirectionQuality?: number
+  spaceMethod?: string
 }
 
 export type GraphEdge = {

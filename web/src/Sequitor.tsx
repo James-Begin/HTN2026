@@ -19,6 +19,7 @@ type Post = {
   basetenKind?: string; sameClaimScore?: number; sameClaimRegister?: string; rerankerScore?: number; rerankerModel?: string
   basetenPick?: boolean; semanticScore?: number; lexicalScore?: number
   rankingScore?: number; rankingMethod?: string
+  spaceScore?: number; spaceY?: number; spaceZ?: number; spaceDirectionQuality?: number; spaceMethod?: string
 }
 type Bucket = { day: string; count: number | null; coverage: 'complete' | 'partial' | 'sample' | 'unavailable'; pending?: boolean }
 type RunStatus = 'running' | 'reconnecting' | 'completed' | 'stopped' | 'failed'
@@ -212,8 +213,8 @@ function record(value: unknown): value is Record<string, unknown> {
 }
 function validPost(value: unknown): value is Post {
   return record(value) && ['id', 'text', 'publishedAt', 'author'].every(key => typeof value[key] === 'string')
-    && ['handle', 'avatar', 'url', 'scope', 'captureTime', 'basetenKind', 'rankingMethod', 'parentId', 'quotedPostId'].every(key => value[key] == null || typeof value[key] === 'string')
-    && ['likes', 'reposts', 'replies', 'rankingScore', 'sameClaimScore', 'semanticScore', 'lexicalScore'].every(key => value[key] == null || typeof value[key] === 'number' && Number.isFinite(value[key]))
+    && ['handle', 'avatar', 'url', 'scope', 'captureTime', 'basetenKind', 'rankingMethod', 'spaceMethod', 'parentId', 'quotedPostId'].every(key => value[key] == null || typeof value[key] === 'string')
+    && ['likes', 'reposts', 'replies', 'rankingScore', 'sameClaimScore', 'semanticScore', 'lexicalScore', 'spaceScore', 'spaceY', 'spaceZ', 'spaceDirectionQuality'].every(key => value[key] == null || typeof value[key] === 'number' && Number.isFinite(value[key]))
 }
 function validBucket(value: unknown): value is Bucket {
   return record(value) && typeof value.day === 'string' && !Number.isNaN(Date.parse(value.day))

@@ -295,6 +295,106 @@ def cosine(left: list[float] | None, right: list[float] | None) -> float | None:
     return sum(a * b for a, b in zip(left, right)) / denominator if denominator else None
 
 
+def _dot(left: list[float], right: list[float]) -> float:
+    return sum(a * b for a, b in zip(left, right))
+
+
+def _norm(vector: list[float]) -> float:
+    return math.sqrt(_dot(vector, vector))
+
+
+def _space_angle(text: str) -> tuple[float, float]:
+    """A deterministic lexical direction when an embedding endpoint is absent.
+
+    Posts sharing distinctive terms receive a related direction. It deliberately
+    remains labelled as a lexical fallback in the browser rather than implying a
+    semantic embedding that was never served.
+    """
+    tokens = normalized_words(text)
+    if not tokens:
+        return 1.0, 0.0
+    horizontal = vertical = 0.0
+    for token in tokens:
+        digest = hashlib.sha256(token.encode()).digest()
+        angle = int.from_bytes(digest[:8], "big") / 2**64 * math.tau
+        horizontal += math.cos(angle)
+        vertical += math.sin(angle)
+    length = math.hypot(horizontal, vertical)
+    return (horizontal / length, vertical / length) if length > 1e-9 else (1.0, 0.0)
+
+
+def _lexical_space(seed: dict, posts: list[dict]) -> str:
+    """Provide a live, clearly marked projection before embeddings are deployed."""
+    seed_id = str(seed.get("id") or "")
+    for post in posts:
+        score = post.get("semanticScore")
+        similarity = float(score) if isinstance(score, (int, float)) and math.isfinite(score) else token_overlap(seed.get("text", ""), post.get("text", ""))
+        similarity = min(1.0, max(-1.0, similarity))
+        if str(post.get("id")) == seed_id:
+            similarity, y, z = 1.0, 0.0, 0.0
+        else:
+            radius = math.sqrt((1.0 - similarity) / 2.0)
+            horizontal, vertical = _space_angle(post.get("text", ""))
+            y, z = radius * horizontal, radius * vertical
+        post["spaceScore"] = round(similarity, 6)
+        post["spaceY"] = round(y, 6)
+        post["spaceZ"] = round(z, 6)
+        post["spaceDirectionQuality"] = 0.0
+        post["spaceMethod"] = "lexical direction fallback"
+    return "lexical direction fallback"
+
+
+def add_space_features(seed: dict, posts: list[dict], vectors: list[list[float] | None], source: str = "embeddings") -> str:
+    """Attach a seed-relative 2D embedding projection to streamed live posts.
+
+    The radial value remains the exact embedding distance from the seed. The
+    angle uses two stable residual basis directions chosen from this run, so it
+    is a useful neighbourhood view without claiming clusters or influence.
+    """
+    if len(vectors) != len(posts) + 1 or not vectors or not vectors[0]:
+        return _lexical_space(seed, posts)
+    seed_vector = vectors[0]
+    if not isinstance(seed_vector, list) or not seed_vector or not all(isinstance(value, (int, float)) and math.isfinite(value) for value in seed_vector):
+        return _lexical_space(seed, posts)
+    residuals: list[tuple[dict, list[float], float, list[float]]] = []
+    for post, vector in zip(posts, vectors[1:]):
+        if not isinstance(vector, list) or len(vector) != len(seed_vector) or not all(isinstance(value, (int, float)) and math.isfinite(value) for value in vector):
+            return _lexical_space(seed, posts)
+        similarity = min(1.0, max(-1.0, _dot(seed_vector, vector)))
+        residual = [value - similarity * basis for value, basis in zip(vector, seed_vector)]
+        residuals.append((post, residual, _norm(residual), similarity))
+    ordered = sorted(residuals, key=lambda item: (-item[2], str(item[0].get("id"))))
+    if not ordered or ordered[0][2] <= 1e-8:
+        return _lexical_space(seed, posts)
+    first = [value / ordered[0][2] for value in ordered[0][1]]
+    candidates = []
+    for post, residual, _, similarity in residuals:
+        perpendicular = [value - _dot(residual, first) * basis for value, basis in zip(residual, first)]
+        candidates.append((post, residual, similarity, perpendicular, _norm(perpendicular)))
+    second = max(candidates, key=lambda item: (item[4], str(item[0].get("id"))))
+    if second[4] <= 1e-8:
+        return _lexical_space(seed, posts)
+    second_basis = [value / second[4] for value in second[3]]
+    seed_id = str(seed.get("id") or "")
+    for post, residual, residual_norm, similarity in residuals:
+        one, two = _dot(residual, first), _dot(residual, second_basis)
+        projected_norm = math.hypot(one, two)
+        quality = min(1.0, (projected_norm / residual_norm) ** 2) if residual_norm > 1e-8 else 0.0
+        if str(post.get("id")) == seed_id:
+            similarity, y, z, quality = 1.0, 0.0, 0.0, 0.0
+        elif projected_norm > 1e-8:
+            radius = math.sqrt((1.0 - similarity) / 2.0)
+            y, z = radius * one / projected_norm, radius * two / projected_norm
+        else:
+            y = z = 0.0
+        post["spaceScore"] = round(similarity, 6)
+        post["spaceY"] = round(y, 6)
+        post["spaceZ"] = round(z, 6)
+        post["spaceDirectionQuality"] = round(quality, 6)
+        post["spaceMethod"] = f"{source} residual projection"
+    return f"{source} residual projection"
+
+
 def post_from_x(row: dict, scope: str) -> dict:
     refs = row.get("referenced_tweets") or []
     metrics = row.get("public_metrics") or {}
@@ -513,12 +613,12 @@ class Sequitor:
         return {"queries": queries, "reason": str(result.get("reason") or "")[:180], "model": data.get("model")}
 
     def embed_texts(self, texts: list[str]) -> tuple[list[list[float] | None], str]:
-        """Use an optional Baseten BEI endpoint; retain a clear local fallback until it exists."""
+        """Prefer a Baseten embedding endpoint, then use the OpenAI sponsor path."""
         endpoint = os.environ.get("SEQUITOR_BASETEN_EMBED_URL", "").rstrip("/")
         key = os.environ.get("BASETEN_API_KEY")
         model = os.environ.get("SEQUITOR_BASETEN_EMBED_MODEL", "not-required")
         if not endpoint or not key:
-            return [None] * len(texts), "token-overlap fallback"
+            return self.openai_embed_texts(texts)
         # Keep vectors tied to the deployment as well as the model label: two
         # Baseten deployments can legitimately expose the same model name.
         deployment = hashlib.sha256(endpoint.encode()).hexdigest()[:16]
@@ -542,6 +642,33 @@ class Sequitor:
                 cached[hashes[index]] = vector
         self.save()
         return [cached.get(digest) for digest in hashes], "Baseten embeddings"
+
+    def openai_embed_texts(self, texts: list[str]) -> tuple[list[list[float] | None], str]:
+        """Small, cached embeddings keep live space coordinates meaningful."""
+        key = os.environ.get("OPENAI_API_KEY")
+        model = "text-embedding-3-small"
+        if not key:
+            return [None] * len(texts), "token-overlap fallback"
+        cached = self.cache.setdefault("embeddings", {}).setdefault("openai", {}).setdefault(model, {})
+        hashes = [hashlib.sha256(text.encode()).hexdigest() for text in texts]
+        missing = [index for index, digest in enumerate(hashes) if digest not in cached]
+        for offset in range(0, len(missing), 64):
+            indices = missing[offset:offset + 64]
+            body = {"input": [texts[index][:3000] for index in indices], "model": model}
+            req = urllib.request.Request("https://api.openai.com/v1/embeddings", data=json.dumps(body).encode(),
+                                         headers={"Authorization": "Bearer " + key, "Content-Type": "application/json"})
+            with urllib.request.urlopen(req, timeout=25) as response:
+                payload = json.load(response)
+            rows = sorted(payload.get("data") or [], key=lambda row: int(row.get("index", -1)))
+            if len(rows) != len(indices):
+                raise RuntimeError("OpenAI embedding response did not match the request")
+            for index, row in zip(indices, rows):
+                vector = row.get("embedding")
+                if not isinstance(vector, list) or not vector:
+                    raise RuntimeError("OpenAI embedding response was missing a vector")
+                cached[hashes[index]] = vector
+        self.save()
+        return [cached.get(digest) for digest in hashes], f"OpenAI {model}"
 
     def rank_posts(self, seed: dict, posts: list[dict]) -> dict:
         """Stable hybrid scoring now; a future trained reranker simply supplies one signal."""
@@ -574,8 +701,17 @@ class Sequitor:
             post["lexicalScore"] = round(lexical, 4)
             post["rankingScore"] = round(score, 4)
             post["rankingMethod"] = "hybrid + " + reranker_name if reranker is not None else "hybrid retrieval"
+        space_method = add_space_features(seed, posts, vectors, semantic_method)
+        # The resolved seed can live outside a cached period's post list. It is
+        # still the reference point for the live scene, so keep it centered.
+        seed["spaceScore"] = 1.0
+        seed["spaceY"] = 0.0
+        seed["spaceZ"] = 0.0
+        seed["spaceDirectionQuality"] = 0.0
+        seed["spaceMethod"] = space_method
         return {"status": "ready", "semantic": semantic_method,
                 "reranker": "connected" if any(post.get("sameClaimScore") is not None or post.get("rerankerScore") is not None for post in posts) else "awaiting trained endpoint",
+                "space": space_method,
                 **({"embeddingError": embedding_error} if embedding_error else {})}
 
     def classify(self, seed_text: str, posts: list[dict], emit=None) -> dict:
@@ -651,7 +787,7 @@ class Sequitor:
                 self.save()
                 if run.get("seed") == DEFAULT_SEED:
                     write_json(CAPTURE_FILE, run)
-            if any("rankingScore" not in post for post in cached_period["posts"]):
+            if any("rankingScore" not in post or "spaceY" not in post or "spaceZ" not in post for post in cached_period["posts"]):
                 retrieval = self.rank_posts(run["seedPost"], cached_period["posts"])
                 cached_period["model"] = {**cached_period.get("model", {}), "retrieval": retrieval}
                 self.save()
@@ -817,6 +953,14 @@ class Sequitor:
                 except Exception as exc:
                     cached["searchPlan"]["revisionError"] = type(exc).__name__
                     self.save()
+            needs_space = ("spaceY" not in cached.get("seedPost", {}) or "spaceZ" not in cached.get("seedPost", {})
+                           or any("spaceY" not in post or "spaceZ" not in post for post in cached.get("posts", [])))
+            needs_semantic_upgrade = bool(os.environ.get("OPENAI_API_KEY")) and any(
+                post.get("spaceMethod") == "lexical direction fallback" for post in cached.get("posts", []))
+            if needs_space or needs_semantic_upgrade:
+                retrieval = self.rank_posts(cached["seedPost"], cached["posts"])
+                cached["model"] = {**cached.get("model", {}), "retrieval": retrieval}
+                self.save()
             if emit:
                 emit_activity(emit, cached, "cache")
                 ordered = sorted(cached["posts"], key=lambda post: -(post.get("likes") or 0))
