@@ -1,5 +1,15 @@
 [
   {
+    "id": "iclr-submission-overload-joke",
+    "entryUrl": "https://x.com/CSProfKGD/status/2101363979016614393",
+    "entryId": "2101363979016614393",
+    "expectedAnchorUrl": "https://x.com/jacobli99/status/2101349669439688867",
+    "expectedAnchorId": "2101349669439688867",
+    "kind": "semantic-reference",
+    "notes": "The crime-spree joke about abandoned ICLR submissions refers to the earlier report that ICLR 2027 received more than 60,000 submissions.",
+    "live": true
+  },
+  {
     "id": "tomdale-navier-stokes",
     "entryUrl": "https://x.com/tomdale/status/2098435855857668156",
     "entryId": "2098435855857668156",
