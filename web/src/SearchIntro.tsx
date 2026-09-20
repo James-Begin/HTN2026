@@ -50,7 +50,7 @@ const FOCAL = 720
 const READ_MS = 4200
 const ACCELERATE_MS = 1700
 const READ_SPEED = 0.025
-const RUSH_SPEED = 2.15
+const RUSH_SPEED = 1.65
 const ACCENTS = ['#94cfee', '#e8c58d', '#a8d8b9', '#9dbce9', '#f1b4ce', '#bfbcf4', '#dcad9e', '#d8d499', '#c9b1f2', '#e1a7d7', '#78c8e2', '#b9a9f3']
 
 const clamp = (value: number, low: number, high: number) => Math.min(high, Math.max(low, value))
