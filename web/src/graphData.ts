@@ -16,7 +16,11 @@ export type GraphPost = {
   spaceZ?: number
   spaceDirectionQuality?: number
   spaceMethod?: string
+  semanticScore?: number
+  lexicalScore?: number
+  rankingScore?: number
 }
+
 
 export type GraphEdge = {
   id: string

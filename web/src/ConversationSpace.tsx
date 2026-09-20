@@ -7,7 +7,7 @@ import type { GraphPost } from './graphData'
 import './conversation-space.css'
 import './conversation-space-overrides.css'
 
-type Feature = { text: string; cosine: number; y: number | null; z: number | null; inputTruncated: boolean }
+type Feature = { text: string; cosine: number; y: number | null; z: number | null; inputTruncated: boolean; estimated?: boolean }
 type Layout = { referencePostId: string; referenceTextHash: string; basisId: string; features: Record<string, Feature> }
 const layouts = artifact.layouts as Record<string, Layout>
 const DAY = 86400000
@@ -22,6 +22,35 @@ function liveFeature(post: GraphPost): Feature | undefined {
   if (![post.spaceScore, post.spaceY, post.spaceZ].every(value => typeof value === 'number' && Number.isFinite(value))) return undefined
   return { text: post.text, cosine: post.spaceScore!, y: post.spaceY!, z: post.spaceZ!, inputTruncated: false }
 }
+
+// A saved run can gain posts after its frozen MiniLM projection was recorded.
+// Project their words through a stable signed hash so shared terms retain a
+// shared direction until the live semantic projection replaces it. This avoids
+// fabricating a single "waiting" rail at the bottom of the space.
+const directionStopWords = new Set(['about', 'after', 'again', 'also', 'and', 'are', 'been', 'but', 'for', 'from', 'have', 'here', 'into', 'just', 'more', 'not', 'now', 'our', 'out', 'that', 'the', 'their', 'then', 'this', 'they', 'was', 'what', 'when', 'with', 'you', 'your'])
+function stableHash(value: string, salt = 0) {
+  let hash = 2166136261 ^ salt
+  for (let index = 0; index < value.length; index++) hash = Math.imul(hash ^ value.charCodeAt(index), 16777619)
+  return hash >>> 0
+}
+function fallbackFeature(post: GraphPost): Feature | undefined {
+  const words = (post.text.toLowerCase().match(/[\p{L}\p{N}_-]+/gu) || [])
+    .filter(word => word.length > 2 && !directionStopWords.has(word)).slice(0, 90)
+  if (!words.length) return undefined
+  let y = 0, z = 0
+  for (const word of words) {
+    const angle = stableHash(word) / 0xffffffff * Math.PI * 2
+    y += Math.cos(angle); z += Math.sin(angle)
+  }
+  if (Math.hypot(y, z) < .001) {
+    const angle = stableHash(post.id) / 0xffffffff * Math.PI * 2
+    y = Math.cos(angle); z = Math.sin(angle)
+  }
+  const length = Math.hypot(y, z)
+  const seedMatch = post.semanticScore ?? post.lexicalScore ?? post.rankingScore ?? 0
+  const radius = .24 + .48 * (1 - Math.max(0, Math.min(1, seedMatch)))
+  return { text: post.text, cosine: seedMatch, y: y / length * radius, z: z / length * radius, inputTruncated: false, estimated: true }
+}
 const dateLabel = (time: number) => new Date(time).toLocaleString('en-CA', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit', timeZone: 'UTC' })
 function elapsed(ms: number) {
   const seconds = Math.floor(Math.abs(ms) / 1000)
@@ -31,7 +60,7 @@ function elapsed(ms: number) {
   return `${ms < 0 ? '−' : '+'}${parts}`
 }
 
-type Point = { post: GraphPost; position: THREE.Vector3; feature?: Feature; pending: boolean }
+type Point = { post: GraphPost; position: THREE.Vector3; feature?: Feature; pending: boolean; estimated: boolean }
 type Frame = { origin: number; end: number; scale: number; times: number[]; flow: number[] }
 function makeFrame(origin: number, end: number, posts: GraphPost[]): Frame {
   // Calibrate once against the reference capture, not the changing replay subset.
@@ -192,7 +221,7 @@ function createScene(host: HTMLDivElement, frame: Frame, seedId: string, initial
       dummy.scale.setScalar(Math.max(size, minSize) * Math.max(.05, progress))
       dummy.updateMatrix()
       nodes!.setMatrixAt(slot, dummy.matrix)
-      const color = point.pending ? '#53606c' : point.post.id === seedId ? '#f1faff' : active ? '#ffffff' : point.post.quotedPostId ? '#b8a0f4' : point.post.parentId ? '#72d3cf' : '#6da9d2'
+      const color = point.pending ? '#53606c' : point.estimated ? '#7895aa' : point.post.id === seedId ? '#f1faff' : active ? '#ffffff' : point.post.quotedPostId ? '#b8a0f4' : point.post.parentId ? '#72d3cf' : '#6da9d2'
       nodes!.setColorAt(slot, new THREE.Color(color))
     })
     nodes.instanceMatrix.needsUpdate = true
@@ -403,7 +432,7 @@ export default function ConversationSpace({ posts, seedId, referencePosts, onOpe
   const activeId = selected?.id || ''
   const matchingFeature = (post: GraphPost) => {
     const feature = layout?.features[post.id]
-    return feature?.text === post.text ? feature : liveFeature(post)
+    return feature?.text === post.text ? feature : liveFeature(post) || fallbackFeature(post)
   }
   const points = useMemo<Point[]>(() => !frame ? [] : corpus.filter(post => stamp(post) <= cutoff && (earlier || stamp(post) >= frame.origin)).map(post => {
     const matched = matchingFeature(post)
@@ -413,13 +442,14 @@ export default function ConversationSpace({ posts, seedId, referencePosts, onOpe
     const pending = !isReference && (matched?.y == null || matched.z == null)
     const x = isReference ? 0 : timeX(frame, stamp(post), timeMode)
     const radius = radiusAt(x, display)
-    const y = isReference ? 0 : pending ? -(radius + 7) : matched!.y! * radius
+    const y = isReference ? 0 : pending ? 0 : matched!.y! * radius
     const z = isReference || pending ? 0 : matched!.z! * radius
-    return { post, feature: matched, pending, position: new THREE.Vector3(x, y, z) }
+    return { post, feature: matched, pending, estimated: !!matched?.estimated, position: new THREE.Vector3(x, y, z) }
   }), [corpus, cutoff, earlier, frame, layout, timeMode, display, reference?.id])
   const selectedFeature = selected ? matchingFeature(selected) : undefined
   const priorCount = frame ? corpus.filter(post => stamp(post) < frame.origin).length : 0
   const pending = points.filter(point => point.pending).length
+  const estimated = points.filter(point => point.estimated).length
   const matches = corpus.filter(post => `${post.author} ${post.handle || ''} ${post.text}`.toLowerCase().includes(query.toLowerCase()))
   const neighbors = selected ? corpus.filter(post => post.id !== selected.id && (post.parentId === selected.id || post.quotedPostId === selected.id || selected.parentId === post.id || selected.quotedPostId === post.id)) : []
   const visibleNeighbors = showAllConnections ? neighbors : neighbors.slice(0, 10)
@@ -465,7 +495,7 @@ export default function ConversationSpace({ posts, seedId, referencePosts, onOpe
   function replay() { setCursor(start); setPlaying(true); setSelectedId(reference?.id || ''); api.current?.reset() }
 
   return <section className="space-shell" aria-label="Conversation Space">
-    <div className="space-heading"><div><p className="space-eyebrow">CONVERSATION SPACE <span>{layout ? 'RECORDED' : liveSpaceMethod ? 'LIVE' : 'WAITING'}</span></p><h2>Time, meaning, and replies.</h2><p>{timeMode === 'flow' ? 'A continuous view of captured posts. Quiet gaps compressed.' : 'True elapsed time. Every post at its publication timestamp.'}</p></div><div className="space-count"><strong>{points.length}</strong><span>of {corpus.length} captured posts{pending ? ` · ${pending} awaiting a position` : ''}</span></div></div>
+    <div className="space-heading"><div><p className="space-eyebrow">CONVERSATION SPACE <span>{layout ? 'RECORDED' : liveSpaceMethod ? 'LIVE' : 'WAITING'}</span></p><h2>Time, meaning, and replies.</h2><p>{timeMode === 'flow' ? 'A continuous view of captured posts. Quiet gaps compressed.' : 'True elapsed time. Every post at its publication timestamp.'}</p></div><div className="space-count"><strong>{points.length}</strong><span>of {corpus.length} captured posts{estimated ? ` · ${estimated} lexical placements` : pending ? ` · ${pending} awaiting a position` : ''}</span></div></div>
     <div className="space-toolbar">
       <div className="space-segment" role="group" aria-label="Visible connections">{[['selected', 'Selected links'], ['all', 'All links'], ['none', 'No links']].map(([value, label]) => <button key={value} aria-pressed={links === value} onClick={() => setLinks(value)}>{label}</button>)}</div>
       <label className="space-earlier"><input type="checkbox" checked={earlier} onChange={event => { setEarlier(event.target.checked); setCursor(null); setPlaying(false) }} /> Include earlier posts {priorCount ? `(${priorCount})` : ''}</label>
@@ -495,6 +525,7 @@ export default function ConversationSpace({ posts, seedId, referencePosts, onOpe
           {selected.textIsExcerpt && <p className="space-source-note">Captured excerpt; full text unavailable here.</p>}
           <div className="space-post-metrics">{selected.likes != null && <span><Heart size={14} />{selected.likes.toLocaleString()} captured likes</span>}{selected.url && <a href={selected.url} target="_blank" rel="noopener noreferrer">Open on X <ArrowUpRight size={13} /></a>}</div>
           <div className="space-readings"><div><span>FROM REFERENCE</span><strong>{frame ? elapsed(stamp(selected) - frame.origin) : '—'}</strong></div><div><span>{selected?.spaceMethod === 'lexical direction fallback' ? 'SEED MATCH' : 'SEED COSINE'}</span><strong>{selectedFeature ? selectedFeature.cosine.toFixed(3) : 'Awaiting score'}</strong></div></div>
+          {selectedFeature?.estimated && <p className="space-source-note">Saved projection unavailable for this later-captured post. Its angle is a stable lexical estimate; a live embedding will replace it when available.</p>}
           {selectedFeature?.inputTruncated && <p className="space-source-note">Embedding uses a token-limited excerpt of the captured text.</p>}
           {!points.some(point => point.post.id === selected.id) && <p className="space-source-note">Selected post is outside the visible time window.</p>}
           <div className="space-post-actions"><button onClick={() => api.current?.focus(selected.id)}><Focus size={14} />Focus camera</button><button onClick={() => onOpenPost(selected)}>Source context <ArrowUpRight size={14} /></button></div>
@@ -503,7 +534,7 @@ export default function ConversationSpace({ posts, seedId, referencePosts, onOpe
       </aside>
     </div>
     <div className="space-playback"><button className="space-play" disabled={!corpus.length} onClick={() => playing ? setPlaying(false) : cursor !== null && cursor < end ? setPlaying(true) : replay()} aria-label={playing ? 'Pause time replay' : 'Play time replay'}>{playing ? <Pause size={17} /> : <Play size={17} />}</button><div className="space-scrubber"><div><span>{frame ? dateLabel(start) : '—'} UTC</span><strong>{cursor === null ? 'All received posts' : `${dateLabel(cutoff)} UTC`}</strong><span>{frame ? dateLabel(end) : '—'} UTC</span></div><input aria-label="Publication time" aria-valuetext={frame ? `${dateLabel(cutoff)} UTC` : 'Waiting for captured posts'} type="range" min={frame ? timeX(frame, start, timeMode) : 0} max={frame ? timeX(frame, end, timeMode) : 1} step="any" value={frame ? timeX(frame, cutoff, timeMode) : 1} onChange={event => { if (frame) setCursor(timeAtX(frame, Number(event.target.value), timeMode)); setPlaying(false) }} /></div><select aria-label="Replay speed" value={speed} onChange={event => setSpeed(Number(event.target.value))}><option value={.5}>0.5×</option><option value={1}>1×</option><option value={2}>2×</option></select><button className="space-show-all" onClick={() => { setCursor(null); setPlaying(false) }}>Show all</button></div>
-    <div className="space-foot"><span title={layout ? artifact.model : liveSpaceMethod}>{layout ? `${artifact.model.split('@')[0]} · frozen semantic projection` : liveSpaceMethod ? `Live projection · ${liveSpaceMethod}` : 'Waiting for live ranking to position captured posts'}</span><span>{cone ? 'Cone width amplifies semantic departure with time; it is a visual treatment, not a comparable distance scale.' : 'Radius measures departure from the seed’s captured text.'} {selected?.spaceMethod === 'lexical direction fallback' ? 'Fallback radius uses the retrieval match score; angle groups shared terms.' : 'Cosine scores are unchanged. Angle is a lossy projection.'}</span><span>{timeMode === 'flow' ? 'Flow spacing compresses captured gaps and expands dense bursts; horizontal distance is not elapsed time.' : 'Horizontal distance represents elapsed publication time.'} No timestamps are shifted and no posts are added. Replay follows publication order.</span></div>
+    <div className="space-foot"><span title={layout ? artifact.model : liveSpaceMethod}>{layout ? `${artifact.model.split('@')[0]} · frozen semantic projection` : liveSpaceMethod ? `Live projection · ${liveSpaceMethod}` : 'Waiting for live ranking to position captured posts'}</span><span>{cone ? 'Cone width amplifies semantic departure with time; it is a visual treatment, not a comparable distance scale.' : 'Radius measures departure from the seed’s captured text.'} {selectedFeature?.estimated || selected?.spaceMethod === 'lexical direction fallback' ? 'Estimated placements use retrieval similarity for radius; shared terms determine a stable angle.' : 'Cosine scores are unchanged. Angle is a lossy projection.'}</span><span>{timeMode === 'flow' ? 'Flow spacing compresses captured gaps and expands dense bursts; horizontal distance is not elapsed time.' : 'Horizontal distance represents elapsed publication time.'} No timestamps are shifted and no posts are added. Replay follows publication order.</span></div>
     <details className="space-accessible-list"><summary>Browse captured posts without the 3D view</summary><div>{corpus.map(post => <button key={post.id} onClick={() => choose(post.id)}><strong>{post.author}</strong><span>{post.text.slice(0, 140)}</span></button>)}</div></details>
   </section>
 }
