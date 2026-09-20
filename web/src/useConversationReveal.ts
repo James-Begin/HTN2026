@@ -24,10 +24,10 @@ export type ConversationRevealState<TPost extends RevealablePost> = {
   reset: () => void
 }
 
-const FIRST_POST_DELAY_MS = 180
-const SLOW_REVEAL_COUNT = 5
-const SLOW_REVEAL_DELAY_MS = 690
-const FASTEST_REVEAL_DELAY_MS = 90
+const FIRST_POST_DELAY_MS = 260
+const SLOW_REVEAL_COUNT = 7
+const SLOW_REVEAL_DELAY_MS = 760
+const FASTEST_REVEAL_DELAY_MS = 165
 
 function delayForReveal(revealedCount: number, backlogCount: number) {
   if (revealedCount === 0) return FIRST_POST_DELAY_MS
@@ -35,9 +35,9 @@ function delayForReveal(revealedCount: number, backlogCount: number) {
 
   // The queue becomes more energetic as evidence accumulates, while preserving
   // enough time for the graph and lineage to read as one shared arrival.
-  const acceleration = Math.min(250, (revealedCount - SLOW_REVEAL_COUNT) * 22)
-  const backlogPressure = Math.min(110, Math.max(0, backlogCount - 4) * 7)
-  return Math.max(FASTEST_REVEAL_DELAY_MS, 440 - acceleration - backlogPressure)
+  const acceleration = Math.min(155, (revealedCount - SLOW_REVEAL_COUNT) * 12)
+  const backlogPressure = Math.min(65, Math.max(0, backlogCount - 8) * 3)
+  return Math.max(FASTEST_REVEAL_DELAY_MS, 410 - acceleration - backlogPressure)
 }
 
 /**
@@ -60,6 +60,7 @@ export function useConversationReveal<TPost extends RevealablePost>(posts: reado
   const [postVersion, setPostVersion] = useState(0)
   const [totalCount, setTotalCount] = useState(0)
   const [phase, setPhase] = useState<ConversationRevealPhase>('idle')
+  const [reducedMotion, setReducedMotion] = useState(() => window.matchMedia('(prefers-reduced-motion: reduce)').matches)
 
   const clearTimer = useCallback(() => {
     if (timer.current !== undefined) {
@@ -100,6 +101,27 @@ export function useConversationReveal<TPost extends RevealablePost>(posts: reado
 
   schedule.current = scheduleNext
 
+  const skip = useCallback(() => {
+    clearTimer()
+    let didPresent = false
+    for (const id of queuedIds.current.splice(0)) {
+      if (presentedIdSet.current.has(id)) continue
+      presentedIdSet.current.add(id)
+      presentedOrder.current.push(id)
+      revealedCount.current += 1
+      didPresent = true
+    }
+    if (didPresent) publishPresented()
+    setPhase(presentedOrder.current.length === 0 ? 'idle' : 'complete')
+  }, [clearTimer, publishPresented])
+
+  useEffect(() => {
+    const media = window.matchMedia('(prefers-reduced-motion: reduce)')
+    const update = () => setReducedMotion(media.matches)
+    media.addEventListener('change', update)
+    return () => media.removeEventListener('change', update)
+  }, [])
+
   useEffect(() => {
     let added = false
     let changed = false
@@ -121,24 +143,13 @@ export function useConversationReveal<TPost extends RevealablePost>(posts: reado
 
     if (added) setTotalCount(knownOrder.current.length)
     if (changed) setPostVersion(version => version + 1)
-    if (queuedIds.current.length > 0) schedule.current()
-  }, [posts])
+    if (queuedIds.current.length > 0) {
+      if (reducedMotion) skip()
+      else schedule.current()
+    }
+  }, [posts, reducedMotion, skip])
 
   useEffect(() => () => clearTimer(), [clearTimer])
-
-  const skip = useCallback(() => {
-    clearTimer()
-    let didPresent = false
-    for (const id of queuedIds.current.splice(0)) {
-      if (presentedIdSet.current.has(id)) continue
-      presentedIdSet.current.add(id)
-      presentedOrder.current.push(id)
-      revealedCount.current += 1
-      didPresent = true
-    }
-    if (didPresent) publishPresented()
-    setPhase(presentedOrder.current.length === 0 ? 'idle' : 'complete')
-  }, [clearTimer, publishPresented])
 
   const reset = useCallback(() => {
     clearTimer()
@@ -148,8 +159,9 @@ export function useConversationReveal<TPost extends RevealablePost>(posts: reado
     revealedCount.current = 0
     publishPresented()
     setPhase(queuedIds.current.length === 0 ? 'idle' : 'revealing')
-    schedule.current()
-  }, [clearTimer, publishPresented])
+    if (reducedMotion) skip()
+    else schedule.current()
+  }, [clearTimer, publishPresented, reducedMotion, skip])
 
   const presentedPosts = useMemo(
     () => presentedIds.flatMap(id => {

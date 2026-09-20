@@ -91,7 +91,7 @@ function createScene(host: HTMLDivElement, frame: Frame, seedId: string, initial
   let display = initialDisplay
   const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false })
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.8))
-  renderer.setClearColor('#090e14')
+  renderer.setClearColor('#000000')
   renderer.outputColorSpace = THREE.SRGBColorSpace
   host.appendChild(renderer.domElement)
   renderer.domElement.setAttribute('aria-label', '3D conversation. Drag to orbit; scroll to zoom. Use the post list for keyboard selection.')
