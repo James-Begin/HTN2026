@@ -6,6 +6,9 @@ export type GraphPost = {
   handle?: string
   avatar?: string
   likes?: number | null
+  reposts?: number | null
+  replies?: number | null
+  followers?: number | null
   url?: string
   parentId?: string | null
   quotedPostId?: string | null

@@ -5,7 +5,7 @@ import unittest
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from sequitor_server import Sequitor, recording_for_seed  # noqa: E402
+from sequitor_server import Sequitor, post_from_x, recording_for_seed  # noqa: E402
 
 
 TOMDALE = "2098435855857668156"
@@ -126,6 +126,68 @@ class TestResolveConversationSeed(unittest.TestCase):
         result = self.app.resolve_conversation_seed(f"https://x.com/drewhahn/status/{DREW}")
         self.assertEqual(result["seed_post"]["id"], HF)
         self.assertEqual(result["anchor_method"], "semantic")
+
+
+class TestAnchorCandidatePriority(unittest.TestCase):
+    def test_source_queries_prioritize_high_signal_context_post(self):
+        target = {
+            "id": "2101349669439688867",
+            "text": "60k+ ICLR 2027 submissions is more than all prior ICLRs combined",
+            "created_at": "2026-09-19T16:36:17Z",
+            "author_id": "1",
+            "public_metrics": {"like_count": 914, "retweet_count": 75, "reply_count": 19},
+            "sequitor_author": {"username": "jacobli99", "name": "Jacob",
+                                  "public_metrics": {"followers_count": 12000}},
+        }
+        reaction = {
+            "id": "2101355000000000000",
+            "text": "ICLR 2027 submissions are everywhere, stay vigilant",
+            "created_at": "2026-09-19T17:00:00Z",
+            "author_id": "2",
+            "public_metrics": {"like_count": 3, "retweet_count": 0, "reply_count": 0},
+            "sequitor_author": {"username": "reaction", "name": "Reaction",
+                                  "public_metrics": {"followers_count": 40}},
+        }
+
+        class FakeX:
+            posts_read = 0
+            counts_calls = 0
+            spend = 0
+
+            def __init__(self):
+                self.queries = []
+
+            def search(self, query, _start, _end, max_results):
+                self.queries.append((query, max_results))
+                self.posts_read += 2
+                return [reaction, target], None
+
+        app = Sequitor()
+        app.x = FakeX()
+        app.save = lambda: None
+        entry = post("2101363979016614393",
+                     "I predict a crime spree is coming. Random #ICLR2027 submissions left behind.",
+                     published="2026-09-19T17:33:08Z")
+        candidates = app.semantic_anchor_candidates(
+            entry,
+            {"anchorQueries": ["ICLR 2027 submissions", "60k ICLR submissions"],
+             "discoveryQueries": ["ICLR submissions"]},
+        )
+
+        self.assertEqual(candidates[0]["id"], target["id"])
+        self.assertEqual(candidates[0]["followers"], 12000)
+        self.assertEqual(len(app.x.queries), 2)
+        self.assertTrue(all(" -is:retweet" in query for query, _ in app.x.queries))
+
+    def test_x_post_preserves_author_reach(self):
+        converted = post_from_x({
+            "id": "2101349669439688867", "text": "ICLR context",
+            "created_at": "2026-09-19T16:36:17Z", "author_id": "1",
+            "public_metrics": {"like_count": 914},
+            "sequitor_author": {"username": "jacobli99", "name": "Jacob",
+                                  "public_metrics": {"followers_count": 12000}},
+        }, "anchor discovery")
+        self.assertEqual(converted["followers"], 12000)
 
 
 if __name__ == "__main__":

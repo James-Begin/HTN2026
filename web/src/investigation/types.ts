@@ -1,6 +1,6 @@
 export type Post = {
   id: string; text: string; publishedAt: string; author: string; handle?: string
-  avatar?: string; likes?: number | null; reposts?: number | null; replies?: number | null
+  avatar?: string; likes?: number | null; reposts?: number | null; replies?: number | null; followers?: number | null
   url?: string; parentId?: string | null; quotedPostId?: string | null
   scope?: string; captureTime?: string; textIsExcerpt?: boolean; sourceType?: 'input'
   basetenKind?: string; sameClaimScore?: number; sameClaimRegister?: string; rerankerScore?: number; rerankerModel?: string
@@ -25,6 +25,7 @@ export type SearchPlan = {
   volumeFallback?: string
   discoveryPhrase?: string | null
   discoveryQueries?: string[]
+  anchorQueries?: string[]
   expansionQueries?: string[]
   expansionReason?: string
   whyDiscovery?: string

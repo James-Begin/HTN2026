@@ -207,7 +207,7 @@ class XClient:
                   "max_results": mr,
                   "tweet.fields": "created_at,public_metrics,author_id,lang,referenced_tweets,conversation_id",
                   "expansions": "author_id",
-                  "user.fields": "name,username,profile_image_url"}
+                  "user.fields": "name,username,profile_image_url,public_metrics"}
         if token:
             params["next_token"] = token
         d = self._get("tweets/search/all", params)
@@ -229,7 +229,7 @@ class XClient:
         params = {
             "tweet.fields": "created_at,public_metrics,author_id,lang,referenced_tweets,conversation_id",
             "expansions": "author_id,referenced_tweets.id,referenced_tweets.id.author_id",
-            "user.fields": "name,username,profile_image_url",
+            "user.fields": "name,username,profile_image_url,public_metrics",
         }
         d = self._get(f"tweets/{tweet_id}", params)
         row = d.get("data")

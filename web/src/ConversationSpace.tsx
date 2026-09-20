@@ -18,6 +18,15 @@ type Display = { timeMode: TimeMode; cone: boolean; spread: number }
 const stamp = (post: GraphPost) => Date.parse(post.publishedAt)
 const order = (a: GraphPost, b: GraphPost) => stamp(a) - stamp(b) || a.id.localeCompare(b.id)
 const authorName = (post: GraphPost) => post.author.replace(/\s*·\s*@\S+$/, '')
+const metric = (value: number | null | undefined) => Math.max(0, Number.isFinite(value) ? Number(value) : 0)
+export function nodeSignalSize(post: GraphPost) {
+  const signal = Math.log1p(metric(post.likes)) * .014
+    + Math.log1p(metric(post.reposts)) * .010
+    + Math.log1p(metric(post.replies)) * .008
+    + Math.log1p(metric(post.followers)) * .006
+  return .21 + Math.min(.24, signal)
+}
+
 function liveFeature(post: GraphPost): Feature | undefined {
   if (![post.spaceScore, post.spaceY, post.spaceZ].every(value => typeof value === 'number' && Number.isFinite(value))) return undefined
   return { text: post.text, cosine: post.spaceScore!, y: post.spaceY!, z: post.spaceZ!, inputTruncated: false }
@@ -231,7 +240,8 @@ function createScene(host: HTMLDivElement, frame: Frame, seedId: string, initial
       const progress = reduced || point.post.id === seedId ? 1 : Math.min(1, (now - (births.get(point.post.id) ?? now)) / 320)
       if (progress < 1) animating = true
       const active = point.post.id === selected || point.post.id === hovered
-      const size = point.post.id === seedId ? .55 : active ? .42 : .22 + Math.min(.15, Math.log1p(Math.max(0, point.post.likes ?? 0)) * .014)
+      const signalSize = nodeSignalSize(point.post)
+      const size = point.post.id === seedId ? Math.max(.55, signalSize) : active ? Math.max(.42, signalSize) : signalSize
       dummy.position.copy(point.position)
       const minSize = point.position.distanceTo(camera.position) * screenScale * (point.post.id === seedId ? 4 : active ? 3 : 1.5)
       dummy.scale.setScalar(Math.max(size, minSize) * Math.max(.05, progress))

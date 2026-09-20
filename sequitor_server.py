@@ -37,8 +37,8 @@ EVENT_DIR = DATA_DIR / "sequitor-streams"
 DEFAULT_SEED = "https://x.com/DarioAmodei/status/2098773920774074715"
 MAX_POSTS = 1800  # $9.00 at the default cap.
 MAX_COUNTS = 48   # $0.48 at the default cap.
-PLAN_VERSION = 5
-ANCHOR_VERSION = 2
+PLAN_VERSION = 6
+ANCHOR_VERSION = 3
 PERIOD_SCHEMA = 6
 FEED_TARGET = 500
 CLASSIFY_LIMIT = 128
@@ -356,6 +356,22 @@ def distinct_queries(values: list[str], limit: int = 2) -> list[str]:
     return queries
 
 
+def distinct_anchor_queries(values: list[str], limit: int = 2) -> list[str]:
+    """Keep source-finding queries specific enough to avoid later reactions."""
+    queries: list[str] = []
+    for value in values:
+        words = [word for word in re.findall(r"[\w'-]+", str(value), flags=re.UNICODE)
+                 if word.casefold() not in {"ai", "the", "and", "industry", "third-party"}][:4]
+        if len(words) < 2:
+            continue
+        query = " ".join(words)
+        if query.casefold() not in {item.casefold() for item in queries}:
+            queries.append(query)
+        if len(queries) >= limit:
+            break
+    return queries
+
+
 def normalized_words(text: str) -> set[str]:
     return {word.casefold() for word in re.findall(r"[\w'-]{3,}", text, flags=re.UNICODE)
             if word.casefold() not in {"the", "and", "that", "with", "this", "from", "have", "will", "about", "your"}}
@@ -477,11 +493,13 @@ def post_from_x(row: dict, scope: str) -> dict:
     refs = row.get("referenced_tweets") or []
     metrics = row.get("public_metrics") or {}
     user = row.get("sequitor_author") or {}
+    user_metrics = user.get("public_metrics") or {}
     return {
         "id": str(row["id"]), "text": row.get("text") or "",
         "publishedAt": row.get("created_at") or "", "authorId": str(row.get("author_id") or ""),
         "handle": user.get("username") or "", "author": user.get("name") or "X post",
-        "avatar": user.get("profile_image_url"), "likes": metrics.get("like_count"),
+        "avatar": user.get("profile_image_url"), "followers": user_metrics.get("followers_count"),
+        "likes": metrics.get("like_count"),
         "reposts": metrics.get("retweet_count"), "replies": metrics.get("reply_count"),
         "url": f"https://x.com/i/status/{row['id']}",
         "parentId": next((str(ref["id"]) for ref in refs if ref.get("type") == "replied_to"), None),
@@ -610,8 +628,9 @@ class Sequitor:
         return post_from_x(row, "referenced conversation") if row else None
 
     def semantic_anchor_candidates(self, entry_post: dict, plan: dict) -> list[dict]:
-        """Run one tight, pre-entry search when commentary has no explicit id."""
-        queries = list(plan.get("discoveryQueries") or [])
+        """Search multiple source-oriented queries and rank likely premise posts."""
+        queries = list(plan.get("anchorQueries") or []) + list(plan.get("discoveryQueries") or [])
+        queries = list(dict.fromkeys(query.casefold() for query in queries if query))
         if not queries:
             entities = [str(item).strip() for item in plan.get("entities") or [] if str(item).strip()]
             if len(entities) >= 2:
@@ -621,16 +640,45 @@ class Sequitor:
         published = datetime.fromisoformat(entry_post["publishedAt"].replace("Z", "+00:00"))
         end = min(published, now_safe())
         start = end - timedelta(days=28)
-        available = MAX_POSTS - self.x.posts_read if MAX_POSTS is not None else 20
+        available = MAX_POSTS - self.x.posts_read if MAX_POSTS is not None else 80
         if available < 10:
             return []
+        candidates: dict[str, dict] = {}
+        for query in queries[:2]:
+            remaining = MAX_POSTS - self.x.posts_read if MAX_POSTS is not None else 40
+            if remaining < 10:
+                break
+            try:
+                rows, _ = self.x.search(query + " -is:retweet", start, end,
+                                        max_results=min(40, remaining))
+            finally:
+                self.save()
+            for row in rows:
+                post = post_from_x(row, "anchor discovery")
+                if str(post["id"]) != str(entry_post.get("id")):
+                    candidates[post["id"]] = post
+
         try:
-            rows, _ = self.x.search(queries[0] + " -is:retweet", start, end,
-                                    max_results=min(20, available))
-        finally:
-            self.save()
-        return [post_from_x(row, "anchor discovery") for row in rows
-                if str(row.get("id")) != str(entry_post.get("id"))]
+            entry_time = datetime.fromisoformat(str(entry_post.get("publishedAt") or "").replace("Z", "+00:00"))
+        except ValueError:
+            entry_time = None
+
+        def source_score(post: dict) -> tuple[float, str]:
+            try:
+                published = datetime.fromisoformat(str(post.get("publishedAt") or "").replace("Z", "+00:00"))
+            except ValueError:
+                published = None
+            age_hours = max(0.0, (entry_time - published).total_seconds() / 3600) if entry_time and published else 168.0
+            proximity = math.exp(-age_hours / 168.0)
+            engagement = math.log1p(max(0, post.get("likes") or 0) +
+                                    2 * max(0, post.get("reposts") or 0) +
+                                    max(0, post.get("replies") or 0)) / math.log(10_001)
+            reach = math.log1p(max(0, post.get("followers") or 0)) / math.log(1_000_001)
+            overlap = token_overlap(entry_post.get("text", ""), post.get("text", ""))
+            score = .34 * min(1.0, engagement) + .12 * min(1.0, reach) + .24 * proximity + .30 * overlap
+            return score, str(post.get("id") or "")
+
+        return sorted(candidates.values(), key=lambda post: source_score(post), reverse=True)
 
     def select_semantic_anchor(self, entry_post: dict, candidates: list[dict]) -> dict:
         """Let OpenAI select only from supplied ids, then verify the selection."""
@@ -647,15 +695,20 @@ class Sequitor:
         }
         evidence = [{"id": post["id"], "text": post.get("text", "")[:500],
                      "author": post.get("handle") or post.get("author"),
-                     "publishedAt": post.get("publishedAt")}
+                     "publishedAt": post.get("publishedAt"),
+                     "likes": post.get("likes") or 0,
+                     "reposts": post.get("reposts") or 0,
+                     "followers": post.get("followers") or 0}
                     for post in candidates[:20]]
         body = {
             "model": openai_model(),
             "instructions": (
-                "Determine whether the commentary clearly describes one of the candidate public posts as its "
-                "referenced announcement or source. Return exactly that candidate's id, or an empty string when "
-                "the evidence is ambiguous. Never return an id outside the candidates, infer truth, or treat mere "
-                "topic similarity as a reference."
+                "Choose the earlier candidate that best supplies the concrete premise or event behind the "
+                "commentary. Prefer a concise context-setting statement over later jokes, reactions, questions, "
+                "or posts that merely repeat the topic. Use chronology as a hard constraint and engagement or "
+                "author reach only as secondary corroboration. Return exactly that candidate's id, or an empty "
+                "string when none explains the commentary. Never return an id outside the candidates, infer "
+                "truth, or treat mere topic similarity as a reference."
             ),
             "input": json.dumps({"commentary": entry_post.get("text", "")[:1200],
                                  "candidates": evidence}, ensure_ascii=False),
@@ -674,10 +727,16 @@ class Sequitor:
         if not content:
             return entry_post
         suggestion = json.loads(content)
-        candidate_ids = {str(post["id"]) for post in candidates}
-        if str(suggestion.get("referenced_post_id") or "") not in candidate_ids:
+        candidate_by_id = {str(post["id"]): post for post in candidates}
+        selected_id = str(suggestion.get("referenced_post_id") or "")
+        if selected_id not in candidate_by_id:
             return entry_post
-        return choose_semantic_anchor(entry_post, suggestion, self.fetch_anchor_post)
+        verified = choose_semantic_anchor(entry_post, suggestion, self.fetch_anchor_post)
+        if str(verified.get("id") or "") != selected_id:
+            return entry_post
+        # Preserve public metrics from the X search when keyless verification
+        # returns only the post body and author identity.
+        return {**candidate_by_id[selected_id], **verified}
 
     def count(self, query: str, start: datetime, end: datetime,
               granularity: str = "day") -> list[dict]:
@@ -746,13 +805,14 @@ class Sequitor:
                 "uncertainties": {"type": "array", "items": {"type": "string"}},
                 "volume_phrase": {"type": "string"},
                 "discovery_queries": {"type": "array", "items": {"type": "string"}},
+                "anchor_queries": {"type": "array", "items": {"type": "string"}},
                 "why_discovery": {"type": "string"},
                 "referenced_post_id": {"type": "string"},
                 "is_commentary": {"type": "boolean"},
                 "anchor_rationale": {"type": "string"},
             },
             "required": ["context_label", "entities", "angles", "uncertainties",
-                         "volume_phrase", "discovery_queries", "why_discovery",
+                         "volume_phrase", "discovery_queries", "anchor_queries", "why_discovery",
                          "referenced_post_id", "is_commentary", "anchor_rationale"],
         }
         body = {
@@ -763,9 +823,11 @@ class Sequitor:
                 "entities are only names or organizations grounded in the post. angles are possible "
                 "discussion directions, not facts. uncertainties must say what the post alone cannot establish. "
                 "volume_phrase must be 2–6 consecutive words copied from the post for a measured histogram. "
-                "discovery_queries contains at most two 2–3 word, unquoted search term groups likely to find "
-                "the original announcement or source post, not later jokes. Prefer an organization plus a "
-                "distinctive event name. If this post is clearly a joke, paraphrase, quote-without-card, or "
+                "discovery_queries contains at most two 2–3 word unquoted groups for the broader discussion. "
+                "anchor_queries contains at most two 2–4 word unquoted groups specifically designed to retrieve "
+                "the earlier premise/source post behind the input. Preserve concrete identifiers, conference "
+                "years, quantities, and nouns; omit punchline wording. Prefer an organization plus a distinctive "
+                "event or claim. If this post is clearly a joke, paraphrase, quote-without-card, or "
                 "reaction to a public announcement, set is_commentary true even when the original is unnamed. "
                 "In that case discovery_queries may use the well-known public name of the event. Put a status "
                 "id in referenced_post_id only when that id appears in the supplied text or URLs; otherwise "
@@ -793,12 +855,14 @@ class Sequitor:
         if primary.strip('"').casefold() not in text.casefold():
             raise RuntimeError("OpenAI's measured phrase was not in the seed post")
         discovery = distinct_queries(plan.get("discovery_queries") or [])
+        anchor_queries = distinct_anchor_queries(plan.get("anchor_queries") or [])
         return {"planVersion": PLAN_VERSION, "contextLabel": str(plan["context_label"])[:110],
                 "entities": [str(item)[:50] for item in plan["entities"][:6]],
                 "angles": [str(item)[:70] for item in plan["angles"][:4]],
                 "uncertainties": [str(item)[:110] for item in plan["uncertainties"][:3]],
                 "volumePhrase": primary, "discoveryPhrase": discovery[0] if discovery else None,
                 "discoveryQueries": discovery, "expansionQueries": [],
+                "anchorQueries": anchor_queries,
                 "whyDiscovery": str(plan["why_discovery"])[:200],
                 "referencedPostId": str(plan["referenced_post_id"])[:24],
                 "isCommentary": bool(plan["is_commentary"]),
@@ -1315,7 +1379,7 @@ class Sequitor:
             plan = {"planVersion": PLAN_VERSION, "contextLabel": "Unstructured seed post",
                     "entities": [], "angles": [], "uncertainties": ["Context planning was unavailable."],
                     "volumePhrase": phrase(" ".join(words[:4])), "discoveryPhrase": None,
-                    "discoveryQueries": [], "expansionQueries": [], "whyDiscovery": "",
+                    "discoveryQueries": [], "anchorQueries": [], "expansionQueries": [], "whyDiscovery": "",
                     "referencedPostId": (commentary_plan or {}).get("referencedPostId", ""),
                     "isCommentary": bool((commentary_plan or {}).get("isCommentary")),
                     "anchorRationale": (commentary_plan or {}).get("anchorRationale", ""),
