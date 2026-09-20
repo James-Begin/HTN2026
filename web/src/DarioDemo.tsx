@@ -71,7 +71,7 @@ export default function DarioDemo() {
       setSidebarActive(false)
       return
     }
-    const delay = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 4600
+    const delay = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 7900
     const timer = window.setTimeout(() => setSidebarActive(true), delay)
     return () => window.clearTimeout(timer)
   }, [stage])
