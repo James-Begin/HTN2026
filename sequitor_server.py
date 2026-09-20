@@ -41,6 +41,7 @@ PLAN_VERSION = 5
 ANCHOR_VERSION = 2
 PERIOD_SCHEMA = 6
 FEED_TARGET = 500
+CLASSIFY_LIMIT = 128
 ANCHOR_RECORDINGS = {
     "2098435855857668156": ROOT / "demo" / "recordings" / "anchor-tomdale.json",
     "2085392809385988130": ROOT / "demo" / "recordings" / "anchor-drewhahn.json",
@@ -951,12 +952,13 @@ class Sequitor:
         key = os.environ.get("BASETEN_API_KEY")
         if not key or not posts:
             return {"status": "unavailable", "model": None}
+        scored = sorted(posts, key=lambda post: -(post.get("likes") or 0))[:CLASSIFY_LIMIT]
         openjev_url = os.environ.get("SEQUITOR_JEV_RERANK_URL", "").strip()
         if openjev_url and not self._openjev_unavailable:
             try:
                 # OpenJev supplies the claim score used by the hybrid ranker.
                 # The Chain still adds response categories and observed edges.
-                jev = OpenJevReranker(key, openjev_url).score(seed_text, posts, emit=emit)
+                jev = OpenJevReranker(key, openjev_url).score(seed_text, scored, emit=emit)
             except Exception as exc:
                 self._openjev_unavailable = True
                 if emit:
@@ -969,7 +971,7 @@ class Sequitor:
                 # Keep Jev scores even when the Chain's baseline reranker arrives.
                 # rank_posts prioritizes sameClaimScore over rerankerScore.
                 try:
-                    chain = BasetenChainClient(key, chain_url).classify(seed_text, posts, emit=emit)
+                    chain = BasetenChainClient(key, chain_url).classify(seed_text, scored, emit=emit)
                     return {**chain, "openjev": jev}
                 except Exception as exc:
                     if emit:
@@ -979,7 +981,7 @@ class Sequitor:
         chain_url = os.environ.get("SEQUITOR_BASETEN_CHAIN_URL", "").strip()
         if chain_url:
             try:
-                return BasetenChainClient(key, chain_url).classify(seed_text, posts, emit=emit)
+                return BasetenChainClient(key, chain_url).classify(seed_text, scored, emit=emit)
             except Exception as exc:
                 if emit:
                     emit("stage", {"name": "Baseten Chain unavailable; using hosted curation",
