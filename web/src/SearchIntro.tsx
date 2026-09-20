@@ -100,12 +100,15 @@ function cardsFromPosts(posts: SearchIntroPost[]): Card[] {
 }
 
 function placeField(deck: Card[]): PlacedCard[] {
-  return Array.from({ length: FIELD_SIZE }, (_, index) => {
+  // Keep the fallback field visually dense, but never truncate a real capture:
+  // every captured post must get one opportunity to fly past before completion.
+  const fieldSize = Math.max(FIELD_SIZE, deck.length)
+  return Array.from({ length: fieldSize }, (_, index) => {
     const source = deck[index % deck.length]
-    const ring = index / FIELD_SIZE
+    const depth = index / fieldSize
     const angle = index * GOLDEN
-    const z = PASS_AT - 70 - ring * (LOOP - 180) - (index % 5) * 18
-    const radius = 170 + (index % 11) * 42 + ring * 70
+    const z = PASS_AT - 70 - depth * (LOOP - 180)
+    const radius = 170 + (index % 11) * 42 + depth * 70
     return {
       ...source,
       key: `${source.handle}-${index}`,
