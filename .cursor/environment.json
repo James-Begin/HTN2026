@@ -1,0 +1,11 @@
+{
+  "name": "Sequitor",
+  "install": "cd web && npm install --package-lock=false --ignore-scripts --registry=https://registry.npmjs.org/ && npm run build",
+  "terminals": [
+    {
+      "name": "sequitor-server",
+      "command": "python3 sequitor_server.py"
+    }
+  ],
+  "ports": [8765]
+}
