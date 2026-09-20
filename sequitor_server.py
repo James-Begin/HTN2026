@@ -54,6 +54,27 @@ class StoppedRun(Exception):
     pass
 
 
+def seed_from_job_events(events: list[dict]) -> str | None:
+    for event in events:
+        if event.get("type") == "run.started":
+            seed = (event.get("payload") or {}).get("seed")
+            if isinstance(seed, str) and seed.strip():
+                return seed.strip()[:2000]
+    return None
+
+
+def streamed_post_count(events: list[dict]) -> int:
+    total = 0
+    for event in events:
+        if event.get("type") == "posts.upsert":
+            total += len((event.get("payload") or {}).get("posts") or [])
+    return total
+
+
+def run_cache_key(seed: str) -> str:
+    return re.sub(r"[^a-z0-9]+", "-", seed.strip().lower())[:100]
+
+
 class StreamJob:
     """Small durable event log. A reconnect never starts provider work again."""
 
@@ -62,6 +83,7 @@ class StreamJob:
         self.events = events or []
         self.condition = threading.Condition()
         self.stopped = False
+        self.resuming = False
         self.done = bool(self.events and self.events[-1]["type"] in
                          {"run.completed", "run.failed", "run.stopped"})
 
@@ -97,9 +119,46 @@ class StreamHub:
             events = [json.loads(line) for line in path.read_text().splitlines() if line]
             job = StreamJob(job_id, events)
             if not job.done:
-                job.emit("run.failed", {"message": "The server restarted during this investigation. Existing results remain available."})
+                seed = seed_from_job_events(events)
+                if seed:
+                    self._resume_incomplete(job, seed)
+                else:
+                    job.emit("run.failed", {"message": "The server restarted during this investigation. Existing results remain available."})
             self.jobs[job_id] = job
             return job
+
+    def _resume_incomplete(self, job: StreamJob, seed: str) -> None:
+        """After a deploy or crash, finish or replay a durable run instead of failing the stream."""
+        with self.lock:
+            if job.resuming or job.done:
+                return
+            job.resuming = True
+
+        def work() -> None:
+            try:
+                with APP.lock:
+                    result = APP.explore(seed, emit=job.emit)
+                job.emit("run.completed", {"model": result.get("model"),
+                                           "rankingCoverage": result.get("rankingCoverage"),
+                                           "xSpend": result.get("xSpend", 0)})
+            except StoppedRun:
+                job.emit("run.stopped", {})
+            except Exception as exc:
+                cache_key = run_cache_key(seed)
+                cached = APP.cache["runs"].get(cache_key)
+                if cached and run_cache_usable(cached):
+                    job.emit("run.completed", {"model": cached.get("model"),
+                                               "rankingCoverage": cached.get("rankingCoverage"),
+                                               "xSpend": cached.get("xSpend", 0)})
+                elif streamed_post_count(job.events) >= MIN_FEED_CACHE:
+                    job.emit("run.completed", {"model": None,
+                                               "rankingCoverage": "partial results retained after interruption",
+                                               "xSpend": round(APP.x.spend, 3) if APP.x else 0})
+                else:
+                    job.emit("run.failed", {"message": "The server restarted during this investigation. Existing results remain available.",
+                                            "reason": type(exc).__name__})
+
+        threading.Thread(target=work, daemon=True).start()
 
     def start(self, seed: str, mode: str) -> StreamJob:
         job = StreamJob(uuid.uuid4().hex)
@@ -147,9 +206,6 @@ class StreamHub:
 
         threading.Thread(target=work, daemon=True).start()
         return job
-
-
-STREAMS = StreamHub()
 
 
 def load_local_env() -> None:
@@ -652,6 +708,27 @@ class Sequitor:
                                     "countsCalls": self.x.counts_calls,
                                     "estimatedXSpend": round(self.x.spend, 3)}
         write_json(CACHE_FILE, self.cache)
+
+    def checkpoint_collected_feed(self, run_id: str, day: str, posts: list[dict], run: dict,
+                                  ranking_coverage: str) -> None:
+        """Persist retrieved posts before model curation so a restart can replay the feed."""
+        key = run_id + ":" + day
+        seed_id = str(run.get("seedPost", {}).get("id") or "")
+        period = {"schemaVersion": PERIOD_SCHEMA,
+                  "discoveryQuery": run["searchPlan"].get("discoveryPhrase"),
+                  "seedPostId": seed_id or None, "day": day, "posts": posts,
+                  "feedTarget": FEED_TARGET, "rankingCoverage": ranking_coverage,
+                  "partial": True, "model": {"status": "pending", "reason": "curation not finished"},
+                  "xSpend": round(self.x.spend, 3) if self.x else 0}
+        self.cache["periods"][key] = period
+        if day == run.get("selectedDay"):
+            run["posts"] = posts
+            run["rankingCoverage"] = ranking_coverage
+            run["model"] = {"openai": run["searchPlan"].get("model"), "baseten": "pending"}
+            run["xSpend"] = period["xSpend"]
+            run["capturedAt"] = today_utc()
+            self.cache["runs"][run_id] = run
+        self.save()
 
     def fetch_anchor_post(self, tweet_id: str) -> dict | None:
         """Resolve keylessly first, then spend one bounded X lookup if needed."""
@@ -1304,19 +1381,26 @@ class Sequitor:
         posts = cap_feed(list(unique.values()), run.get("seedPost"), run.get("entryPost"))
         if emit:
             emit_post_batches(emit, posts, size=24, pause=0)
+        truncated = partial or extra_partial or len(posts) >= FEED_TARGET
+        ranking_coverage = (f"up to {FEED_TARGET} retrieved posts; search may be truncated" if truncated
+                            else f"up to {FEED_TARGET} retrieved posts; phrase scope plus related searches")
+        self.checkpoint_collected_feed(run_id, day, posts, run, ranking_coverage)
+        if emit:
             emit("stage", {"name": "Curating retrieved posts with Baseten"})
-        model = self.classify(run["seedPost"]["text"], posts, emit=emit)
-        retrieval = self.rank_posts(run["seedPost"], posts)
+        try:
+            model = self.classify(run["seedPost"]["text"], posts, emit=emit)
+            retrieval = self.rank_posts(run["seedPost"], posts)
+        except Exception as exc:
+            model = {"status": "unavailable", "reason": type(exc).__name__}
+            retrieval = self.rank_posts(run["seedPost"], posts)
         if emit:
             updates = [post for post in posts if post.get("basetenPick") or post.get("sameClaimScore") is not None or post.get("rankingScore") is not None]
             emit_post_batches(emit, updates, size=12, pause=0)
             emit("model.ready", {"model": {**model, "retrieval": retrieval}})
-        truncated = partial or extra_partial or len(posts) >= FEED_TARGET
         seed_id = str(run.get("seedPost", {}).get("id") or "")
         result = {"schemaVersion": PERIOD_SCHEMA, "discoveryQuery": run["searchPlan"].get("discoveryPhrase"),
                   "seedPostId": seed_id or None, "day": day, "posts": posts, "feedTarget": FEED_TARGET,
-                  "rankingCoverage": f"up to {FEED_TARGET} retrieved posts; search may be truncated" if truncated
-                  else f"up to {FEED_TARGET} retrieved posts; phrase scope plus related searches",
+                  "rankingCoverage": ranking_coverage,
                   "partial": partial or extra_partial, "model": {**model, "retrieval": retrieval},
                   "xSpend": round(self.x.spend, 3) if self.x else 0}
         self.cache["periods"][key] = result
@@ -1451,7 +1535,7 @@ class Sequitor:
         seed = seed.strip()[:2000]
         if not seed:
             seed = DEFAULT_SEED
-        cache_key = re.sub(r"[^a-z0-9]+", "-", seed.lower())[:100]
+        cache_key = run_cache_key(seed)
         stale = self.cache["runs"].get(cache_key)
         if stale and stale.get("anchorVersion") != ANCHOR_VERSION:
             self.cache["runs"].pop(cache_key, None)
@@ -1594,6 +1678,7 @@ class Sequitor:
 
 
 APP = Sequitor()
+STREAMS = StreamHub()
 
 
 class Handler(BaseHTTPRequestHandler):
