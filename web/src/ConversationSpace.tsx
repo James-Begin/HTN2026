@@ -36,7 +36,6 @@ function stableHash(value: string, salt = 0) {
 function fallbackFeature(post: GraphPost): Feature | undefined {
   const words = (post.text.toLowerCase().match(/[\p{L}\p{N}_-]+/gu) || [])
     .filter(word => word.length > 2 && !directionStopWords.has(word)).slice(0, 90)
-  if (!words.length) return undefined
   let y = 0, z = 0
   for (const word of words) {
     const angle = stableHash(word) / 0xffffffff * Math.PI * 2
@@ -388,8 +387,9 @@ function createScene(host: HTMLDivElement, frame: Frame, seedId: string, initial
   }
 }
 
-export default function ConversationSpace({ posts, seedId, referencePosts, onOpenPost }: {
+export default function ConversationSpace({ posts, seedId, referencePosts, onOpenPost, compact = false, onSelectPost }: {
   posts: GraphPost[]; seedId: string; referencePosts?: GraphPost[]; onOpenPost: (post: GraphPost) => void
+  compact?: boolean; onSelectPost?: (post: GraphPost) => void
 }) {
   const corpus = useMemo(() => [...new Map(posts.filter(post => Number.isFinite(stamp(post)) && post.id !== 'seed-text').map(post => [post.id, post])).values()].sort(order), [posts])
   const referenceCorpus = referencePosts?.length ? referencePosts : corpus
@@ -401,7 +401,7 @@ export default function ConversationSpace({ posts, seedId, referencePosts, onOpe
   const [selectedId, setSelectedId] = useState(seedId)
   const [hoveredId, setHoveredId] = useState<string | null>(null)
   const [query, setQuery] = useState('')
-  const [links, setLinks] = useState('selected')
+  const [links, setLinks] = useState(compact ? 'none' : 'selected')
   const [timeMode, setTimeMode] = useState<TimeMode>('flow')
   const [cone, setCone] = useState(true)
   const [spread, setSpread] = useState(1.2)
@@ -472,6 +472,7 @@ export default function ConversationSpace({ posts, seedId, referencePosts, onOpe
   useEffect(() => { api.current?.configure(display) }, [display, frame])
   useEffect(() => { api.current?.update(points, activeId, links) }, [points, activeId, links, frame])
   useEffect(() => { api.current?.fit() }, [earlier, timeMode, cone])
+  useEffect(() => { if (selected) onSelectPost?.(selected) }, [selected?.id, onSelectPost])
   useEffect(() => {
     if (!playing || !frame) return
     const started = performance.now()
@@ -493,6 +494,22 @@ export default function ConversationSpace({ posts, seedId, referencePosts, onOpe
     if (post && stamp(post) > cutoff) { setCursor(stamp(post)); setPlaying(false) }
   }
   function replay() { setCursor(start); setPlaying(true); setSelectedId(reference?.id || ''); api.current?.reset() }
+
+  if (compact) return <section className="space-shell space-shell-compact" aria-label="Conversation Space">
+    <div className="space-toolbar space-toolbar-compact">
+      <div className="space-segment" role="group" aria-label="Visible connections">{[['selected', 'Lineage'], ['none', 'No links']].map(([value, label]) => <button key={value} aria-pressed={links === value} onClick={() => setLinks(value)}>{label}</button>)}</div>
+      <label className="space-earlier"><input type="checkbox" checked={cone} onChange={event => setCone(event.target.checked)} /> Expand with time</label>
+      <div className="space-camera"><button onClick={() => api.current?.fit()} aria-label="Fit conversation"><Maximize2 size={15} /></button><button onClick={() => api.current?.reset()} aria-label="Reset camera"><RotateCcw size={15} /></button></div>
+    </div>
+    <div className="space-workspace space-workspace-compact">
+      <div className="space-view"><div ref={host} className="space-canvas" />
+        {!reference && <div className="space-canvas-note">Preparing the conversation.</div>}
+        {failure && <div className="space-canvas-note" role="status">Posts remain available in the reading column.</div>}
+        <div className="space-view-caption"><span className="space-status-dot" /> {points.length ? `${points.length} posts in view` : 'Waiting for the starting post'}</div>
+        {hover && <div className="space-hover" aria-hidden="true"><strong>{authorName(hover)}</strong><span>{hover.text.slice(0, 110)}{hover.text.length > 110 ? '…' : ''}</span></div>}
+      </div>
+    </div>
+  </section>
 
   return <section className="space-shell" aria-label="Conversation Space">
     <div className="space-heading"><div><p className="space-eyebrow">CONVERSATION SPACE <span>{layout ? 'RECORDED' : liveSpaceMethod ? 'LIVE' : 'WAITING'}</span></p><h2>Time, meaning, and replies.</h2><p>{timeMode === 'flow' ? 'A continuous view of captured posts. Quiet gaps compressed.' : 'True elapsed time. Every post at its publication timestamp.'}</p></div><div className="space-count"><strong>{points.length}</strong><span>of {corpus.length} captured posts{estimated ? ` · ${estimated} lexical placements` : pending ? ` · ${pending} awaiting a position` : ''}</span></div></div>
