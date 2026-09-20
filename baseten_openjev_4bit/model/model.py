@@ -27,11 +27,11 @@ class Model:
         base_path = "/models/openjev/qwen3.5-4b-nli-v2"
         if not os.path.exists(base_path):
             base_path = "AlexWortega/openjev"
+        # Transformers 5 rejects ``subfolder=None`` for a local path. Baseten
+        # mounts the selected Hugging Face subfolder directly at base_path.
+        hub_kwargs = {"subfolder": "qwen3.5-4b-nli-v2"} if base_path == "AlexWortega/openjev" else {}
 
-        self.tok = AutoTokenizer.from_pretrained(
-            base_path,
-            subfolder="qwen3.5-4b-nli-v2" if base_path == "AlexWortega/openjev" else None
-        )
+        self.tok = AutoTokenizer.from_pretrained(base_path, **hub_kwargs)
         if self.tok.pad_token is None:
             self.tok.pad_token = self.tok.eos_token
         self.tok.padding_side = "right"
@@ -45,10 +45,10 @@ class Model:
 
         base_model = AutoModelForSequenceClassification.from_pretrained(
             base_path,
-            subfolder="qwen3.5-4b-nli-v2" if base_path == "AlexWortega/openjev" else None,
             quantization_config=bnb_config,
             device_map="auto",
             attn_implementation="sdpa",
+            **hub_kwargs,
         )
 
         # Attach 5-class head
