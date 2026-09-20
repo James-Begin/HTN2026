@@ -50,7 +50,7 @@ const FOCAL = 720
 const READ_MS = 4200
 const ACCELERATE_MS = 1700
 const READ_SPEED = 0.025
-const RUSH_SPEED = 1.65
+const RUSH_SPEED = 1.22
 const ACCENTS = ['#94cfee', '#e8c58d', '#a8d8b9', '#9dbce9', '#f1b4ce', '#bfbcf4', '#dcad9e', '#d8d499', '#c9b1f2', '#e1a7d7', '#78c8e2', '#b9a9f3']
 
 const clamp = (value: number, low: number, high: number) => Math.min(high, Math.max(low, value))
@@ -64,8 +64,7 @@ function wrapZ(z: number, travel: number, recycle: boolean) {
   return start + offset
 }
 
-function project(x: number, y: number, z: number, rx: number, ry: number, travel = 0, recycle = true) {
-  const zWorld = wrapZ(z, travel, recycle)
+function projectWorld(x: number, y: number, zWorld: number, rx: number, ry: number) {
   const denom = FOCAL - zWorld
   const passed = zWorld > PASS_AT || denom <= 36
   const scale = passed ? 0 : clamp(FOCAL / denom, 0.08, 2.8)
@@ -77,6 +76,10 @@ function project(x: number, y: number, z: number, rx: number, ry: number, travel
     zIndex: Math.round(4000 + zWorld),
     transform: `translate3d(calc(-50% + ${x * scale}px), calc(-50% + ${y * scale}px), 0) rotateY(${ry}deg) rotateX(${rx}deg) scale(${scale})`,
   }
+}
+
+function project(x: number, y: number, z: number, rx: number, ry: number, travel = 0, recycle = true) {
+  return projectWorld(x, y, wrapZ(z, travel, recycle), rx, ry)
 }
 
 function cardsFromPosts(posts: SearchIntroPost[]): Card[] {

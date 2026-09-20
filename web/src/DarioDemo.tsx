@@ -61,7 +61,8 @@ const addUnit = (stamp: number, unit: 'hour' | 'day' | 'month') => {
   return stamp + (unit === 'hour' ? 3600000 : 86400000)
 }
 const labelTime = (stamp: number, unit: 'hour' | 'day' | 'month') => new Intl.DateTimeFormat('en-CA', unit === 'hour' ? { month: 'short', day: 'numeric', hour: 'numeric', timeZone: 'UTC' } : unit === 'month' ? { month: 'short', year: 'numeric', timeZone: 'UTC' } : { day: 'numeric', month: 'short', timeZone: 'UTC' }).format(new Date(stamp))
-const LAUNCH_AT = { searching: 1250, resolving: 5600, forming: 10000, exploring: 14200, reducedSearching: 180 }
+const LAUNCH_AT = { searching: 1250, resolving: 7200, forming: 11800, exploring: 16200, reducedSearching: 180 }
+const BLACKOUT_HOLD_MS = 1200
 
 function ActivityStrip({ buckets, posts }: { buckets: Bucket[]; posts: DarioPost[] }) {
   const [scale, setScale] = useState<'hour' | 'day' | 'month'>('day')
@@ -114,7 +115,9 @@ export default function DarioDemo() {
   const seedPost = resolvedSeed && Number.isFinite(Date.parse(resolvedSeed.publishedAt)) ? resolvedSeed : streamPosts[0]
   const allPosts = useMemo(() => {
     const values = [...(seedPost ? [seedPost] : []), ...streamPosts]
-    return [...new Map(values.map(post => [post.id, post])).values()]
+    return [...new Map(values.map(post => [post.id, post])).values()].sort(
+      (a, b) => a.publishedAt.localeCompare(b.publishedAt) || a.id.localeCompare(b.id),
+    )
   }, [seedPost, streamPosts])
   const revealing = stage === 'forming' || stage === 'exploring'
   const reveal = useConversationReveal(revealing ? allPosts : stage === 'anchor' && seedPost ? [seedPost] : [])
@@ -147,7 +150,7 @@ export default function DarioDemo() {
   }, [fallbackRun, investigation.milestones, introFinished, runMode, seedPost, stage, timerReady])
   useEffect(() => {
     if (stage !== 'blackout') return
-    const delay = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 1000
+    const delay = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : BLACKOUT_HOLD_MS
     const timer = window.setTimeout(() => setTimerReady(previous => ({ ...previous, anchor: true })), delay)
     return () => window.clearTimeout(timer)
   }, [stage])
