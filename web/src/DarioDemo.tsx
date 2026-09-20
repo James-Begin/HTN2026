@@ -62,8 +62,11 @@ const addUnit = (stamp: number, unit: 'hour' | 'day' | 'month') => {
   return stamp + (unit === 'hour' ? 3600000 : 86400000)
 }
 const labelTime = (stamp: number, unit: 'hour' | 'day' | 'month') => new Intl.DateTimeFormat('en-CA', unit === 'hour' ? { month: 'short', day: 'numeric', hour: 'numeric', timeZone: 'UTC' } : unit === 'month' ? { month: 'short', year: 'numeric', timeZone: 'UTC' } : { day: 'numeric', month: 'short', timeZone: 'UTC' }).format(new Date(stamp))
-const LAUNCH_AT = { searching: 1250, resolving: 7200, forming: 11800, exploring: 16200, reducedSearching: 180 }
+const LAUNCH_AT = { searching: 1250, resolving: 7200, reducedSearching: 180 }
 const BLACKOUT_HOLD_MS = 1200
+const ANCHOR_HOLD_MS = 1200
+const FORMING_HOLD_MS = 4200
+const MIN_CONVERSATION_POSTS = 12
 
 function ActivityStrip({ buckets, posts }: { buckets: Bucket[]; posts: DarioPost[] }) {
   const [scale, setScale] = useState<'hour' | 'day' | 'month'>('day')
@@ -142,17 +145,33 @@ export default function DarioDemo() {
     const recordedReady = runMode === 'recorded' && (investigation.milestones.runReady || !!fallbackRun)
     const started = investigation.milestones.started || recordedReady
     const resolved = investigation.milestones.seedResolved || investigation.milestones.planReady || recordedReady
+    const conversationPostCount = streamPosts.filter(post => post.id !== seedPost?.id).length
+    const terminal = ['completed', 'failed', 'stopped'].includes(investigation.status)
+    const conversationReady = !!fallbackRun
+      || investigation.milestones.runReady && (conversationPostCount >= MIN_CONVERSATION_POSTS || terminal)
     if (stage === 'departing' && timerReady.searching && started) setStage('searching')
-    else if (stage === 'searching' && timerReady.resolving && resolved) setStage('resolving')
+    else if (stage === 'searching' && timerReady.resolving && resolved && conversationReady) setStage('resolving')
     else if (stage === 'resolving' && introFinished) setStage('blackout')
     else if (stage === 'blackout' && timerReady.anchor && seedPost) setStage('anchor')
     else if (stage === 'anchor' && timerReady.forming && seedPost) setStage('forming')
     else if (stage === 'forming' && timerReady.exploring) setStage('exploring')
-  }, [fallbackRun, investigation.milestones, introFinished, runMode, seedPost, stage, timerReady])
+  }, [fallbackRun, investigation.milestones, investigation.status, introFinished, runMode, seedPost, stage, streamPosts, timerReady])
   useEffect(() => {
     if (stage !== 'blackout') return
     const delay = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : BLACKOUT_HOLD_MS
     const timer = window.setTimeout(() => setTimerReady(previous => ({ ...previous, anchor: true })), delay)
+    return () => window.clearTimeout(timer)
+  }, [stage])
+  useEffect(() => {
+    if (stage !== 'anchor') return
+    const delay = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : ANCHOR_HOLD_MS
+    const timer = window.setTimeout(() => setTimerReady(previous => ({ ...previous, forming: true })), delay)
+    return () => window.clearTimeout(timer)
+  }, [stage])
+  useEffect(() => {
+    if (stage !== 'forming') return
+    const delay = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : FORMING_HOLD_MS
+    const timer = window.setTimeout(() => setTimerReady(previous => ({ ...previous, exploring: true })), delay)
     return () => window.clearTimeout(timer)
   }, [stage])
   useEffect(() => {
@@ -179,8 +198,6 @@ export default function DarioDemo() {
     const mark = (key: keyof typeof timerReady) => setTimerReady(previous => ({ ...previous, [key]: true }))
     timers.current.push(window.setTimeout(() => mark('searching'), reduced ? LAUNCH_AT.reducedSearching : LAUNCH_AT.searching))
     timers.current.push(window.setTimeout(() => mark('resolving'), LAUNCH_AT.resolving))
-    timers.current.push(window.setTimeout(() => mark('forming'), LAUNCH_AT.forming))
-    timers.current.push(window.setTimeout(() => mark('exploring'), LAUNCH_AT.exploring))
     void investigation.start({ seed: value, mode }).then(started => {
       if (!started && mode === 'recorded' && stageRef.current !== 'landing') {
         const local = LOCAL_RECORDINGS[statusId]

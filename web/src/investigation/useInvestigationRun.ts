@@ -78,10 +78,9 @@ export function useInvestigationRun() {
         return false
       }
       runIdRef.current = data.runId
-      const stream = new EventSource(data.eventsUrl)
       let terminal = false
-      streamRef.current = stream
-      stream.addEventListener('sequitor', raw => {
+      let reconnectAttempts = 0
+      const handleEvent = (raw: Event) => {
         if (id !== generation.current || terminal) return
         try {
           const decoded: unknown = JSON.parse((raw as MessageEvent).data)
@@ -155,7 +154,7 @@ export function useInvestigationRun() {
           })
           if (message.type === 'run.completed' || message.type === 'run.failed' || message.type === 'run.stopped') {
             terminal = true
-            stream.close()
+            streamRef.current?.close()
             streamRef.current = null
             runIdRef.current = null
           }
@@ -165,19 +164,38 @@ export function useInvestigationRun() {
           setState(previous => ({ ...previous, status: 'failed', busy: false, activity: '',
             error: cause instanceof Error ? cause.message : 'Invalid investigation event' }))
         }
-      })
-      stream.onerror = () => {
+      }
+      const connect = () => {
         if (id !== generation.current || terminal) return
-        if (stream.readyState === EventSource.CLOSED) {
-          terminal = true
-          close(true)
-          setState(previous => ({ ...previous, status: 'failed', busy: false, activity: '',
-            error: 'Investigation stream closed; partial results retained' }))
-        } else {
+        const separator = data.eventsUrl.includes('?') ? '&' : '?'
+        const stream = new EventSource(`${data.eventsUrl}${separator}after=${sequenceRef.current}`)
+        streamRef.current = stream
+        stream.addEventListener('sequitor', handleEvent)
+        stream.onopen = () => {
+          reconnectAttempts = 0
+          setState(previous => previous.status === 'reconnecting'
+            ? { ...previous, status: 'running', busy: true }
+            : previous)
+        }
+        stream.onerror = () => {
+          if (id !== generation.current || terminal) return
           setState(previous => ({ ...previous, status: 'reconnecting', busy: true,
             activity: 'Reconnecting to the investigation…' }))
+          if (stream.readyState !== EventSource.CLOSED) return
+          stream.close()
+          reconnectAttempts += 1
+          if (reconnectAttempts > 10) {
+            terminal = true
+            close(false)
+            setState(previous => ({ ...previous, status: 'failed', busy: false, activity: '',
+              error: 'Unable to reconnect to the investigation; partial results retained' }))
+            return
+          }
+          const delay = Math.min(5000, 400 * 2 ** (reconnectAttempts - 1))
+          window.setTimeout(connect, delay)
         }
       }
+      connect()
       return true
     } catch (cause) {
       if (id !== generation.current) return false
