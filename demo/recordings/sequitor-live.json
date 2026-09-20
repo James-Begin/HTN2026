@@ -14529,23 +14529,32 @@
   "selectedDay": "2026-09-12",
   "rankingCoverage": "up to 500 retrieved posts; search may be truncated",
   "searchPlan": {
-    "planVersion": 5,
-    "contextLabel": "Unstructured seed post",
-    "entities": [],
-    "angles": [],
-    "uncertainties": [
-      "Context planning was unavailable."
+    "planVersion": 4,
+    "contextLabel": "AI industry pacing and evaluation plan",
+    "entities": [
+      "Anthropic"
     ],
-    "volumePhrase": "\"We Must Pace the\"",
+    "angles": [
+      "Implications of slowing AI development",
+      "Anthropic's approach to third-party evaluation",
+      "Industry reactions to pacing proposals"
+    ],
+    "uncertainties": [
+      "Effectiveness of the proposed three-part plan",
+      "Reception by other AI companies",
+      "Long-term impact on AI innovation"
+    ],
+    "volumePhrase": "\"We Must Pace the Frontier\"",
     "discoveryPhrase": null,
     "discoveryQueries": [],
-    "expansionQueries": [],
-    "whyDiscovery": "",
-    "referencedPostId": "",
-    "isCommentary": false,
-    "anchorRationale": "",
-    "model": null,
-    "error": "RuntimeError"
+    "expansionQueries": [
+      "independent evaluators",
+      "regulation proposals"
+    ],
+    "whyDiscovery": "To find related discussions on AI pacing proposals and Anthropic's evaluation commitments",
+    "model": "gpt-4.1-mini-2025-04-14",
+    "expansionReason": "The retrieved posts discuss a plan to slow down AI progress by involving third-party or independent evaluators with deep access, a step Anthropic is committing to. There is also me",
+    "expansionModel": "gpt-4.1-mini-2025-04-14"
   },
   "seedPost": {
     "id": "2098773920774074715",
@@ -14592,6 +14601,6 @@
       }
     }
   },
-  "note": "Recorded conversation around the referenced announcement. Bars measure X phrase activity from the live capture; replay does not spend X credits.",
+  "note": "Bars measure the exact phrase only. The feed can include a separately marked related search.",
   "xSpend": 4.18
 }
