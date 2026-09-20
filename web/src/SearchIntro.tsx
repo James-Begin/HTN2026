@@ -42,13 +42,13 @@ const CARDS: Card[] = [
   { author: 'Elon Musk', handle: '@elonmusk', text: 'the bird is freed', accent: '#e0c39d', year: '2022' },
 ]
 
-const FIELD_SIZE = 240
+const FIELD_SIZE = 220
 const GOLDEN = 2.399963229728653
-const LOOP = 1560
-const PASS_AT = 120
-const FOCAL = 760
-const FLY_SPEED = 1.95
-const FLY_BOOST = 1.55
+const LOOP = 2100
+const PASS_AT = 90
+const FOCAL = 720
+const FLY_SPEED = 2.25
+const FLY_BOOST = 1.65
 const ACCENTS = ['#94cfee', '#e8c58d', '#a8d8b9', '#9dbce9', '#f1b4ce', '#bfbcf4', '#dcad9e', '#d8d499', '#c9b1f2', '#e1a7d7', '#78c8e2', '#b9a9f3']
 
 const clamp = (value: number, low: number, high: number) => Math.min(high, Math.max(low, value))
@@ -99,13 +99,13 @@ function placeField(deck: Card[]): PlacedCard[] {
     const source = deck[index % deck.length]
     const ring = index / FIELD_SIZE
     const angle = index * GOLDEN
-    const z = PASS_AT - 36 - ring * (LOOP - 110)
-    const radius = 48 + (index % 9) * 16 + ring * 28
+    const z = PASS_AT - 70 - ring * (LOOP - 180) - (index % 5) * 18
+    const radius = 170 + (index % 11) * 42 + ring * 70
     return {
       ...source,
       key: `${source.handle}-${index}`,
-      x: Math.cos(angle) * radius * 1.28,
-      y: Math.sin(angle) * radius * 0.58,
+      x: Math.cos(angle) * radius * 1.55,
+      y: Math.sin(angle) * radius * 0.78,
       z,
       rx: Math.sin(angle) * -6,
       ry: Math.cos(angle) * 10,
@@ -142,7 +142,7 @@ export default function SearchIntro({ phase, className = '', posts = [] }: Searc
     const motion = window.matchMedia('(prefers-reduced-motion: reduce)')
     if (motion.matches) return
 
-    let travel = 160
+    let travel = 220
     let last = performance.now()
     let frame = 0
 
@@ -180,7 +180,7 @@ export default function SearchIntro({ phase, className = '', posts = [] }: Searc
       <div className="search-intro-stage">
         <div className="search-intro-field" ref={fieldRef}>
           {items.map(item => {
-            const start = project(item.x, item.y, item.z, item.rx, item.ry, 160)
+            const start = project(item.x, item.y, item.z, item.rx, item.ry, 220)
             return (
             <article
               key={item.key}

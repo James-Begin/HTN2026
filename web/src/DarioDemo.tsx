@@ -20,7 +20,9 @@ type DarioPost = GraphPost & ConversationSidebarPost & { textIsExcerpt?: boolean
 type DarioRun = Omit<Run, 'posts' | 'seedPost' | 'savedPeriods'> & {
   posts: DarioPost[]
   seedPost?: DarioPost
+  entryPost?: DarioPost
   savedPeriods?: Record<string, { posts: DarioPost[] }>
+  anchorMethod?: string
 }
 type DemoStage = 'landing' | 'departing' | 'searching' | 'resolving' | 'blackout' | 'anchor' | 'forming' | 'exploring'
 const capture = liveCapture as unknown as DarioRun
