@@ -3,12 +3,10 @@ import type { FormEvent, ReactNode } from 'react'
 import { ArrowLeft, ArrowRight, ArrowUpRight, BarChart3, Check, Clock3, Heart, Info, Link2, Search, Sparkles, X } from 'lucide-react'
 import snapshot from '../../demo/recordings/pace-the-frontier/snapshot.json'
 import liveCapture from '../../demo/recordings/sequitor-live.json'
-import wetLabCapture from '../../demo/recordings/anthropic-wet-lab.json'
 import darioHumorCapture from '../../demo/recordings/dario-humor.json'
 import storyCapture from '../../demo/recordings/sequitor-story.json'
-import Neighborhood from './Neighborhood'
 import ConversationSpace from './ConversationSpace'
-import type { GraphPost, SemanticEdge, StoryAnnotation } from './graphData'
+import type { GraphPost } from './graphData'
 import './sequitor.css'
 
 type Post = {
@@ -133,7 +131,6 @@ const fallback: Run = {
   scope: 'Recorded X counts and retrieved posts',
   note: `Saved run captured ${formatTime(liveCapture.capturedAt)}. Its bars were measured on X at capture time; post lists cover retrieved candidates only. Three humor-search posts were added later with separate capture timestamps.`,
 }
-const wetLab: Run = hydrateRecordedContext(wetLabCapture as Run)
 const recordedReferencePosts: GraphPost[] = [...new Map([
   ...fallback.posts,
   ...Object.values(fallback.savedPeriods || {}).flatMap(period => period.posts),
@@ -157,21 +154,6 @@ function formatTime(iso: string) {
 function shortNumber(value: number | null | undefined) {
   if (value === null || value === undefined) return '—'
   return Intl.NumberFormat('en', { notation: value >= 1000 ? 'compact' : 'standard', maximumFractionDigits: 1 }).format(value)
-}
-function activityAnnotation(post: Post): StoryAnnotation {
-  const kind = (post.basetenKind || '').toLowerCase()
-  if (post.scope === 'seed' || post.id === 'seed-text' || post.author === 'Seed text') return { role: 'announcement', focus: 'starting post' }
-  if (post.scope === 'humor branch' || /joke|humou?r|meme|riff/.test(kind)) return { role: 'humor', focus: 'humor or riff' }
-  if (/criticism|critique|skeptic/.test(kind)) return { role: 'critique', focus: 'critical response' }
-  if (/question|ask/.test(kind)) return { role: 'question', focus: 'question or uncertainty' }
-  if (/same wording|report|explanation/.test(kind) || post.scope === 'wet-lab context' || post.scope === 'broader discovery') return { role: 'reporting', focus: 'event framing' }
-  if (/reaction|response/.test(kind) || post.scope === 'direct conversation') return { role: 'adoption', focus: 'response' }
-  if (post.scope === 'context expansion') return { role: 'explanation', focus: 'context expansion' }
-  if (post.scope === 'measured phrase') return { role: 'adoption', focus: 'measured response' }
-  return { role: 'other', focus: 'not yet classified' }
-}
-function inferredAnnotations(posts: Post[]): Record<string, StoryAnnotation> {
-  return Object.fromEntries(posts.map(post => [post.id, activityAnnotation(post)]))
 }
 function normalizeBucket(bucket: Bucket, capturedAt?: string): Bucket {
   if (bucket.coverage === 'unavailable') return { ...bucket, count: null }
@@ -404,7 +386,7 @@ export default function Sequitor() {
   const [error, setError] = useState('')
   const [inspect, setInspect] = useState<Post | null>(null)
   const [showData, setShowData] = useState(false)
-  const [view, setView] = useState<'feed' | 'space' | 'network'>('space')
+  const [view, setView] = useState<'feed' | 'space'>('feed')
   const [health, setHealth] = useState<boolean | null>(null)
   const [activityScale, setActivityScale] = useState<ActivityScale>('day')
   const [hourlyActivity, setHourlyActivity] = useState<HourlyState | null>(null)
@@ -597,19 +579,6 @@ export default function Sequitor() {
         setRunStatus('completed')
       }
     }, 170)
-  }
-
-  function openWetLabTest() {
-    ++requestId.current
-    resetRequests()
-    setRunStatus('completed')
-    setRun(wetLab)
-    setSeed(wetLab.seed)
-    setSelectedDay(wetLab.selectedDay)
-    setPeriodPosts(wetLab.posts)
-    setRankingCoverage(wetLab.rankingCoverage)
-    setBusy('')
-    setError('')
   }
 
   async function explore(event?: FormEvent) {
@@ -807,9 +776,6 @@ export default function Sequitor() {
     return [...new Map(candidates.filter(post => !isInput(post)).map(post => [post.id, normalizePost(post)])).values()]
   }, [periodPosts, run, busy])
   const graphSeedId = run.seedPost && !isInput(run.seedPost) ? run.seedPost.id : run.seed.match(/\/status\/(\d+)/)?.[1] || ''
-  const graphAnnotations = useMemo(() => graphSeedId === storyCapture.seedId
-    ? storyCapture.annotations as Record<string, StoryAnnotation>
-    : inferredAnnotations(graphPosts), [graphPosts, graphSeedId])
   const activityBuckets = useMemo(() => {
     if (activityScale === 'month') return aggregateMonths(run.buckets)
     if (activityScale === 'hour') return hourlyBuckets || (run.kind === 'saved' ? sampleHourly(periodPosts, selectedDay) : [])
@@ -830,12 +796,11 @@ export default function Sequitor() {
     <header className="seq-topbar"><Wordmark /><span className="seq-topbar-right"><span className={`seq-live-dot ${run.kind === 'saved' || run.streamSource === 'cache' ? 'is-saved' : ''}`} />{run.streamSource === 'cache' ? 'Cached X activity' : run.kind === 'saved' ? 'Recorded X activity' : 'Live X activity'}<button onClick={() => setShowData(true)} aria-label="About the data"><Info size={17} /></button></span></header>
     <div className="seq-intro" role="region" aria-label="Explore a conversation"><div><h1>Follow the conversation.</h1><p>See when a post took off, what people said, and where it went next.</p></div>
       <div className="seq-start-actions">{health === true && <form className="seq-search" onSubmit={explore}><Link2 size={17} aria-hidden="true" /><input aria-label="X post URL or topic" value={seed} onChange={event => setSeed(event.target.value)} placeholder="Paste an X post URL or topic" /><button type="submit"><Search size={16} /><span>Explore live</span></button></form>}
-        <button className="seq-recorded-cta" type="button" onClick={replayExample}>Replay the Dario example <ArrowRight size={17} /></button>
-        <button className="seq-recorded-cta" type="button" onClick={openWetLabTest}>View Anthropic Wet Lab test <ArrowRight size={17} /></button></div>
+        <button className="seq-recorded-cta" type="button" onClick={replayExample}>Replay the Dario example <ArrowRight size={17} /></button></div>
     </div>
     {error && <div className="seq-error" role="alert">{error} <button onClick={() => setError('')}>Dismiss</button></div>}
     <div className="seq-investigation-head" role="region" aria-label="Current conversation"><div><span className="seq-investigation-caption">CURRENT CONVERSATION</span><h2>{run.title}</h2><p>{run.seedPost && isInput(run.seedPost) ? 'Search input · no authored starting post supplied.' : run.streamSource === 'cache' ? 'Cached results from an earlier live investigation.' : run.kind === 'saved' ? 'A recorded conversation you can explore offline.' : run.query ? 'Measured search, with original posts kept in view.' : 'No measurement received yet.'}</p></div><button className="seq-data-button" onClick={() => setShowData(true)}>About this data <ArrowUpRight size={15} /></button></div>
-    <nav className="seq-view-tabs" aria-label="Investigation views"><button type="button" className={view === 'feed' ? 'active' : ''} aria-current={view === 'feed' ? 'page' : undefined} onClick={() => setView('feed')}>Activity & posts</button><button type="button" className={view === 'space' ? 'active' : ''} aria-current={view === 'space' ? 'page' : undefined} onClick={() => setView('space')}>Conversation Space <span>{graphPosts.length}</span></button><button type="button" className={view === 'network' ? 'active' : ''} aria-current={view === 'network' ? 'page' : undefined} onClick={() => setView('network')}>2D Neighborhood</button></nav>
+    <nav className="seq-view-tabs" aria-label="Investigation views"><button type="button" className={view === 'feed' ? 'active' : ''} aria-current={view === 'feed' ? 'page' : undefined} onClick={() => setView('feed')}>Activity & posts</button><button type="button" className={view === 'space' ? 'active' : ''} aria-current={view === 'space' ? 'page' : undefined} onClick={() => setView('space')}>Conversation Space <span>{graphPosts.length}</span></button></nav>
     {view === 'feed' ? <main id="seq-main" className="seq-layout">
       <aside className="seq-sidebar"><Timeline buckets={activityBuckets} selectedDay={selectedDay} onSelect={chooseDay} kind={run.streamSource === 'cache' ? 'saved' : run.kind} scaleMax={activityScale === 'day' ? run.activityScaleMax : undefined} query={run.query} scale={activityScale} onScaleChange={setActivityScale} loading={activityLoading} error={activityError} sample={activityScale === 'hour' && run.kind === 'saved'} />
         <ContextCard plan={run.searchPlan} />
@@ -850,14 +815,8 @@ export default function Sequitor() {
         {!busyLabel && discoveries.length > 0 && <section className="seq-offshoots"><div className="seq-offshoots-heading"><Sparkles size={17} /><div><h3>A different turn</h3><p>Related replies and reactions beyond the ten posts above</p></div></div>{discoveries.map(post => <PostRow key={post.id} post={post} onOpen={setInspect} />)}</section>}
         <div className="seq-feed-bottom"><span>{run.id === sevenPostFallback.id ? 'Selected source capture' : typeof run.xSpend === 'number' ? `${run.kind === 'saved' ? 'Estimated X spend at capture' : 'Estimated X spend in this server'}: $${run.xSpend.toFixed(2)}` : 'Estimated X spend not reported'}</span><span>Likes reflect collection time, not the selected day.</span></div>
       </section>
-    </main> : view === 'space' ? <main id="seq-main"><ConversationSpace key={run.id} posts={graphPosts} seedId={graphSeedId}
+    </main> : <main id="seq-main"><ConversationSpace key={run.id} posts={graphPosts} seedId={graphSeedId}
       referencePosts={graphSeedId === storyCapture.seedId ? recordedReferencePosts : undefined}
-      onOpenPost={setInspect} /></main> : <main id="seq-main"><Neighborhood key={run.id} posts={graphPosts} seedId={graphSeedId}
-      referencePosts={graphSeedId === storyCapture.seedId ? recordedReferencePosts : undefined}
-      selectedPostIds={graphSeedId === storyCapture.seedId ? storyCapture.selectedPostIds : undefined}
-      annotations={graphAnnotations}
-      semanticEdges={graphSeedId === storyCapture.seedId ? storyCapture.similarityEdges as SemanticEdge[] : undefined}
-      modelLabel={graphSeedId === storyCapture.seedId ? storyCapture.model : undefined}
       onOpenPost={setInspect} /></main>}
     <footer className="seq-footer"><Wordmark /><span>Explore the posts. Keep the limits in view.</span><button onClick={() => setShowData(true)}>Method and sources <ArrowUpRight size={13} /></button></footer>
     {inspect && <Context key={`${run.id}:${inspect.id}`} post={graphPosts.find(post => post.id === inspect.id) || inspect} posts={graphPosts} onClose={() => setInspect(null)} />}
