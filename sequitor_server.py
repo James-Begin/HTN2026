@@ -38,7 +38,9 @@ DEFAULT_SEED = "https://x.com/DarioAmodei/status/2098773920774074715"
 MAX_POSTS = 1800  # $9.00 at the default cap.
 MAX_COUNTS = 48   # $0.48 at the default cap.
 PLAN_VERSION = 5
-ANCHOR_VERSION = 1
+ANCHOR_VERSION = 2
+PERIOD_SCHEMA = 6
+FEED_TARGET = 500
 ANCHOR_RECORDINGS = {
     "2098435855857668156": ROOT / "demo" / "recordings" / "anchor-tomdale.json",
     "2085392809385988130": ROOT / "demo" / "recordings" / "anchor-drewhahn.json",
@@ -120,18 +122,12 @@ class StreamHub:
                     posts = sorted(recorded.get("posts", []),
                                    key=lambda post: -(post.get("likes") or 0))
                     buckets = recorded.get("buckets", [])
-                    # Bars arrive first. The visible posts and then the map fill
-                    # progressively instead of jumping to the completed capture.
-                    first = max(len(buckets), min(10, len(posts)) * 6)
-                    for tick in range(first):
-                        if tick < len(buckets):
-                            job.emit("buckets.upsert", {"bucket": buckets[tick]})
-                        if tick % 6 == 0 and tick // 6 < min(10, len(posts)):
-                            job.emit("posts.upsert", {"posts": [posts[tick // 6]]})
-                        time.sleep(0.14)
-                    for index in range(10, len(posts), 3):
-                        job.emit("posts.upsert", {"posts": posts[index:index + 3]})
-                        time.sleep(0.14)
+                    for bucket in buckets:
+                        job.emit("buckets.upsert", {"bucket": bucket})
+                    for post in posts[:8]:
+                        job.emit("posts.upsert", {"posts": [post]})
+                        time.sleep(0.03)
+                    emit_post_batches(job.emit, posts[8:], size=24, pause=0.012)
                     job.emit("run.completed", {"model": recorded.get("model"),
                                                "rankingCoverage": recorded.get("rankingCoverage"),
                                                "xSpend": recorded.get("xSpend", 0)})
@@ -260,10 +256,55 @@ def emit_progressive_posts(emit, posts: list[dict]) -> None:
     """Let the first screen populate one post at a time, then fill the remainder."""
     if not emit:
         return
-    for post in posts[:10]:
+    for post in posts[:8]:
         emit("posts.upsert", {"posts": [post]})
-        time.sleep(0.11)
-    emit_post_batches(emit, posts[10:], size=10, pause=0.06)
+        time.sleep(0.035)
+    emit_post_batches(emit, posts[8:], size=24, pause=0.012)
+
+
+def feed_room(unique: dict, target: int = FEED_TARGET) -> int:
+    return max(0, target - len(unique))
+
+
+def cap_feed(posts: list[dict], seed: dict | None = None, entry: dict | None = None,
+             limit: int = FEED_TARGET) -> list[dict]:
+    """Keep the conversation identity, then the highest-engagement remainder."""
+    unique: dict[str, dict] = {}
+    for post in posts:
+        if post and post.get("id"):
+            unique[str(post["id"])] = post
+    pinned: list[dict] = []
+    for post in (seed, entry):
+        if not post or not post.get("id"):
+            continue
+        key = str(post["id"])
+        unique[key] = post
+        if not any(row.get("id") == key for row in pinned):
+            pinned.append(post)
+    rest = [post for post in unique.values()
+            if str(post.get("id")) not in {str(row["id"]) for row in pinned}]
+    rest.sort(key=lambda post: (-(post.get("likes") or 0),
+                                post.get("publishedAt") or "",
+                                post.get("id") or ""))
+    return pinned + rest[:max(0, limit - len(pinned))]
+
+
+def overlay_recording(base: dict, extra: dict) -> dict:
+    """Keep the pasted fixture's identity and fill its feed from a denser capture."""
+    merged = dict(base)
+    posts = {str(post["id"]): post for post in extra.get("posts") or [] if post.get("id")}
+    for post in base.get("posts") or []:
+        if post.get("id"):
+            posts[str(post["id"])] = post
+    merged["posts"] = cap_feed(list(posts.values()), base.get("seedPost"), base.get("entryPost"))
+    buckets = {bucket["day"]: dict(bucket) for bucket in extra.get("buckets") or [] if bucket.get("day")}
+    for bucket in base.get("buckets") or []:
+        if bucket.get("day"):
+            buckets[bucket["day"]] = {**buckets.get(bucket["day"], {}), **bucket}
+    merged["buckets"] = sorted(buckets.values(), key=lambda bucket: bucket["day"])
+    if extra.get("savedPeriods") and not base.get("savedPeriods"):
+        merged["savedPeriods"] = extra["savedPeriods"]
+    return merged
 
 
 def day_bounds(day: str) -> tuple[datetime, datetime]:
@@ -503,6 +544,8 @@ def recording_for_seed(seed: str) -> dict:
     if path and path.is_file():
         recorded = read_json(path, {})
         if recorded.get("seedPost"):
+            if str(recorded["seedPost"].get("id")) == "2098773920774074715":
+                recorded = overlay_recording(recorded, recorded_demo())
             return source_metadata(recorded)
     return recorded_demo()
 
@@ -655,17 +698,38 @@ class Sequitor:
         if not self.x:
             raise RuntimeError("X bearer token unavailable")
         start, end = day_bounds(day)
-        if start >= end:
+        if start >= end or limit <= 0:
             return [], False
-        available = MAX_POSTS - self.x.posts_read if MAX_POSTS is not None else limit
-        if MAX_POSTS is not None and available < 10:
-            raise RuntimeError("X post budget reached for this demo server")
-        take = min(limit, available)
-        try:
-            rows, next_token = self.x.search(query + " -is:retweet", start, end, max_results=take)
-        finally:
-            self.save()
-        return [post_from_x(row, scope) for row in rows], bool(next_token)
+        collected: list[dict] = []
+        token = None
+        truncated = False
+        while len(collected) < limit:
+            if MAX_POSTS is not None:
+                available = MAX_POSTS - self.x.posts_read
+                if available < 10:
+                    if not collected:
+                        raise RuntimeError("X post budget reached for this demo server")
+                    truncated = True
+                    break
+            else:
+                available = limit - len(collected)
+            room = min(limit - len(collected), available)
+            take = min(500, max(10, room))
+            try:
+                rows, token = self.x.search(query + " -is:retweet", start, end,
+                                            max_results=take, token=token)
+            finally:
+                self.save()
+            collected.extend(rows)
+            if not rows:
+                break
+            if len(collected) >= limit:
+                collected = collected[:limit]
+                truncated = truncated or bool(token)
+                break
+            if not token:
+                break
+        return [post_from_x(row, scope) for row in collected], truncated or bool(token)
 
     def openai_plan(self, text: str) -> dict:
         """Create a small, inspectable context card before any X search."""
@@ -967,7 +1031,7 @@ class Sequitor:
         if not re.fullmatch(r"\d{4}-\d{2}-\d{2}", day):
             raise ValueError("Invalid UTC day")
         key = run_id + ":" + day
-        if key in self.cache["periods"] and self.cache["periods"][key].get("schemaVersion") == 5 and self.cache["periods"][key].get("discoveryQuery") == run["searchPlan"].get("discoveryPhrase"):
+        if key in self.cache["periods"] and self.cache["periods"][key].get("schemaVersion") == PERIOD_SCHEMA and self.cache["periods"][key].get("discoveryQuery") == run["searchPlan"].get("discoveryPhrase"):
             cached_period = self.cache["periods"][key]
             if emit:
                 emit("stage", {"name": "Loading cached posts", "source": "cache"})
@@ -1012,38 +1076,40 @@ class Sequitor:
         else:
             if emit:
                 emit("stage", {"name": "Retrieving phrase matches"})
-            primary, partial = self.search(run["query"], day,
-                                           limit=100 if day == run["selectedDay"] else 70)
+            phrase_limit = FEED_TARGET if day == run["selectedDay"] else min(80, FEED_TARGET)
+            primary, partial = self.search(run["query"], day, limit=phrase_limit)
         if emit and primary:
             emit_progressive_posts(emit, sorted(primary, key=lambda post: -(post.get("likes") or 0)))
         # Initial context-card queries create explicitly-labelled branches outside
         # the chart's literal phrase scope.
         secondary, extra_partial = [], False
         initial_queries = run["searchPlan"].get("discoveryQueries") or ([run["searchPlan"].get("discoveryPhrase")] if run["searchPlan"].get("discoveryPhrase") else [])
-        if day == run["selectedDay"] and initial_queries:
-            if emit:
-                emit("stage", {"name": "Searching the first context branches"})
-            for query in initial_queries[:2]:
-                if query == run["query"]:
-                    continue
-                rows, partial_result = self.search(query, day, limit=60, scope="broader discovery")
-                secondary.extend(rows)
-                extra_partial = extra_partial or partial_result
-                if emit and rows:
-                    emit_post_batches(emit, rows)
         unique = {p["id"]: p for p in primary}
         if prior:
             for post in prior["posts"]:
                 unique.setdefault(post["id"], post)
+        if day == run["selectedDay"] and initial_queries:
+            if emit:
+                emit("stage", {"name": "Searching the first context branches"})
+            for query in initial_queries[:2]:
+                if query == run["query"] or feed_room(unique) < 10:
+                    continue
+                rows, partial_result = self.search(query, day, limit=min(150, feed_room(unique)),
+                                                   scope="broader discovery")
+                secondary.extend(rows)
+                extra_partial = extra_partial or partial_result
+                if emit and rows:
+                    emit_post_batches(emit, rows)
         for post in secondary:
             unique.setdefault(post["id"], post)
         seed_id = str(run.get("seedPost", {}).get("id") or "")
-        if day == run["selectedDay"] and seed_id.isdigit() and not (prior and prior.get("schemaVersion", 0) >= 2):
+        if day == run["selectedDay"] and seed_id.isdigit() and not (prior and prior.get("schemaVersion", 0) >= 2) and feed_room(unique) >= 10:
             try:
                 if emit:
                     emit("stage", {"name": "Reading direct conversation"})
                 conversation, conv_partial = self.search(f"conversation_id:{seed_id}", day,
-                                                         limit=100, scope="direct conversation")
+                                                         limit=min(200, feed_room(unique)),
+                                                         scope="direct conversation")
                 for post in conversation:
                     unique.setdefault(post["id"], post)
                 if emit and conversation:
@@ -1077,7 +1143,10 @@ class Sequitor:
                 if emit:
                     emit("context.expanded", {"plan": run["searchPlan"]})
                 for query in expansion["queries"]:
-                    rows, partial_result = self.search(query, day, limit=50, scope="context expansion")
+                    if feed_room(unique) < 10:
+                        break
+                    rows, partial_result = self.search(query, day, limit=min(80, feed_room(unique)),
+                                                       scope="context expansion")
                     extra_partial = extra_partial or partial_result
                     for post in rows:
                         unique.setdefault(post["id"], post)
@@ -1089,6 +1158,31 @@ class Sequitor:
                 run["searchPlan"]["expansionError"] = type(exc).__name__
                 if emit:
                     emit("stage", {"name": "Context expansion unavailable; keeping first-round evidence"})
+        unique = {post["id"]: post for post in posts if post.get("id")}
+        if day == run["selectedDay"]:
+            ranked_days = sorted((bucket for bucket in run.get("buckets") or [] if bucket.get("count")),
+                                 key=lambda bucket: -(bucket.get("count") or 0))
+            for bucket in ranked_days:
+                if feed_room(unique) < 10:
+                    break
+                other = bucket.get("day")
+                if not other or other == day:
+                    continue
+                if emit:
+                    emit("stage", {"name": f"Collecting more conversation from {other}"})
+                try:
+                    rows, partial_result = self.search(run["query"], other,
+                                                       limit=min(200, feed_room(unique)))
+                except (RuntimeError, urllib.error.HTTPError):
+                    break
+                extra_partial = extra_partial or partial_result
+                for post in rows:
+                    unique.setdefault(post["id"], post)
+                    if len(unique) >= FEED_TARGET:
+                        break
+                if emit and rows:
+                    emit_post_batches(emit, rows)
+        posts = cap_feed(list(unique.values()), run.get("seedPost"), run.get("entryPost"))
         if emit:
             emit_post_batches(emit, posts, size=24, pause=0)
             emit("stage", {"name": "Curating retrieved posts with Baseten"})
@@ -1098,10 +1192,11 @@ class Sequitor:
             updates = [post for post in posts if post.get("basetenPick") or post.get("sameClaimScore") is not None or post.get("rankingScore") is not None]
             emit_post_batches(emit, updates, size=12, pause=0)
             emit("model.ready", {"model": {**model, "retrieval": retrieval}})
-        result = {"schemaVersion": 5, "discoveryQuery": run["searchPlan"].get("discoveryPhrase"),
-                  "day": day, "posts": posts,
-                  "rankingCoverage": "top retrieved posts; search may be truncated" if partial or extra_partial
-                  else "top retrieved posts; phrase scope plus one related search",
+        truncated = partial or extra_partial or len(posts) >= FEED_TARGET
+        result = {"schemaVersion": PERIOD_SCHEMA, "discoveryQuery": run["searchPlan"].get("discoveryPhrase"),
+                  "day": day, "posts": posts, "feedTarget": FEED_TARGET,
+                  "rankingCoverage": f"up to {FEED_TARGET} retrieved posts; search may be truncated" if truncated
+                  else f"up to {FEED_TARGET} retrieved posts; phrase scope plus related searches",
                   "partial": partial or extra_partial, "model": {**model, "retrieval": retrieval},
                   "xSpend": round(self.x.spend, 3) if self.x else 0}
         self.cache["periods"][key] = result

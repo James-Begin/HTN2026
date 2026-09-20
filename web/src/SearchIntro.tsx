@@ -42,32 +42,38 @@ const CARDS: Card[] = [
   { author: 'Elon Musk', handle: '@elonmusk', text: 'the bird is freed', accent: '#e0c39d', year: '2022' },
 ]
 
-const FIELD_SIZE = 120
+const FIELD_SIZE = 240
 const GOLDEN = 2.399963229728653
-const CRUISE_MS = 3600
-const FLY_MS = 1500
-const CRUISE_START = 110
-const CRUISE_TRAVEL = 280
-const FLY_TRAVEL = 2600
+const LOOP = 1560
+const PASS_AT = 120
 const FOCAL = 760
-const PASS_AT = 110
+const FLY_SPEED = 1.95
+const FLY_BOOST = 1.55
 const ACCENTS = ['#94cfee', '#e8c58d', '#a8d8b9', '#9dbce9', '#f1b4ce', '#bfbcf4', '#dcad9e', '#d8d499', '#c9b1f2', '#e1a7d7', '#78c8e2', '#b9a9f3']
 
 const clamp = (value: number, low: number, high: number) => Math.min(high, Math.max(low, value))
-const easeInCubic = (value: number) => value * value * value
 
-function project(x: number, y: number, z: number, rx: number, ry: number, travel = 0, spread = 1, fly = 0) {
-  const zWorld = z + travel
+function wrapZ(z: number, travel: number, recycle: boolean) {
+  let zWorld = z + travel
+  if (!recycle) return zWorld
+  const start = PASS_AT - LOOP
+  let offset = (zWorld - start) % LOOP
+  if (offset < 0) offset += LOOP
+  return start + offset
+}
+
+function project(x: number, y: number, z: number, rx: number, ry: number, travel = 0, recycle = true) {
+  const zWorld = wrapZ(z, travel, recycle)
   const denom = FOCAL - zWorld
   const passed = zWorld > PASS_AT || denom <= 36
   const scale = passed ? 0 : clamp(FOCAL / denom, 0.08, 2.8)
   const fadeNear = zWorld > 8 ? clamp(1 - (zWorld - 8) / (PASS_AT - 8), 0, 1) : 1
-  const fadeFar = clamp((2100 + z + travel) / 420, 0, 1)
+  const fadeFar = clamp((zWorld - (PASS_AT - LOOP)) / 380, 0, 1)
   return {
     passed,
     opacity: passed ? 0 : fadeNear * fadeFar,
     zIndex: Math.round(4000 + zWorld),
-    transform: `translate3d(calc(-50% + ${x * spread * scale}px), calc(-50% + ${y * spread * scale}px), 0) rotateY(${ry * (1 + fly * 0.4)}deg) rotateX(${rx}deg) scale(${scale})`,
+    transform: `translate3d(calc(-50% + ${x * scale}px), calc(-50% + ${y * scale}px), 0) rotateY(${ry}deg) rotateX(${rx}deg) scale(${scale})`,
   }
 }
 
@@ -93,16 +99,16 @@ function placeField(deck: Card[]): PlacedCard[] {
     const source = deck[index % deck.length]
     const ring = index / FIELD_SIZE
     const angle = index * GOLDEN
-    const z = -80 - ring * 1420 - (index % 5) * 10
-    const radius = 150 + (index % 11) * 40 + ring * 82
+    const z = PASS_AT - 36 - ring * (LOOP - 110)
+    const radius = 48 + (index % 9) * 16 + ring * 28
     return {
       ...source,
       key: `${source.handle}-${index}`,
-      x: Math.cos(angle) * radius * 1.45,
-      y: Math.sin(angle) * radius * 0.82,
+      x: Math.cos(angle) * radius * 1.28,
+      y: Math.sin(angle) * radius * 0.58,
       z,
-      rx: Math.sin(angle) * -7,
-      ry: Math.cos(angle) * 11,
+      rx: Math.sin(angle) * -6,
+      ry: Math.cos(angle) * 10,
       width: 292 + (index % 6) * 10,
     }
   })
@@ -136,35 +142,22 @@ export default function SearchIntro({ phase, className = '', posts = [] }: Searc
     const motion = window.matchMedia('(prefers-reduced-motion: reduce)')
     if (motion.matches) return
 
-    const mountedAt = performance.now()
-    let flyStartedAt = 0
-    let travelWhenFly = 0
+    let travel = 160
+    let last = performance.now()
     let frame = 0
 
     const tick = (now: number) => {
+      const dt = Math.min(48, now - last)
+      last = now
       const resolving = phaseRef.current === 'resolving'
-      let travel = CRUISE_START
-      let spread = 1
-      let fly = 0
-
-      if (resolving) {
-        if (!flyStartedAt) {
-          flyStartedAt = now
-          travelWhenFly = CRUISE_START + clamp((now - mountedAt) / CRUISE_MS, 0, 1) * CRUISE_TRAVEL
-        }
-        fly = easeInCubic(clamp((now - flyStartedAt) / FLY_MS, 0, 1))
-        travel = travelWhenFly + fly * FLY_TRAVEL
-        spread = 1 + fly * 1.8
-      } else {
-        travel = CRUISE_START + clamp((now - mountedAt) / CRUISE_MS, 0, 1) * CRUISE_TRAVEL
-        const t = now * 0.001
-        field.style.setProperty('--sway-x', `${Math.sin(t * 0.17) * 18}px`)
-        field.style.setProperty('--sway-y', `${Math.cos(t * 0.13) * 11}px`)
-      }
+      travel += dt * (resolving ? FLY_SPEED * FLY_BOOST : FLY_SPEED)
+      const t = now * 0.001
+      field.style.setProperty('--sway-x', `${Math.sin(t * 0.28) * 8}px`)
+      field.style.setProperty('--sway-y', `${Math.cos(t * 0.22) * 5}px`)
 
       cards.forEach((card, index) => {
         const origin = origins[index]
-        const next = project(origin.x, origin.y, origin.z, origin.rx, origin.ry, travel, spread, fly)
+        const next = project(origin.x, origin.y, origin.z, origin.rx, origin.ry, travel, true)
         card.classList.toggle('is-passed', next.passed)
         if (next.passed) return
         card.style.opacity = String(next.opacity)
@@ -187,7 +180,7 @@ export default function SearchIntro({ phase, className = '', posts = [] }: Searc
       <div className="search-intro-stage">
         <div className="search-intro-field" ref={fieldRef}>
           {items.map(item => {
-            const start = project(item.x, item.y, item.z, item.rx, item.ry, CRUISE_START)
+            const start = project(item.x, item.y, item.z, item.rx, item.ry, 160)
             return (
             <article
               key={item.key}

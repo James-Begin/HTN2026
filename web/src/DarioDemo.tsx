@@ -29,9 +29,6 @@ const DARIO_ID = '2098773920774074715'
 const RECORDED_IDS = new Set([DARIO_ID, '2098435855857668156', '2085392809385988130', '2098789109980332057'])
 const EXAMPLES = [
   { id: DARIO_ID, url: 'https://x.com/DarioAmodei/status/2098773920774074715', label: 'Try Dario’s post' },
-  { id: '2098435855857668156', url: 'https://x.com/tomdale/status/2098435855857668156', label: 'Navier–Stokes riff' },
-  { id: '2085392809385988130', url: 'https://x.com/drewhahn/status/2085392809385988130', label: 'Sandbox video' },
-  { id: '2098789109980332057', url: 'https://x.com/elonmusk/status/2098789109980332057', label: 'Quote of Dario' },
 ]
 const recordedSeed = capture.seedPost || capture.posts.find(post => post.id === DARIO_ID)!
 const recordedPosts = (() => {
@@ -43,7 +40,12 @@ const LOCAL_RECORDINGS: Record<string, DarioRun> = {
   [DARIO_ID]: { ...capture, kind: 'saved', streamSource: 'recorded', posts: recordedPosts },
   '2098435855857668156': tomdaleCapture as unknown as DarioRun,
   '2085392809385988130': drewhahnCapture as unknown as DarioRun,
-  '2098789109980332057': elonCapture as unknown as DarioRun,
+  '2098789109980332057': (() => {
+    const thin = elonCapture as unknown as DarioRun
+    const values = [...recordedPosts, ...(thin.posts || []), thin.seedPost, thin.entryPost].filter(Boolean) as DarioPost[]
+    const posts = [...new Map(values.filter(post => post.id).map(post => [post.id, post])).values()]
+    return { ...thin, posts, buckets: (capture.buckets?.length ? capture.buckets : thin.buckets) as DarioRun['buckets'] }
+  })(),
 }
 const floorTime = (stamp: number, unit: 'hour' | 'day' | 'month') => {
   const date = new Date(stamp)
@@ -57,7 +59,7 @@ const addUnit = (stamp: number, unit: 'hour' | 'day' | 'month') => {
   return stamp + (unit === 'hour' ? 3600000 : 86400000)
 }
 const labelTime = (stamp: number, unit: 'hour' | 'day' | 'month') => new Intl.DateTimeFormat('en-CA', unit === 'hour' ? { month: 'short', day: 'numeric', hour: 'numeric', timeZone: 'UTC' } : unit === 'month' ? { month: 'short', year: 'numeric', timeZone: 'UTC' } : { day: 'numeric', month: 'short', timeZone: 'UTC' }).format(new Date(stamp))
-const LAUNCH_AT = { searching: 1100, resolving: 4700, blackout: 6200, anchor: 6900, forming: 8000, exploring: 12600, reducedSearching: 320 }
+const LAUNCH_AT = { searching: 420, resolving: 3400, blackout: 4900, anchor: 5600, forming: 6700, exploring: 11000, reducedSearching: 180 }
 
 function ActivityStrip({ buckets, posts }: { buckets: Bucket[]; posts: DarioPost[] }) {
   const [scale, setScale] = useState<'hour' | 'day' | 'month'>('day')
