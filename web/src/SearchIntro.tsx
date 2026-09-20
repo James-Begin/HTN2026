@@ -48,10 +48,9 @@ const LOOP = 2100
 const PASS_AT = 90
 const FOCAL = 720
 const READ_MS = 4200
-const ACCELERATE_MS = 2300
+const ACCELERATE_MS = 1700
 const READ_SPEED = 0.025
-const FLY_SPEED = 0.26
-const FLY_BOOST = 1.35
+const RUSH_SPEED = 2.15
 const ACCENTS = ['#94cfee', '#e8c58d', '#a8d8b9', '#9dbce9', '#f1b4ce', '#bfbcf4', '#dcad9e', '#d8d499', '#c9b1f2', '#e1a7d7', '#78c8e2', '#b9a9f3']
 
 const clamp = (value: number, low: number, high: number) => Math.min(high, Math.max(low, value))
@@ -149,25 +148,34 @@ export default function SearchIntro({ phase, className = '', posts = [] }: Searc
     let last = performance.now()
     const started = last
     let speed = READ_SPEED
+    let resolvingStarted: number | null = null
+    let exitTravel = 0
+    let exitOrigins: typeof origins | null = null
     let frame = 0
 
     const tick = (now: number) => {
       const dt = Math.min(48, now - last)
       last = now
       const resolving = phaseRef.current === 'resolving'
-      // Give each newly loaded deck a readable opening before the fly-past.
-      const acceleration = clamp((now - started - READ_MS) / ACCELERATE_MS, 0, 1)
-      const eased = acceleration * acceleration * (3 - 2 * acceleration)
-      const targetSpeed = READ_SPEED + ((resolving ? FLY_SPEED * FLY_BOOST : FLY_SPEED) - READ_SPEED) * eased
+      if (resolving && resolvingStarted === null) {
+        resolvingStarted = now
+        exitOrigins = origins.map(origin => ({ ...origin, z: wrapZ(origin.z, travel, true) }))
+      }
+      // Read at a crawl; only the final resolved phase accelerates into a one-way fly-past.
+      const rushStart = Math.max(started + READ_MS, resolvingStarted ?? Infinity)
+      const acceleration = clamp((now - rushStart) / ACCELERATE_MS, 0, 1)
+      const eased = acceleration * acceleration * acceleration
+      const targetSpeed = READ_SPEED + (RUSH_SPEED - READ_SPEED) * eased
       speed += (targetSpeed - speed) * (1 - Math.exp(-dt / 180))
-      travel += dt * speed
+      if (resolving) exitTravel += dt * speed
+      else travel += dt * speed
       const t = now * 0.001
       field.style.setProperty('--sway-x', `${Math.sin(t * 0.28) * 8}px`)
       field.style.setProperty('--sway-y', `${Math.cos(t * 0.22) * 5}px`)
 
       cards.forEach((card, index) => {
-        const origin = origins[index]
-        const next = project(origin.x, origin.y, origin.z, origin.rx, origin.ry, travel, true)
+        const origin = exitOrigins?.[index] ?? origins[index]
+        const next = project(origin.x, origin.y, origin.z, origin.rx, origin.ry, resolving ? exitTravel : travel, !resolving)
         card.classList.toggle('is-passed', next.passed)
         if (next.passed) return
         card.style.opacity = String(next.opacity)
