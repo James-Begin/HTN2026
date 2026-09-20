@@ -5,7 +5,8 @@ import unittest
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from sequitor_server import Sequitor, post_from_x, recording_for_seed  # noqa: E402
+from sequitor_server import (Sequitor, anchor_search_queries, post_from_x,  # noqa: E402
+                             recording_for_seed)
 
 
 TOMDALE = "2098435855857668156"
@@ -129,6 +130,14 @@ class TestResolveConversationSeed(unittest.TestCase):
 
 
 class TestAnchorCandidatePriority(unittest.TestCase):
+    def test_anchor_search_splits_entity_year_before_specific_query(self):
+        queries = anchor_search_queries({
+            "anchorQueries": ["ICLR2027 submission numbers", "ICLR conference announcement"],
+            "discoveryQueries": ["ICLR submission"],
+        })
+        self.assertEqual(queries[0], "ICLR 2027")
+        self.assertEqual(queries[1], "ICLR 2027 submission numbers")
+
     def test_source_queries_prioritize_high_signal_context_post(self):
         target = {
             "id": "2101349669439688867",

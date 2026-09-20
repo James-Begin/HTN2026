@@ -372,6 +372,30 @@ def distinct_anchor_queries(values: list[str], limit: int = 2) -> list[str]:
     return queries
 
 
+def anchor_search_queries(plan: dict, limit: int = 4) -> list[str]:
+    """Expand model queries from specific to broad without losing entity years."""
+    queries: list[str] = []
+    raw_queries = list(plan.get("anchorQueries") or [])
+    for raw in raw_queries:
+        normalized = re.sub(r"(?<=[^\W\d_])(?=\d)|(?<=\d)(?=[^\W\d_])", " ", str(raw))
+        words = re.findall(r"[\w'-]+", normalized, flags=re.UNICODE)
+        if len(words) >= 2:
+            # Entity + year is often the invariant shared by a joke and its
+            # premise, while generated words like "numbers" may not be present.
+            year_index = next((index for index, word in enumerate(words) if re.fullmatch(r"20\d{2}", word)), None)
+            if year_index and year_index > 0:
+                queries.append(" ".join(words[year_index - 1:year_index + 1]))
+            queries.append(" ".join(words[:4]))
+    queries.extend(plan.get("discoveryQueries") or [])
+    unique: list[str] = []
+    for query in queries:
+        if query and query.casefold() not in {item.casefold() for item in unique}:
+            unique.append(query)
+        if len(unique) >= limit:
+            break
+    return unique
+
+
 def normalized_words(text: str) -> set[str]:
     return {word.casefold() for word in re.findall(r"[\w'-]{3,}", text, flags=re.UNICODE)
             if word.casefold() not in {"the", "and", "that", "with", "this", "from", "have", "will", "about", "your"}}
@@ -629,8 +653,7 @@ class Sequitor:
 
     def semantic_anchor_candidates(self, entry_post: dict, plan: dict) -> list[dict]:
         """Search multiple source-oriented queries and rank likely premise posts."""
-        queries = list(plan.get("anchorQueries") or []) + list(plan.get("discoveryQueries") or [])
-        queries = list(dict.fromkeys(query.casefold() for query in queries if query))
+        queries = anchor_search_queries(plan)
         if not queries:
             entities = [str(item).strip() for item in plan.get("entities") or [] if str(item).strip()]
             if len(entities) >= 2:
