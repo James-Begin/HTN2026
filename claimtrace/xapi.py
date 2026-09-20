@@ -16,6 +16,7 @@ import urllib.parse
 import urllib.request
 from collections import deque
 from datetime import datetime, timedelta, timezone
+from typing import Optional
 
 from . import config as C
 
@@ -106,7 +107,7 @@ def id_is_plausible_for(tweet_id, when: datetime, tolerance_s: int = 5) -> bool:
 
 
 class XClient:
-    def __init__(self, bearer: str, post_budget: int = C.DEFAULT_POST_BUDGET, verbose: bool = False):
+    def __init__(self, bearer: str, post_budget: Optional[int] = C.DEFAULT_POST_BUDGET, verbose: bool = False):
         if not bearer:
             raise ValueError("X_BEARER is empty")
         self._bearer = bearer
@@ -124,7 +125,7 @@ class XClient:
         return self.posts_read * C.COST_PER_POST_READ + self.counts_calls * C.COST_PER_COUNTS_ALL
 
     def _guard(self, about_to_bill: int) -> None:
-        if self.posts_read + about_to_bill > self.post_budget:
+        if self.post_budget is not None and self.posts_read + about_to_bill > self.post_budget:
             raise BudgetExceeded(
                 f"would exceed post budget: {self.posts_read}+{about_to_bill} > {self.post_budget}"
             )

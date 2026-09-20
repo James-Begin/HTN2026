@@ -22,7 +22,7 @@ from urllib.parse import parse_qs, urlsplit
 
 from claimtrace.baseten import CrossEncoder, HostedLLM
 from claimtrace.resolve import resolve
-from claimtrace.xapi import XClient, now_safe
+from claimtrace.xapi import BudgetExceeded, XClient, now_safe
 from sequitor_baseten_chain import BasetenChainClient
 
 ROOT = Path(__file__).resolve().parent
@@ -127,7 +127,7 @@ class StreamHub:
             except StoppedRun:
                 job.emit("run.stopped", {})
             except Exception as exc:
-                job.emit("run.failed", {"message": str(exc)[:180],
+                job.emit("run.failed", {"message": public_run_error(exc)[:240],
                                         "reason": type(exc).__name__})
 
         threading.Thread(target=work, daemon=True).start()
@@ -148,8 +148,27 @@ def load_local_env() -> None:
 
 
 load_local_env()
-MAX_POSTS = int(os.environ.get("SEQUITOR_X_POST_CAP", MAX_POSTS))
-MAX_COUNTS = int(os.environ.get("SEQUITOR_X_COUNTS_CAP", MAX_COUNTS))
+
+
+def optional_x_cap(name: str, default: int) -> int | None:
+    """Treat 0 as no Sequitor-side cap; X billing still remains authoritative."""
+    value = os.environ.get(name)
+    if value is None or not value.strip():
+        return default
+    parsed = int(value)
+    return None if parsed == 0 else max(10, parsed)
+
+
+MAX_POSTS = optional_x_cap("SEQUITOR_X_POST_CAP", MAX_POSTS)
+MAX_COUNTS = optional_x_cap("SEQUITOR_X_COUNTS_CAP", MAX_COUNTS)
+
+
+def public_run_error(exc: Exception) -> str:
+    message = str(exc)
+    if isinstance(exc, BudgetExceeded) and message.startswith("X credits depleted:"):
+        return ("X has reached its account-level price limit. Sequitor's own testing cap is disabled; "
+                "raise the spend limit in the X Developer Console to run another uncached live search.")
+    return message
 
 
 def read_json(path: Path, fallback: dict) -> dict:
@@ -484,8 +503,10 @@ class Sequitor:
 
     def count(self, query: str, start: datetime, end: datetime,
               granularity: str = "day") -> list[dict]:
-        if not self.x or self.x.counts_calls >= MAX_COUNTS:
-            raise RuntimeError("X counts budget reached or bearer token unavailable")
+        if not self.x:
+            raise RuntimeError("X bearer token unavailable")
+        if MAX_COUNTS is not None and self.x.counts_calls >= MAX_COUNTS:
+            raise RuntimeError("X counts budget reached for this demo server")
         if granularity not in {"hour", "day"}:
             raise ValueError("Unsupported activity granularity")
         buckets, token = self.x.counts(query, start, end, granularity=granularity)
@@ -502,8 +523,8 @@ class Sequitor:
         start, end = day_bounds(day)
         if start >= end:
             return [], False
-        available = MAX_POSTS - self.x.posts_read
-        if available < 10:
+        available = MAX_POSTS - self.x.posts_read if MAX_POSTS is not None else limit
+        if MAX_POSTS is not None and available < 10:
             raise RuntimeError("X post budget reached for this demo server")
         take = min(limit, available)
         try:
@@ -1238,5 +1259,7 @@ if __name__ == "__main__":
         raise RuntimeError("Attach a Railway volume before enabling paid live searches")
     port = int(os.environ.get("PORT") or os.environ.get("SEQUITOR_PORT", "8765"))
     host = "0.0.0.0" if os.environ.get("PORT") else "127.0.0.1"
-    print(f"Sequitor at http://{host}:{port} (X cap: {MAX_POSTS} posts, {MAX_COUNTS} counts calls)")
+    post_cap = MAX_POSTS if MAX_POSTS is not None else "unlimited"
+    counts_cap = MAX_COUNTS if MAX_COUNTS is not None else "unlimited"
+    print(f"Sequitor at http://{host}:{port} (X cap: {post_cap} posts, {counts_cap} counts calls)")
     ThreadingHTTPServer((host, port), Handler).serve_forever()
