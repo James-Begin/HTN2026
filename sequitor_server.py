@@ -24,6 +24,7 @@ from claimtrace.baseten import CrossEncoder, HostedLLM
 from claimtrace.resolve import resolve
 from claimtrace.xapi import BudgetExceeded, XClient, now_safe
 from sequitor_baseten_chain import BasetenChainClient
+from sequitor_openjev import OpenJevReranker
 
 ROOT = Path(__file__).resolve().parent
 DATA_DIR = Path(os.environ.get("SEQUITOR_DATA_DIR") or os.environ.get("RAILWAY_VOLUME_MOUNT_PATH") or ROOT / "work")
@@ -489,6 +490,7 @@ class Sequitor:
         self.cache.setdefault("ledger", {})
         self.cache.setdefault("embeddings", {})
         self._cross_encoder_unavailable = False
+        self._openjev_unavailable = False
         self.x = XClient(os.environ.get("X_BEARER", ""), post_budget=MAX_POSTS) if os.environ.get("X_BEARER") else None
         if self.x:
             self.x.posts_read = int(self.cache["ledger"].get("postsRead", 0))
@@ -739,6 +741,31 @@ class Sequitor:
         key = os.environ.get("BASETEN_API_KEY")
         if not key or not posts:
             return {"status": "unavailable", "model": None}
+        openjev_url = os.environ.get("SEQUITOR_JEV_RERANK_URL", "").strip()
+        if openjev_url and not self._openjev_unavailable:
+            try:
+                # OpenJev supplies the claim score used by the hybrid ranker.
+                # The Chain still adds response categories and observed edges.
+                jev = OpenJevReranker(key, openjev_url).score(seed_text, posts, emit=emit)
+            except Exception as exc:
+                self._openjev_unavailable = True
+                if emit:
+                    emit("stage", {"name": "OpenJev unavailable; continuing with Baseten Chain",
+                                   "reason": type(exc).__name__})
+            else:
+                chain_url = os.environ.get("SEQUITOR_BASETEN_CHAIN_URL", "").strip()
+                if not chain_url:
+                    return jev
+                # Keep Jev scores even when the Chain's baseline reranker arrives.
+                # rank_posts prioritizes sameClaimScore over rerankerScore.
+                try:
+                    chain = BasetenChainClient(key, chain_url).classify(seed_text, posts, emit=emit)
+                    return {**chain, "openjev": jev}
+                except Exception as exc:
+                    if emit:
+                        emit("stage", {"name": "Baseten Chain unavailable; retaining OpenJev ranking",
+                                       "reason": type(exc).__name__})
+                    return jev
         chain_url = os.environ.get("SEQUITOR_BASETEN_CHAIN_URL", "").strip()
         if chain_url:
             try:
@@ -800,8 +827,13 @@ class Sequitor:
                 emit("stage", {"name": "Loading cached posts", "source": "cache"})
                 ordered = sorted(cached_period["posts"], key=lambda post: -(post.get("likes") or 0))
                 emit_post_batches(emit, ordered, size=16, pause=0.035)
-            status = cached_period.get("model", {}).get("status")
-            if status == "unavailable" or (os.environ.get("SEQUITOR_BASETEN_CHAIN_URL") and status != "baseten chain"):
+            cached_model = cached_period.get("model", {})
+            status = cached_model.get("status") if isinstance(cached_model, dict) else None
+            embedded_openjev = cached_model.get("openjev") if isinstance(cached_model, dict) else None
+            has_openjev = status == "openjev" or (isinstance(embedded_openjev, dict)
+                                                   and embedded_openjev.get("status") == "openjev")
+            wants_openjev = bool(os.environ.get("SEQUITOR_JEV_RERANK_URL")) and not has_openjev
+            if status == "unavailable" or wants_openjev or (os.environ.get("SEQUITOR_BASETEN_CHAIN_URL") and status != "baseten chain"):
                 cached_period["model"] = self.classify(run["seedPost"]["text"], cached_period["posts"], emit=emit)
                 run["posts"] = cached_period["posts"]
                 run["model"] = {"openai": run["searchPlan"].get("model"), "baseten": cached_period["model"]}
@@ -988,7 +1020,11 @@ class Sequitor:
                 emit_progressive_posts(emit, ordered)
             current_model = cached.get("model", {}).get("baseten")
             current_status = current_model.get("status") if isinstance(current_model, dict) else current_model
-            if os.environ.get("SEQUITOR_BASETEN_CHAIN_URL") and current_status != "baseten chain":
+            embedded_openjev = current_model.get("openjev") if isinstance(current_model, dict) else None
+            has_openjev = current_status == "openjev" or (isinstance(embedded_openjev, dict)
+                                                            and embedded_openjev.get("status") == "openjev")
+            wants_openjev = bool(os.environ.get("SEQUITOR_JEV_RERANK_URL")) and not has_openjev
+            if wants_openjev or (os.environ.get("SEQUITOR_BASETEN_CHAIN_URL") and current_status != "baseten chain"):
                 model = self.classify(cached["seedPost"]["text"], cached["posts"], emit=emit)
                 cached["model"] = {**cached.get("model", {}), "baseten": model}
                 self.save()
