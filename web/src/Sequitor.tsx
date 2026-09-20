@@ -74,9 +74,15 @@ function mergePosts(existing: Post[], incoming: Post[]): Post[] {
 }
 
 const defaultSeed = 'https://x.com/DarioAmodei/status/2098773920774074715'
+// The source snapshot retains the original profile payload separately from the
+// selected post list. Keep that captured avatar with its matching source post.
+const recordedAvatars: Record<string, string> = {
+  '2098773920774074715': 'https://pbs.twimg.com/profile_images/2015835742577012736/uOwdzrEz_normal.jpg',
+}
 const sourcePosts: Post[] = snapshot.posts.map(post => ({
   id: post.id, text: post.text, publishedAt: post.publishedAt, author: post.author,
   handle: post.handle, likes: post.likes, url: post.url,
+  avatar: recordedAvatars[post.id],
   quotedPostId: 'quotedPostId' in post ? post.quotedPostId : null,
   scope: 'saved source', captureTime: post.capture.capturedAt,
   textIsExcerpt: post.capture.textIsExcerpt,
@@ -106,7 +112,9 @@ function isInput(post: Post) {
 function normalizePost(post: Post): Post {
   if (isInput(post)) return { ...post, sourceType: 'input', author: 'Search input', publishedAt: '', url: undefined }
   const knownExcerpt = sourcePosts.some(source => source.id === post.id && source.text === post.text && source.textIsExcerpt)
-  return knownExcerpt ? { ...post, textIsExcerpt: true } : post
+  const normalized = knownExcerpt ? { ...post, textIsExcerpt: true } : post
+  const avatar = normalized.avatar || recordedAvatars[normalized.id]
+  return avatar ? { ...normalized, avatar } : normalized
 }
 function hydrateRecordedContext(run: Run): Run {
   // Repair display metadata, never source text, capture hashes, or the query
@@ -808,6 +816,10 @@ export default function Sequitor() {
   }, [activityScale, hourlyBuckets, periodPosts, run.buckets, run.kind, selectedDay])
 
   const busyLabel = periodLoading ? `Collecting posts for ${formatDay(selectedDay)}…` : busy
+  const feedCoverage = busyLabel && periodPosts.length
+    ? `${periodPosts.length} retrieved · ranking in progress`
+    : rankingCoverage
+  const shownLabel = busyLabel ? `${visible.length} shown so far` : `${visible.length} shown`
   const rankDescription = sort === 'popular' ? 'Posts are sorted by likes recorded at collection time.'
     : sort === 'recent' ? 'Posts are sorted by publication time, newest first.'
     : 'Posts are sorted by the supplied retrieval match score, with captured likes breaking ties. A match score is not a truth or influence judgment.'
@@ -830,7 +842,7 @@ export default function Sequitor() {
         {run.model?.openai && <section className="seq-model-trace"><p>{run.kind === 'saved' ? 'RECORDED MODEL RUN' : 'POWERED BY'}</p><span>OpenAI <small>{run.model.openai}</small></span><span>Baseten <small>{basetenLabel}</small></span></section>}
       </aside>
       <section className="seq-feed" aria-label="Posts from selected day"><div className="seq-feed-head"><div><p>Conversation on</p><h2>{formatDay(selectedDay)} <small>UTC</small></h2></div><div className="seq-feed-actions"><button className={sort === 'relevance' ? 'active' : ''} onClick={() => setSort('relevance')}>Sequitor</button><button className={sort === 'popular' ? 'active' : ''} onClick={() => setSort('popular')}>Popular</button><button className={sort === 'recent' ? 'active' : ''} onClick={() => setSort('recent')}>Recent</button></div></div>
-        <div className="seq-feed-status"><span>{run.id === sevenPostFallback.id ? 'Selected saved posts' : rankingCoverage}</span><span>{visible.length} shown</span></div>
+        <div className="seq-feed-status"><span>{run.id === sevenPostFallback.id ? 'Selected saved posts' : feedCoverage}</span><span>{shownLabel}</span></div>
         {busyLabel && <div className="seq-stream-status" role="status" aria-live="polite"><span className="seq-stream-pulse" /><span>{busyLabel}</span><span className="seq-stream-count">{periodPosts.length ? `${periodPosts.length} retrieved` : 'Waiting for the first results'}</span><button type="button" onClick={stopInvestigation}>Stop</button></div>}
         {!busyLabel && (runStatus === 'stopped' || runStatus === 'failed') && <p className="seq-stream-status" role="status">Investigation {runStatus}. Any retrieved posts are retained.</p>}
         {visible.length ? <div className="seq-post-list">{visible.map(post => <PostRow key={post.id} post={post} onOpen={setInspect} />)}</div> : busyLabel ? <div className="seq-stream-skeleton" aria-hidden="true"><i /><i /><i /></div> : <div className="seq-empty"><Clock3 size={21} /><h3>No retrieved posts for this day</h3><p>The count can include posts that were not fetched for this feed. Choose another day or try a different seed.</p></div>}

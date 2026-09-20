@@ -5,6 +5,7 @@ import { ArrowUpRight, Focus, Heart, Maximize2, Pause, Play, RotateCcw, Search }
 import artifact from '../../demo/recordings/conversation-space.json'
 import type { GraphPost } from './graphData'
 import './conversation-space.css'
+import './conversation-space-overrides.css'
 
 type Feature = { text: string; cosine: number; y: number | null; z: number | null; inputTruncated: boolean }
 type Layout = { referencePostId: string; referenceTextHash: string; basisId: string; features: Record<string, Feature> }
@@ -145,12 +146,14 @@ function createScene(host: HTMLDivElement, frame: Frame, seedId: string, initial
     for (let tick = 0; tick <= 40; tick++) {
       const x = AXIS_LENGTH * tick / 40, major = tick % 5 === 0
       guideLine([new THREE.Vector3(x, -.5, 0), new THREE.Vector3(x, major ? -2 : -1.1, 0)], '#7696ae', major ? .6 : .3)
-      if (major) {
+      // Three labels stay legible in the narrow mobile canvas; the shorter
+      // unlabeled major ticks still convey the interval between them.
+      if (tick % 20 === 0) {
         const y = -(radiusAt(x, display) * .8 + 4)
         label(tick === 0 ? 'REFERENCE · t = 0' : elapsed(timeAtX(frame, x, display.timeMode) - frame.origin), x, y, 0)
       }
     }
-    label(display.timeMode === 'flow' ? 'PUBLICATION ORDER · GAPS COMPRESSED →' : 'ELAPSED PUBLICATION TIME →', AXIS_LENGTH * .55, -(radiusAt(AXIS_LENGTH * .55, display) * .8 + 10), 0)
+    label(display.timeMode === 'flow' ? 'PUBLICATION ORDER · GAPS COMPRESSED →' : 'ELAPSED PUBLICATION TIME →', AXIS_LENGTH * .55, -(radiusAt(AXIS_LENGTH * .55, display) * .8 + 20), 0)
     sizeLabels()
   }
   drawGuides()
@@ -374,6 +377,7 @@ export default function ConversationSpace({ posts, seedId, referencePosts, onOpe
   const [playing, setPlaying] = useState(false)
   const [cursor, setCursor] = useState<number | null>(null)
   const [speed, setSpeed] = useState(1)
+  const [showAllConnections, setShowAllConnections] = useState(false)
   const cursorRef = useRef(cursor)
   cursorRef.current = cursor
   const [failure, setFailure] = useState('')
@@ -408,6 +412,7 @@ export default function ConversationSpace({ posts, seedId, referencePosts, onOpe
   const pending = points.filter(point => point.pending).length
   const matches = corpus.filter(post => `${post.author} ${post.handle || ''} ${post.text}`.toLowerCase().includes(query.toLowerCase()))
   const neighbors = selected ? corpus.filter(post => post.id !== selected.id && (post.parentId === selected.id || post.quotedPostId === selected.id || selected.parentId === post.id || selected.quotedPostId === post.id)) : []
+  const visibleNeighbors = showAllConnections ? neighbors : neighbors.slice(0, 10)
   const capturedIds = new Set(corpus.map(post => post.id))
   const missingReferences = selected ? [selected.parentId, selected.quotedPostId].filter(id => id && !capturedIds.has(id)) : []
   const hover = corpus.find(post => post.id === hoveredId)
@@ -442,6 +447,7 @@ export default function ConversationSpace({ posts, seedId, referencePosts, onOpe
 
   function choose(id: string) {
     setSelectedId(id)
+    setShowAllConnections(false)
     const post = corpus.find(item => item.id === id)
     if (post && stamp(post) < start) setEarlier(true)
     if (post && stamp(post) > cutoff) { setCursor(stamp(post)); setPlaying(false) }
@@ -473,7 +479,7 @@ export default function ConversationSpace({ posts, seedId, referencePosts, onOpe
         <label className="space-search"><Search size={15} /><input value={query} onChange={event => setQuery(event.target.value)} placeholder="Find a post or author" aria-label="Find a space post" /></label>
         {query && <div className="space-matches">{matches.slice(0, 12).map(post => <button key={post.id} onClick={() => { choose(post.id); setQuery('') }}><strong>{post.author}</strong><span>{post.text.slice(0, 95)}</span></button>)}{!matches.length && <p>No captured matches.</p>}</div>}
         {selected ? <>
-          <div className="space-post-heading"><span className="space-avatar">{selected.author.replace(/^@/, '').slice(0, 2).toUpperCase()}</span><div><strong>{authorName(selected)}</strong>{selected.handle && authorName(selected).toLowerCase() !== `@${selected.handle}`.toLowerCase() && <span>@{selected.handle}</span>}</div>{selected.id === reference?.id && <small>REFERENCE</small>}</div>
+          <div className="space-post-heading"><span className="space-avatar">{selected.author.replace(/^@/, '').slice(0, 2).toUpperCase()}{selected.avatar && <img src={selected.avatar} alt="" onError={event => { event.currentTarget.style.display = 'none' }} />}</span><div><strong>{authorName(selected)}</strong>{selected.handle && authorName(selected).toLowerCase() !== `@${selected.handle}`.toLowerCase() && <span>@{selected.handle}</span>}</div>{selected.id === reference?.id && <small>REFERENCE</small>}</div>
           <time dateTime={selected.publishedAt}>{dateLabel(stamp(selected))} UTC</time>
           <p className="space-post-text">{selected.text}</p>
           {selected.textIsExcerpt && <p className="space-source-note">Captured excerpt; full text unavailable here.</p>}
@@ -482,7 +488,7 @@ export default function ConversationSpace({ posts, seedId, referencePosts, onOpe
           {selectedFeature?.inputTruncated && <p className="space-source-note">Embedding uses a token-limited excerpt of the captured text.</p>}
           {!points.some(point => point.post.id === selected.id) && <p className="space-source-note">Selected post is outside the visible time window.</p>}
           <div className="space-post-actions"><button onClick={() => api.current?.focus(selected.id)}><Focus size={14} />Focus camera</button><button onClick={() => onOpenPost(selected)}>Source context <ArrowUpRight size={14} /></button></div>
-          <div className="space-connections"><h3>Recorded connections <span>{neighbors.length}</span></h3>{neighbors.map(post => <button key={post.id} onClick={() => choose(post.id)}><span>{authorName(post)}</span><small>{post.quotedPostId === selected.id ? 'quotes this' : post.parentId === selected.id ? 'replies to this' : selected.quotedPostId === post.id ? 'quoted post' : 'parent post'} <ArrowUpRight size={12} /></small></button>)}{!neighbors.length && !missingReferences.length && <p>No captured quote or reply links.</p>}{missingReferences.map(id => <a key={id} href={`https://x.com/i/status/${id}`} target="_blank" rel="noopener noreferrer">Referenced post not captured <ArrowUpRight size={12} /></a>)}</div>
+          <div className="space-connections"><h3>Recorded connections <span>{neighbors.length}</span></h3>{visibleNeighbors.map(post => <button key={post.id} onClick={() => choose(post.id)}><span>{authorName(post)}</span><small>{post.quotedPostId === selected.id ? 'quotes this' : post.parentId === selected.id ? 'replies to this' : selected.quotedPostId === post.id ? 'quoted post' : 'parent post'} <ArrowUpRight size={12} /></small></button>)}{neighbors.length > 10 && <button type="button" className="space-connections-more" onClick={() => setShowAllConnections(value => !value)}>{showAllConnections ? 'Show fewer connections' : `Show all ${neighbors.length} connections`}</button>}{!neighbors.length && !missingReferences.length && <p>No captured quote or reply links.</p>}{missingReferences.map(id => <a key={id} href={`https://x.com/i/status/${id}`} target="_blank" rel="noopener noreferrer">Referenced post not captured <ArrowUpRight size={12} /></a>)}</div>
         </> : <p className="space-source-note">Select a post to read its original text.</p>}
       </aside>
     </div>
