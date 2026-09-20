@@ -37,8 +37,8 @@ EVENT_DIR = DATA_DIR / "sequitor-streams"
 DEFAULT_SEED = "https://x.com/DarioAmodei/status/2098773920774074715"
 MAX_POSTS = 1800  # $9.00 at the default cap.
 MAX_COUNTS = 48   # $0.48 at the default cap.
-PLAN_VERSION = 6
-ANCHOR_VERSION = 3
+PLAN_VERSION = 7
+ANCHOR_VERSION = 4
 PERIOD_SCHEMA = 6
 FEED_TARGET = 500
 CLASSIFY_LIMIT = 128
@@ -852,8 +852,13 @@ class Sequitor:
             raise RuntimeError("OpenAI returned no search plan")
         plan = json.loads(content)
         primary = phrase(plan["volume_phrase"])
+        volume_phrase_adjusted = False
         if primary.strip('"').casefold() not in text.casefold():
-            raise RuntimeError("OpenAI's measured phrase was not in the seed post")
+            # Do not throw away otherwise useful source-finding queries when the
+            # model normalizes punctuation (for example #ICLR2027 → ICLR 2027).
+            words = re.findall(r"[\w'-]+", text, flags=re.UNICODE)
+            primary = phrase(" ".join(words[:4]))
+            volume_phrase_adjusted = True
         discovery = distinct_queries(plan.get("discovery_queries") or [])
         anchor_queries = distinct_anchor_queries(plan.get("anchor_queries") or [])
         return {"planVersion": PLAN_VERSION, "contextLabel": str(plan["context_label"])[:110],
@@ -867,6 +872,7 @@ class Sequitor:
                 "referencedPostId": str(plan["referenced_post_id"])[:24],
                 "isCommentary": bool(plan["is_commentary"]),
                 "anchorRationale": str(plan["anchor_rationale"])[:240],
+                "volumePhraseAdjusted": volume_phrase_adjusted,
                 "model": data.get("model")}
 
     def expand_context(self, plan: dict, seed_text: str, posts: list[dict]) -> dict:
