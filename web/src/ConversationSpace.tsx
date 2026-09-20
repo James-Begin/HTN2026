@@ -407,10 +407,16 @@ export default function ConversationSpace({ posts, seedId, referencePosts, onOpe
   }
   const points = useMemo<Point[]>(() => !frame ? [] : corpus.filter(post => stamp(post) <= cutoff && (earlier || stamp(post) >= frame.origin)).map(post => {
     const matched = matchingFeature(post)
-    const pending = matched?.y == null || matched.z == null
-    const x = timeX(frame, stamp(post), timeMode), radius = radiusAt(x, display)
-    return { post, feature: matched, pending, position: new THREE.Vector3(x, pending ? -(radius + 7) : matched.y! * radius, pending ? 0 : matched.z! * radius) }
-  }), [corpus, cutoff, earlier, frame, layout, timeMode, display])
+    const isReference = post.id === reference?.id
+    // The reference is an actual coordinate-system origin, never an awaiting
+    // embedding. This keeps it at t=0 even while the live projection arrives.
+    const pending = !isReference && (matched?.y == null || matched.z == null)
+    const x = isReference ? 0 : timeX(frame, stamp(post), timeMode)
+    const radius = radiusAt(x, display)
+    const y = isReference ? 0 : pending ? -(radius + 7) : matched!.y! * radius
+    const z = isReference || pending ? 0 : matched!.z! * radius
+    return { post, feature: matched, pending, position: new THREE.Vector3(x, y, z) }
+  }), [corpus, cutoff, earlier, frame, layout, timeMode, display, reference?.id])
   const selectedFeature = selected ? matchingFeature(selected) : undefined
   const priorCount = frame ? corpus.filter(post => stamp(post) < frame.origin).length : 0
   const pending = points.filter(point => point.pending).length

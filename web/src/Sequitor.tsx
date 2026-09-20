@@ -242,7 +242,7 @@ function Wordmark() {
   return <span className="seq-wordmark"><span className="seq-mark" aria-hidden="true"><i /><i /><i /></span>sequitor<span className="seq-wordmark-dot">.</span></span>
 }
 
-function Timeline({ buckets, selectedDay, onSelect, kind, scaleMax, query, scale, onScaleChange, loading, error, sample }: { buckets: Bucket[]; selectedDay: string; onSelect: (day: string) => void; kind: Run['kind']; scaleMax?: number; query?: string | null; scale: ActivityScale; onScaleChange: (scale: ActivityScale) => void; loading?: boolean; error?: string; sample?: boolean }) {
+function Timeline({ buckets, selectedDay, onSelect, kind, scaleMax, query, scale, onScaleChange, loading, deferred, error, sample }: { buckets: Bucket[]; selectedDay: string; onSelect: (day: string) => void; kind: Run['kind']; scaleMax?: number; query?: string | null; scale: ActivityScale; onScaleChange: (scale: ActivityScale) => void; loading?: boolean; deferred?: boolean; error?: string; sample?: boolean }) {
   const max = Math.max(1, scaleMax || 0, ...buckets.map(bucket => bucket.count ?? 0))
   const selected = scale === 'day' ? buckets.find(bucket => bucket.day === selectedDay) : undefined
   const displayed = scale === 'day' ? selected ? [selected] : [] : buckets
@@ -263,7 +263,7 @@ function Timeline({ buckets, selectedDay, onSelect, kind, scaleMax, query, scale
         aria-pressed={scale === 'day' && bucket.day === selectedDay} disabled={bucket.pending || bucket.count === null || scale !== 'day'} onClick={() => onSelect(bucket.day)}><span className="sr-only">{activityLabel(bucket.day, scale)}</span></button>)}
     </div>
     <div className="seq-chart-axis"><span>{buckets.length ? activityLabel(buckets[0].day, scale) : ''}</span><span>{buckets.length ? activityLabel(buckets[buckets.length - 1].day, scale) : ''}</span></div>
-    <p className="seq-timeline-foot">{error ? `${error} · ` : unavailable && !loading ? 'Count unavailable · ' : ''}{isSample ? 'Sample counts · not platform activity' : query ? `One measured query · retweets included · ${kind === 'saved' ? 'saved measurement' : 'live measurement'}` : 'No measurement received'}{scale === 'hour' ? isSample ? ' · saved post timestamps by hour' : ' · hourly count request for selected day' : scale === 'month' ? ' · monthly roll-up of captured days' : ''}{partial ? ' · partial coverage' : ''}</p>
+    <p className="seq-timeline-foot">{deferred ? 'Hourly activity will load when live collection finishes · ' : error ? `${error} · ` : unavailable && !loading ? 'Count unavailable · ' : ''}{isSample ? 'Sample counts · not platform activity' : query ? `One measured query · retweets included · ${kind === 'saved' ? 'saved measurement' : 'live measurement'}` : 'No measurement received'}{scale === 'hour' ? isSample ? ' · saved post timestamps by hour' : ' · hourly count request for selected day' : scale === 'month' ? ' · monthly roll-up of captured days' : ''}{partial ? ' · partial coverage' : ''}</p>
   </section>
 }
 
@@ -395,7 +395,8 @@ export default function Sequitor() {
   const periodController = useRef<AbortController | null>(null)
   const activityController = useRef<AbortController | null>(null)
   const hourlyKey = `${run.id}:${selectedDay}`
-  const hourlyEnabled = activityScale === 'hour' && run.kind !== 'saved' && !run.id.startsWith('pending-') && !!selectedDay
+  const hourlyDeferred = activityScale === 'hour' && run.kind !== 'saved' && !run.id.startsWith('pending-') && !!selectedDay && (runStatus === 'running' || runStatus === 'reconnecting')
+  const hourlyEnabled = activityScale === 'hour' && run.kind !== 'saved' && !run.id.startsWith('pending-') && !!selectedDay && !hourlyDeferred
   const currentHourly = hourlyActivity?.key === hourlyKey ? hourlyActivity : null
   const hourlyBuckets = currentHourly?.buckets ?? null
   const activityLoading = hourlyEnabled && (!currentHourly || currentHourly.loading)
@@ -802,7 +803,7 @@ export default function Sequitor() {
     <div className="seq-investigation-head" role="region" aria-label="Current conversation"><div><span className="seq-investigation-caption">CURRENT CONVERSATION</span><h2>{run.title}</h2><p>{run.seedPost && isInput(run.seedPost) ? 'Search input · no authored starting post supplied.' : run.streamSource === 'cache' ? 'Cached results from an earlier live investigation.' : run.kind === 'saved' ? 'A recorded conversation you can explore offline.' : run.query ? 'Measured search, with original posts kept in view.' : 'No measurement received yet.'}</p></div><button className="seq-data-button" onClick={() => setShowData(true)}>About this data <ArrowUpRight size={15} /></button></div>
     <nav className="seq-view-tabs" aria-label="Investigation views"><button type="button" className={view === 'feed' ? 'active' : ''} aria-current={view === 'feed' ? 'page' : undefined} onClick={() => setView('feed')}>Activity & posts</button><button type="button" className={view === 'space' ? 'active' : ''} aria-current={view === 'space' ? 'page' : undefined} onClick={() => setView('space')}>Conversation Space <span>{graphPosts.length}</span></button></nav>
     {view === 'feed' ? <main id="seq-main" className="seq-layout">
-      <aside className="seq-sidebar"><Timeline buckets={activityBuckets} selectedDay={selectedDay} onSelect={chooseDay} kind={run.streamSource === 'cache' ? 'saved' : run.kind} scaleMax={activityScale === 'day' ? run.activityScaleMax : undefined} query={run.query} scale={activityScale} onScaleChange={setActivityScale} loading={activityLoading} error={activityError} sample={activityScale === 'hour' && run.kind === 'saved'} />
+      <aside className="seq-sidebar"><Timeline buckets={activityBuckets} selectedDay={selectedDay} onSelect={chooseDay} kind={run.streamSource === 'cache' ? 'saved' : run.kind} scaleMax={activityScale === 'day' ? run.activityScaleMax : undefined} query={run.query} scale={activityScale} onScaleChange={setActivityScale} loading={activityLoading || hourlyDeferred} deferred={hourlyDeferred} error={activityError} sample={activityScale === 'hour' && run.kind === 'saved'} />
         <ContextCard plan={run.searchPlan} />
         <section className="seq-sidebar-note"><p className="seq-sidebar-note-title">A slice of the discussion</p><p>{run.note}</p><button onClick={() => setShowData(true)}>See scope and sources <ArrowRight size={13} /></button></section>
         {run.model?.openai && <section className="seq-model-trace"><p>{run.kind === 'saved' ? 'RECORDED MODEL RUN' : 'POWERED BY'}</p><span>OpenAI <small>{run.model.openai}</small></span><span>Baseten <small>{basetenLabel}</small></span></section>}
