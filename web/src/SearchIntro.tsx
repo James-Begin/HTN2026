@@ -3,13 +3,9 @@ import type { CSSProperties } from 'react'
 import './search-intro.css'
 
 export type SearchIntroPhase = 'idle' | 'searching' | 'resolving'
-export type SearchIntroPost = { author?: string; handle?: string; text: string; publishedAt?: string }
 export type SearchIntroProps = {
   phase: SearchIntroPhase
   className?: string
-  posts?: SearchIntroPost[]
-  /** Famous-tweet filler is only for recorded demos with no capture yet. Live pastes must not fall back to it. */
-  canned?: boolean
   onFinished?: () => void
 }
 
@@ -58,7 +54,6 @@ const READ_MS = 4200
 const ACCELERATE_MS = 1700
 const READ_SPEED = 0.025
 const RUSH_SPEED = 1.22
-const ACCENTS = ['#94cfee', '#e8c58d', '#a8d8b9', '#9dbce9', '#f1b4ce', '#bfbcf4', '#dcad9e', '#d8d499', '#c9b1f2', '#e1a7d7', '#78c8e2', '#b9a9f3']
 
 const clamp = (value: number, low: number, high: number) => Math.min(high, Math.max(low, value))
 
@@ -103,27 +98,7 @@ function project(x: number, y: number, z: number, rx: number, ry: number, travel
   return projectWorld(x, y, wrapZ(z, travel, recycle), rx, ry)
 }
 
-function cardsFromPosts(posts: SearchIntroPost[]): Card[] {
-  return posts.flatMap(post => {
-    const text = post.text?.trim()
-    if (!text) return []
-    const handle = (post.handle || '').replace(/^@/, '')
-    const author = (post.author || handle || 'Post').replace(/^@/, '').split('·')[0].trim() || 'Post'
-    const published = post.publishedAt ? Date.parse(post.publishedAt) : NaN
-    return [{
-      author,
-      handle: handle ? `@${handle}` : '',
-      text,
-      accent: ACCENTS[Math.abs(Array.from(text).reduce((sum, char) => sum + char.charCodeAt(0), 0)) % ACCENTS.length],
-      year: Number.isFinite(published) ? String(new Date(published).getUTCFullYear()) : '',
-    }]
-  })
-}
-
 function placeField(deck: Card[]): PlacedCard[] {
-  if (!deck.length) return []
-  // Keep the fallback field visually dense, but never truncate a real capture:
-  // every captured post must get one opportunity to fly past before completion.
   const fieldSize = Math.max(FIELD_SIZE, deck.length)
   return Array.from({ length: fieldSize }, (_, index) => {
     const source = deck[index % deck.length]
@@ -143,19 +118,10 @@ function placeField(deck: Card[]): PlacedCard[] {
   })
 }
 
-export default function SearchIntro({ phase, className = '', posts = [], canned = true, onFinished }: SearchIntroProps) {
+export default function SearchIntro({ phase, className = '', onFinished }: SearchIntroProps) {
   const fieldRef = useRef<HTMLDivElement>(null)
   const phaseRef = useRef(phase)
-  const frozenDeck = useRef<Card[] | null>(null)
-  const deck = useMemo(() => {
-    const fromPosts = cardsFromPosts(posts)
-    const next = fromPosts.length ? fromPosts : canned ? CARDS : []
-    if (frozenDeck.current && frozenDeck.current.length >= 6) return frozenDeck.current
-    if (next.length >= 6) frozenDeck.current = next
-    else if (next.length && !frozenDeck.current) frozenDeck.current = next
-    return frozenDeck.current || next
-  }, [canned, posts])
-  const items = useMemo(() => placeField(deck), [deck])
+  const items = useMemo(() => placeField(CARDS), [])
 
   useEffect(() => {
     phaseRef.current = phase

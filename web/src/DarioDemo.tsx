@@ -66,7 +66,6 @@ const LAUNCH_AT = { searching: 1250, resolving: 7200, reducedSearching: 180 }
 const BLACKOUT_HOLD_MS = 1200
 const ANCHOR_HOLD_MS = 1200
 const FORMING_HOLD_MS = 4200
-const MIN_CONVERSATION_POSTS = 12
 
 function ActivityStrip({ buckets, posts }: { buckets: Bucket[]; posts: DarioPost[] }) {
   const [scale, setScale] = useState<'hour' | 'day' | 'month'>('day')
@@ -142,20 +141,13 @@ export default function DarioDemo() {
     if (seedPost) setSelectedId(current => current || seedPost.id)
   }, [seedPost])
   useEffect(() => {
-    const recordedReady = runMode === 'recorded' && (investigation.milestones.runReady || !!fallbackRun)
-    const started = investigation.milestones.started || recordedReady
-    const resolved = investigation.milestones.seedResolved || investigation.milestones.planReady || recordedReady
-    const conversationPostCount = streamPosts.filter(post => post.id !== seedPost?.id).length
-    const terminal = ['completed', 'failed', 'stopped'].includes(investigation.status)
-    const conversationReady = !!fallbackRun
-      || investigation.milestones.runReady && (conversationPostCount >= MIN_CONVERSATION_POSTS || terminal)
-    if (stage === 'departing' && timerReady.searching && started) setStage('searching')
-    else if (stage === 'searching' && timerReady.resolving && resolved && conversationReady) setStage('resolving')
+    if (stage === 'departing' && timerReady.searching) setStage('searching')
+    else if (stage === 'searching' && timerReady.resolving) setStage('resolving')
     else if (stage === 'resolving' && introFinished) setStage('blackout')
     else if (stage === 'blackout' && timerReady.anchor && seedPost) setStage('anchor')
     else if (stage === 'anchor' && timerReady.forming && seedPost) setStage('forming')
     else if (stage === 'forming' && timerReady.exploring) setStage('exploring')
-  }, [fallbackRun, investigation.milestones, investigation.status, introFinished, runMode, seedPost, stage, streamPosts, timerReady])
+  }, [introFinished, seedPost, stage, timerReady])
   useEffect(() => {
     if (stage !== 'blackout') return
     const delay = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : BLACKOUT_HOLD_MS
@@ -210,13 +202,6 @@ export default function DarioDemo() {
     launch(input)
   }, [input, launch])
   const context = useMemo(() => ({ title: run?.searchPlan?.contextLabel, entities: run?.searchPlan?.entities }), [run?.searchPlan])
-  const introPosts = useMemo(() => {
-    if (runMode === 'recorded') {
-      const recorded = LOCAL_RECORDINGS[entryId]
-      if (recorded?.posts?.length) return recorded.posts
-    }
-    return streamPosts
-  }, [entryId, runMode, streamPosts])
   const error = fallbackRun ? '' : investigation.error
   const status = error ? 'error' : stage === 'searching' || stage === 'resolving' ? 'searching' : reveal.isComplete ? 'complete' : 'building'
   if (stage === 'landing' || stage === 'departing') return <main className={`dario-landing${stage === 'departing' ? ' is-departing' : ''}`} data-demo-stage={stage}>
@@ -253,7 +238,7 @@ export default function DarioDemo() {
     </div>
     {error && <p className="dario-run-error" role="alert">{error}</p>}
   </main>
-  if (stage === 'searching' || stage === 'resolving') return <main className="dario-transition is-intro-enter" data-demo-stage={stage}><SearchIntro key={`${runMode || 'live'}-${entryId || 'query'}`} phase={stage === 'searching' ? 'searching' : 'resolving'} posts={introPosts} canned={runMode === 'recorded'} onFinished={finishIntro} />{error && <p className="dario-run-error" role="alert">{error}</p>}</main>
+  if (stage === 'searching' || stage === 'resolving') return <main className="dario-transition is-intro-enter" data-demo-stage={stage}><SearchIntro phase={stage === 'searching' ? 'searching' : 'resolving'} onFinished={finishIntro} />{error && <p className="dario-run-error" role="alert">{error}</p>}</main>
   if (stage === 'blackout') return <main className="dario-transition" data-demo-stage="blackout">{error && <p className="dario-run-error" role="alert">{error}</p>}</main>
   const cinematic = stage === 'anchor' || stage === 'forming'
   const seedId = seedPost?.id || ''
