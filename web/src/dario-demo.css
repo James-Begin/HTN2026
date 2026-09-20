@@ -232,15 +232,29 @@ textarea:focus-visible { outline: none; }
 }
 
 main.dario-demo.is-exploring .dario-header {
-  animation: dario-interface-reveal 4.8s cubic-bezier(.16, 1, .3, 1) .1s both;
+  animation: dario-interface-reveal 3.2s cubic-bezier(.16, 1, .3, 1) 0s both;
 }
 
 main.dario-demo.is-exploring .dario-activity {
-  animation: dario-interface-reveal 5.2s cubic-bezier(.16, 1, .3, 1) .8s both;
+  animation: dario-interface-reveal 3.4s cubic-bezier(.16, 1, .3, 1) 1.8s both;
 }
 
 main.dario-demo.is-exploring .conversation-sidebar {
-  animation: dario-interface-reveal 5.6s cubic-bezier(.16, 1, .3, 1) 1.6s both;
+  animation: dario-interface-reveal 4.2s cubic-bezier(.16, 1, .3, 1) 3.7s both;
+}
+
+@keyframes dario-interface-reveal {
+  0%,
+  20% {
+    opacity: 0;
+    clip-path: inset(0 100% 0 0);
+    transform: translateX(-18px);
+  }
+  100% {
+    opacity: 1;
+    clip-path: inset(0);
+    transform: translateX(0);
+  }
 }
 
 @media (max-width: 680px) {

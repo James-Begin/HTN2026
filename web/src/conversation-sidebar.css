@@ -70,13 +70,13 @@
 
 @keyframes conversation-sidebar-pulse { 50% { opacity: .4; transform: scale(.8); } }
 @keyframes conversation-sidebar-card-in {
-  from { opacity: 0; transform: translateX(12px); }
+  from { opacity: 0; transform: translateX(22px); }
   to { opacity: 1; transform: translateX(0); }
 }
 
 .dario-demo.is-exploring .conversation-sidebar-card {
-  animation: conversation-sidebar-card-in 1.45s cubic-bezier(.16, 1, .3, 1)
-    calc(2.1s + var(--conversation-card-order, 0) * 320ms) both;
+  animation: conversation-sidebar-card-in .95s cubic-bezier(.16, 1, .3, 1)
+    calc(4.6s + var(--conversation-card-order, 0) * 720ms) both;
 }
 
 @media (prefers-reduced-motion: reduce) {
