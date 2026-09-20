@@ -10,6 +10,7 @@ import type { GraphPost } from './graphData'
 import { useConversationReveal } from './useConversationReveal'
 import './dario-demo.css'
 import './landing.css'
+import htnLogo from '../public/htn-logo.svg?inline'
 
 type DarioPost = GraphPost & ConversationSidebarPost & { textIsExcerpt?: boolean }
 type DarioRun = { seed: string; buckets: { day: string; count: number | null }[]; posts: DarioPost[]; seedPost?: DarioPost; savedPeriods?: Record<string, { posts: DarioPost[] }>; searchPlan?: { contextLabel?: string; entities?: string[] } }
@@ -112,7 +113,7 @@ export default function DarioDemo() {
       <form onSubmit={begin}>
         <div className="dario-composer-body">
           <span className="dario-composer-avatar" aria-hidden="true">
-            <img src="/htn-logo.svg" alt="" />
+            <img src={htnLogo} alt="" />
           </span>
           <div className="dario-composer-content">
             <textarea

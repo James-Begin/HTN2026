@@ -34,7 +34,9 @@ const CARDS: Card[] = [
 const CRUISE_MS = 6500
 const FLY_MS = 1800
 const CLONES = 8
-const CRUISE_DEPTH = 36
+const READ_MS = 4200
+const READ_DEPTH = 1.4
+const CRUISE_DEPTH = 12
 const FLY_DEPTH = 90
 const TUNNEL = 58
 const GOLDEN = 2.399963229728653
@@ -100,14 +102,21 @@ export default function SearchIntro({ phase, className = '' }: SearchIntroProps)
       objects.push({ mesh, base, rotation, phase: index * .37 + clone * .13, index, scale, passed: false })
     }
     const resize = () => { const { width, height } = host.getBoundingClientRect(); renderer.setSize(Math.max(1, width), Math.max(1, height), false); camera.aspect = Math.max(1, width) / Math.max(1, height); camera.updateProjectionMatrix() }; const observer = new ResizeObserver(resize); observer.observe(host); resize()
+    journeySince.current = performance.now()
     let request = 0, disposed = false, flyAmount = 0
     const render = (now: number) => {
       if (disposed) return
       const journeyAge = now - journeySince.current, phaseAge = now - phaseSince.current, resolving = phaseRef.current === 'resolving'
-      const cruiseAge = journeyAge - (resolving ? phaseAge : 0), travel = reduced ? 0 : clamp(cruiseAge / CRUISE_MS, 0, 1)
+      const cruiseAge = journeyAge - (resolving ? phaseAge : 0)
+      // Give fully rendered tweet cards a reading interval, then accelerate.
+      const reading = clamp(cruiseAge / READ_MS, 0, 1)
+      const acceleration = clamp((cruiseAge - READ_MS) / (CRUISE_MS - READ_MS), 0, 1)
+      const travel = reduced ? 0 : READ_DEPTH * reading
+        + READ_DEPTH / READ_MS * (CRUISE_MS - READ_MS) * acceleration
+        + (CRUISE_DEPTH - READ_DEPTH - READ_DEPTH / READ_MS * (CRUISE_MS - READ_MS)) * acceleration ** 3
       if (resolving) flyAmount = Math.max(flyAmount, clamp(phaseAge / FLY_MS, 0, 1))
       const fly = reduced ? 0 : easeInQuad(flyAmount)
-      camera.position.set(reduced ? 0 : Math.sin(now * .00017) * .38, reduced ? 0 : Math.cos(now * .00013) * .2, 5 - travel * CRUISE_DEPTH)
+      camera.position.set(reduced ? 0 : Math.sin(now * .00017) * .16, reduced ? 0 : Math.cos(now * .00013) * .1, 5 - travel)
       camera.lookAt(0, 0, camera.position.z - 31)
       const fadeOut = reduced ? (resolving ? flyAmount : 0) : clamp((flyAmount - .78) / .22, 0, 1)
       objects.forEach(item => {
