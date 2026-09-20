@@ -43,10 +43,10 @@ const CARDS: Card[] = [
 ]
 
 const FIELD_SIZE = 220
-const GOLDEN = 2.399963229728653
 const LOOP = 2100
 const PASS_AT = 90
 const FOCAL = 720
+const VISIBLE_DEPTH = 760
 const READ_MS = 4200
 const ACCELERATE_MS = 1700
 const READ_SPEED = 0.025
@@ -54,6 +54,20 @@ const RUSH_SPEED = 1.22
 const ACCENTS = ['#94cfee', '#e8c58d', '#a8d8b9', '#9dbce9', '#f1b4ce', '#bfbcf4', '#dcad9e', '#d8d499', '#c9b1f2', '#e1a7d7', '#78c8e2', '#b9a9f3']
 
 const clamp = (value: number, low: number, high: number) => Math.min(high, Math.max(low, value))
+
+function randomUnit(seed: string) {
+  let hash = 2166136261
+  for (let index = 0; index < seed.length; index += 1) {
+    hash ^= seed.charCodeAt(index)
+    hash = Math.imul(hash, 16777619)
+  }
+  hash += hash << 13
+  hash ^= hash >>> 7
+  hash += hash << 3
+  hash ^= hash >>> 17
+  hash += hash << 5
+  return (hash >>> 0) / 4294967296
+}
 
 function wrapZ(z: number, travel: number, recycle: boolean) {
   let zWorld = z + travel
@@ -69,7 +83,7 @@ function projectWorld(x: number, y: number, zWorld: number, rx: number, ry: numb
   const passed = zWorld > PASS_AT || denom <= 36
   const scale = passed ? 0 : clamp(FOCAL / denom, 0.08, 2.8)
   const fadeNear = zWorld > 8 ? clamp(1 - (zWorld - 8) / (PASS_AT - 8), 0, 1) : 1
-  const fadeFar = clamp((zWorld - (PASS_AT - LOOP)) / 380, 0, 1)
+  const fadeFar = clamp((zWorld - (PASS_AT - VISIBLE_DEPTH)) / 180, 0, 1)
   return {
     passed,
     opacity: passed ? 0 : fadeNear * fadeFar,
@@ -105,19 +119,18 @@ function placeField(deck: Card[]): PlacedCard[] {
   const fieldSize = Math.max(FIELD_SIZE, deck.length)
   return Array.from({ length: fieldSize }, (_, index) => {
     const source = deck[index % deck.length]
-    const depth = index / fieldSize
-    const angle = index * GOLDEN
+    const seed = `${source.handle}|${source.text}|${index}`
+    const depth = (index + randomUnit(`${seed}|depth`)) / fieldSize
     const z = PASS_AT - 70 - depth * (LOOP - 180)
-    const radius = 170 + (index % 11) * 42 + depth * 70
     return {
       ...source,
       key: `${source.handle}-${index}`,
-      x: Math.cos(angle) * radius * 1.55,
-      y: Math.sin(angle) * radius * 0.78,
+      x: (randomUnit(`${seed}|x`) * 2 - 1) * 940,
+      y: (randomUnit(`${seed}|y`) * 2 - 1) * 510,
       z,
-      rx: Math.sin(angle) * -6,
-      ry: Math.cos(angle) * 10,
-      width: 292 + (index % 6) * 10,
+      rx: (randomUnit(`${seed}|rx`) * 2 - 1) * 6,
+      ry: (randomUnit(`${seed}|ry`) * 2 - 1) * 10,
+      width: 292 + Math.floor(randomUnit(`${seed}|width`) * 6) * 10,
     }
   })
 }
@@ -187,9 +200,21 @@ export default function SearchIntro({ phase, className = '', posts = [], onFinis
       cards.forEach((card, index) => {
         const origin = exitOrigins?.[index] ?? origins[index]
         const next = project(origin.x, origin.y, origin.z, origin.rx, origin.ry, resolving ? exitTravel : travel, !resolving)
-        card.classList.toggle('is-passed', next.passed)
-        if (next.passed) return
+        if (next.passed) {
+          if (!card.classList.contains('is-passed')) card.classList.add('is-passed')
+          card.dataset.visible = 'false'
+          return
+        }
         remaining += 1
+        if (card.classList.contains('is-passed')) card.classList.remove('is-passed')
+        if (next.opacity <= 0.001) {
+          if (card.dataset.visible !== 'false') {
+            card.dataset.visible = 'false'
+            card.style.opacity = '0'
+          }
+          return
+        }
+        card.dataset.visible = 'true'
         card.style.opacity = String(next.opacity)
         card.style.zIndex = String(next.zIndex)
         card.style.transform = next.transform
