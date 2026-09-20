@@ -211,10 +211,12 @@ export default function DarioDemo() {
   }, [input, launch])
   const context = useMemo(() => ({ title: run?.searchPlan?.contextLabel, entities: run?.searchPlan?.entities }), [run?.searchPlan])
   const introPosts = useMemo(() => {
-    const recorded = LOCAL_RECORDINGS[entryId]
-    if (recorded?.posts?.length) return recorded.posts
+    if (runMode === 'recorded') {
+      const recorded = LOCAL_RECORDINGS[entryId]
+      if (recorded?.posts?.length) return recorded.posts
+    }
     return streamPosts
-  }, [entryId, streamPosts])
+  }, [entryId, runMode, streamPosts])
   const error = fallbackRun ? '' : investigation.error
   const status = error ? 'error' : stage === 'searching' || stage === 'resolving' ? 'searching' : reveal.isComplete ? 'complete' : 'building'
   if (stage === 'landing' || stage === 'departing') return <main className={`dario-landing${stage === 'departing' ? ' is-departing' : ''}`} data-demo-stage={stage}>
@@ -251,7 +253,7 @@ export default function DarioDemo() {
     </div>
     {error && <p className="dario-run-error" role="alert">{error}</p>}
   </main>
-  if (stage === 'searching' || stage === 'resolving') return <main className="dario-transition is-intro-enter" data-demo-stage={stage}><SearchIntro key={entryId || 'live'} phase={stage === 'searching' ? 'searching' : 'resolving'} posts={introPosts} onFinished={finishIntro} />{error && <p className="dario-run-error" role="alert">{error}</p>}</main>
+  if (stage === 'searching' || stage === 'resolving') return <main className="dario-transition is-intro-enter" data-demo-stage={stage}><SearchIntro key={`${runMode || 'live'}-${entryId || 'query'}`} phase={stage === 'searching' ? 'searching' : 'resolving'} posts={introPosts} canned={runMode === 'recorded'} onFinished={finishIntro} />{error && <p className="dario-run-error" role="alert">{error}</p>}</main>
   if (stage === 'blackout') return <main className="dario-transition" data-demo-stage="blackout">{error && <p className="dario-run-error" role="alert">{error}</p>}</main>
   const cinematic = stage === 'anchor' || stage === 'forming'
   const seedId = seedPost?.id || ''

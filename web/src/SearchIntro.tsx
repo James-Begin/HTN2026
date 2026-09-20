@@ -4,7 +4,14 @@ import './search-intro.css'
 
 export type SearchIntroPhase = 'idle' | 'searching' | 'resolving'
 export type SearchIntroPost = { author?: string; handle?: string; text: string; publishedAt?: string }
-export type SearchIntroProps = { phase: SearchIntroPhase; className?: string; posts?: SearchIntroPost[]; onFinished?: () => void }
+export type SearchIntroProps = {
+  phase: SearchIntroPhase
+  className?: string
+  posts?: SearchIntroPost[]
+  /** Famous-tweet filler is only for recorded demos with no capture yet. Live pastes must not fall back to it. */
+  canned?: boolean
+  onFinished?: () => void
+}
 
 type Card = { author: string; handle: string; text: string; accent: string; year: string }
 type PlacedCard = Card & {
@@ -114,6 +121,7 @@ function cardsFromPosts(posts: SearchIntroPost[]): Card[] {
 }
 
 function placeField(deck: Card[]): PlacedCard[] {
+  if (!deck.length) return []
   // Keep the fallback field visually dense, but never truncate a real capture:
   // every captured post must get one opportunity to fly past before completion.
   const fieldSize = Math.max(FIELD_SIZE, deck.length)
@@ -135,13 +143,18 @@ function placeField(deck: Card[]): PlacedCard[] {
   })
 }
 
-export default function SearchIntro({ phase, className = '', posts = [], onFinished }: SearchIntroProps) {
+export default function SearchIntro({ phase, className = '', posts = [], canned = true, onFinished }: SearchIntroProps) {
   const fieldRef = useRef<HTMLDivElement>(null)
   const phaseRef = useRef(phase)
+  const frozenDeck = useRef<Card[] | null>(null)
   const deck = useMemo(() => {
     const fromPosts = cardsFromPosts(posts)
-    return fromPosts.length >= 6 ? fromPosts : CARDS
-  }, [posts])
+    const next = fromPosts.length ? fromPosts : canned ? CARDS : []
+    if (frozenDeck.current && frozenDeck.current.length >= 6) return frozenDeck.current
+    if (next.length >= 6) frozenDeck.current = next
+    else if (next.length && !frozenDeck.current) frozenDeck.current = next
+    return frozenDeck.current || next
+  }, [canned, posts])
   const items = useMemo(() => placeField(deck), [deck])
 
   useEffect(() => {
@@ -155,8 +168,8 @@ export default function SearchIntro({ phase, className = '', posts = [], onFinis
   useEffect(() => {
     const field = fieldRef.current
     if (!field) return
-
     const cards = Array.from(field.querySelectorAll<HTMLElement>('.search-intro-card'))
+    if (!cards.length) return
     const origins = cards.map(card => ({
       x: Number(card.dataset.x),
       y: Number(card.dataset.y),
