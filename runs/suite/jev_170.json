@@ -1,0 +1,1395 @@
+{
+  "metrics": {
+    "accuracy_at_0.5": 0.5823529411764706,
+    "f1_at_0.5": 0.25263157894736843,
+    "n": 170,
+    "negative_max": 0.6719963146151723,
+    "positive_min": 0.0015788040373820465,
+    "roc_auc": 0.8587876265778888,
+    "separation_margin": -0.6704175105777902
+  },
+  "rows": [
+    {
+      "forward_entailment": 0.982166588306427,
+      "fwd_same_claim": 0.982166588306427,
+      "id": "ssi-01",
+      "label": "same_verbatim",
+      "reverse_entailment": 0.982166588306427,
+      "same_claim": 0.982166588306427
+    },
+    {
+      "forward_entailment": 0.5415160059928894,
+      "fwd_same_claim": 0.5415160059928894,
+      "id": "ssi-02",
+      "label": "same_verbatim",
+      "reverse_entailment": 0.001945693395100534,
+      "same_claim": 0.0324595766485268
+    },
+    {
+      "forward_entailment": 0.9803017973899841,
+      "fwd_same_claim": 0.9803017973899841,
+      "id": "ssi-03",
+      "label": "same_paraphrase",
+      "reverse_entailment": 0.012434501200914383,
+      "same_claim": 0.1104063579550756
+    },
+    {
+      "forward_entailment": 0.011793108657002449,
+      "fwd_same_claim": 0.011793108657002449,
+      "id": "ssi-04",
+      "label": "incidental",
+      "reverse_entailment": 0.0021269882563501596,
+      "same_claim": 0.005008373350630483
+    },
+    {
+      "forward_entailment": 0.0020464137196540833,
+      "fwd_same_claim": 0.0020464137196540833,
+      "id": "ssi-05",
+      "label": "incidental",
+      "reverse_entailment": 0.004545858129858971,
+      "same_claim": 0.0030500338431801786
+    },
+    {
+      "forward_entailment": 0.0040860045701265335,
+      "fwd_same_claim": 0.0040860045701265335,
+      "id": "ssi-06",
+      "label": "unrelated",
+      "reverse_entailment": 0.002468870021402836,
+      "same_claim": 0.003176131954201585
+    },
+    {
+      "forward_entailment": 0.04273757338523865,
+      "fwd_same_claim": 0.04273757338523865,
+      "id": "ssi-07",
+      "label": "unrelated",
+      "reverse_entailment": 0.010900826193392277,
+      "same_claim": 0.021584134437123814
+    },
+    {
+      "forward_entailment": 0.10004650801420212,
+      "fwd_same_claim": 0.10004650801420212,
+      "id": "ssi-08",
+      "label": "unrelated",
+      "reverse_entailment": 0.01667424850165844,
+      "same_claim": 0.040843608268026084
+    },
+    {
+      "forward_entailment": 0.19445447623729706,
+      "fwd_same_claim": 0.19445447623729706,
+      "id": "ssi-09",
+      "label": "meta",
+      "reverse_entailment": 0.004949655849486589,
+      "same_claim": 0.031023905875417885
+    },
+    {
+      "forward_entailment": 0.012153830379247665,
+      "fwd_same_claim": 0.012153830379247665,
+      "id": "ssi-10",
+      "label": "meta",
+      "reverse_entailment": 0.000499188550747931,
+      "same_claim": 0.0024631388456708685
+    },
+    {
+      "forward_entailment": 0.9770458340644836,
+      "fwd_same_claim": 0.9770458340644836,
+      "id": "ptf-01",
+      "label": "same_verbatim",
+      "reverse_entailment": 0.9738075733184814,
+      "same_claim": 0.9754253598770469
+    },
+    {
+      "forward_entailment": 0.5075053572654724,
+      "fwd_same_claim": 0.5075053572654724,
+      "id": "ptf-02",
+      "label": "same_verbatim",
+      "reverse_entailment": 0.015434477478265762,
+      "same_claim": 0.08850468917980082
+    },
+    {
+      "forward_entailment": 0.217604860663414,
+      "fwd_same_claim": 0.217604860663414,
+      "id": "ptf-03",
+      "label": "same_paraphrase",
+      "reverse_entailment": 0.0708250030875206,
+      "same_claim": 0.12414453241422188
+    },
+    {
+      "forward_entailment": 0.04988769441843033,
+      "fwd_same_claim": 0.04988769441843033,
+      "id": "ptf-04",
+      "label": "meta",
+      "reverse_entailment": 0.007741729728877544,
+      "same_claim": 0.01965240562842932
+    },
+    {
+      "forward_entailment": 0.0026371015701442957,
+      "fwd_same_claim": 0.0026371015701442957,
+      "id": "ptf-05",
+      "label": "meta",
+      "reverse_entailment": 0.023268764838576317,
+      "same_claim": 0.007833396216911792
+    },
+    {
+      "forward_entailment": 0.01042089331895113,
+      "fwd_same_claim": 0.01042089331895113,
+      "id": "ptf-06",
+      "label": "meta",
+      "reverse_entailment": 0.031101318076252937,
+      "same_claim": 0.01800287526345162
+    },
+    {
+      "forward_entailment": 0.039640847593545914,
+      "fwd_same_claim": 0.039640847593545914,
+      "id": "ptf-07",
+      "label": "meta",
+      "reverse_entailment": 0.004942125640809536,
+      "same_claim": 0.01399678710688586
+    },
+    {
+      "forward_entailment": 0.12772737443447113,
+      "fwd_same_claim": 0.12772737443447113,
+      "id": "ptf-08",
+      "label": "incidental",
+      "reverse_entailment": 0.00624482985585928,
+      "same_claim": 0.02824244538418907
+    },
+    {
+      "forward_entailment": 0.10417470335960388,
+      "fwd_same_claim": 0.10417470335960388,
+      "id": "boom-01",
+      "label": "incidental",
+      "reverse_entailment": 0.6167605519294739,
+      "same_claim": 0.2534775089453865
+    },
+    {
+      "forward_entailment": 0.9430086612701416,
+      "fwd_same_claim": 0.9430086612701416,
+      "id": "boom-02",
+      "label": "same_paraphrase",
+      "reverse_entailment": 0.6278257369995117,
+      "same_claim": 0.769444674917469
+    },
+    {
+      "forward_entailment": 0.9586572051048279,
+      "fwd_same_claim": 0.9586572051048279,
+      "id": "twtr-01",
+      "label": "same_verbatim",
+      "reverse_entailment": 0.9586572051048279,
+      "same_claim": 0.9586572051048279
+    },
+    {
+      "forward_entailment": 0.002106825588271022,
+      "fwd_same_claim": 0.002106825588271022,
+      "id": "twtr-02",
+      "label": "same_paraphrase",
+      "reverse_entailment": 0.002586773131042719,
+      "same_claim": 0.002334497766872513
+    },
+    {
+      "forward_entailment": 0.9629326462745667,
+      "fwd_same_claim": 0.9629326462745667,
+      "id": "dril-01",
+      "label": "same_paraphrase",
+      "reverse_entailment": 0.9530513286590576,
+      "same_claim": 0.9579792471349043
+    },
+    {
+      "forward_entailment": 0.24666868150234222,
+      "fwd_same_claim": 0.24666868150234222,
+      "id": "cov-01",
+      "label": "same_verbatim",
+      "reverse_entailment": 0.9087044596672058,
+      "same_claim": 0.47344369352797167
+    },
+    {
+      "forward_entailment": 0.034098632633686066,
+      "fwd_same_claim": 0.034098632633686066,
+      "id": "cov-02",
+      "label": "meta",
+      "reverse_entailment": 0.012569273822009563,
+      "same_claim": 0.020702537296884923
+    },
+    {
+      "forward_entailment": 0.94214928150177,
+      "fwd_same_claim": 0.94214928150177,
+      "id": "hold-trunc-3muuxqvqexx2x",
+      "label": "same_verbatim",
+      "reverse_entailment": 0.6030333042144775,
+      "same_claim": 0.7537555268701572
+    },
+    {
+      "forward_entailment": 0.15591003000736237,
+      "fwd_same_claim": 0.15591003000736237,
+      "id": "hold-head-3mupqdx5yyq2w",
+      "label": "same_verbatim",
+      "reverse_entailment": 0.09926735609769821,
+      "same_claim": 0.12440569306886101
+    },
+    {
+      "forward_entailment": 0.07694030553102493,
+      "fwd_same_claim": 0.07694030553102493,
+      "id": "hold-head-3mrwqyzrz4p2a",
+      "label": "same_verbatim",
+      "reverse_entailment": 0.62896329164505,
+      "same_claim": 0.21998324442322714
+    },
+    {
+      "forward_entailment": 0.835118293762207,
+      "fwd_same_claim": 0.835118293762207,
+      "id": "hold-head-3muq2y5npgk2i",
+      "label": "same_paraphrase",
+      "reverse_entailment": 0.5702643394470215,
+      "same_claim": 0.6901001247300486
+    },
+    {
+      "forward_entailment": 0.982424795627594,
+      "fwd_same_claim": 0.982424795627594,
+      "id": "hold-head-3mrwsblbxtw2f",
+      "label": "same_verbatim",
+      "reverse_entailment": 0.11112017184495926,
+      "same_claim": 0.33040461878564475
+    },
+    {
+      "forward_entailment": 0.988698422908783,
+      "fwd_same_claim": 0.988698422908783,
+      "id": "hold-head-3mtqfpwoizo2g",
+      "label": "same_verbatim",
+      "reverse_entailment": 0.07675863802433014,
+      "same_claim": 0.2754834738405942
+    },
+    {
+      "forward_entailment": 0.02344726026058197,
+      "fwd_same_claim": 0.02344726026058197,
+      "id": "hold-coll-3mrxkgmivrj2y_3mtl2ctjyoy22",
+      "label": "incidental",
+      "reverse_entailment": 0.01802843064069748,
+      "same_claim": 0.020560090109780268
+    },
+    {
+      "forward_entailment": 0.026237977668642998,
+      "fwd_same_claim": 0.026237977668642998,
+      "id": "hold-coll-3mrxfdxaeeq2y_3mtvfmobaxu2z",
+      "label": "incidental",
+      "reverse_entailment": 0.08338660001754761,
+      "same_claim": 0.04677494787944162
+    },
+    {
+      "forward_entailment": 0.0018688477575778961,
+      "fwd_same_claim": 0.0018688477575778961,
+      "id": "hold-neg-3mrw77qobch2v_3mvidceb6ji2f",
+      "label": "unrelated",
+      "reverse_entailment": 0.0028070444241166115,
+      "same_claim": 0.0022904014227710973
+    },
+    {
+      "forward_entailment": 0.5448117256164551,
+      "fwd_same_claim": 0.5448117256164551,
+      "id": "hold-trunc-3mry4tshkaq22",
+      "label": "same_verbatim",
+      "reverse_entailment": 0.032638996839523315,
+      "same_claim": 0.13334957139237727
+    },
+    {
+      "forward_entailment": 0.00182428362313658,
+      "fwd_same_claim": 0.00182428362313658,
+      "id": "hold-neg-3mu2sn2ifb225_3mrwvzu4pyt25",
+      "label": "unrelated",
+      "reverse_entailment": 0.000992265297099948,
+      "same_claim": 0.001345426821237851
+    },
+    {
+      "forward_entailment": 0.004240768495947123,
+      "fwd_same_claim": 0.004240768495947123,
+      "id": "hold-bsky-3mrxwhg3o3p2j_3mry2ngqpay2n",
+      "label": "same_paraphrase",
+      "reverse_entailment": 0.5165534019470215,
+      "same_claim": 0.04680366858966549
+    },
+    {
+      "forward_entailment": 0.9830906391143799,
+      "fwd_same_claim": 0.9830906391143799,
+      "id": "hold-head-3mutargizgp2j",
+      "label": "same_verbatim",
+      "reverse_entailment": 0.039513781666755676,
+      "same_claim": 0.19709294475601327
+    },
+    {
+      "forward_entailment": 0.7500842809677124,
+      "fwd_same_claim": 0.7500842809677124,
+      "id": "hold-trunc-3mtzlxq5tj227",
+      "label": "same_verbatim",
+      "reverse_entailment": 0.013885704800486565,
+      "same_claim": 0.10205610663259146
+    },
+    {
+      "forward_entailment": 0.07382812350988388,
+      "fwd_same_claim": 0.07382812350988388,
+      "id": "hold-bsky-3mu32q3kyuy2f_3mu2v5o44x22o",
+      "label": "same_paraphrase",
+      "reverse_entailment": 0.8938379883766174,
+      "same_claim": 0.25688593072353155
+    },
+    {
+      "forward_entailment": 0.07378178834915161,
+      "fwd_same_claim": 0.07378178834915161,
+      "id": "hold-bsky-3mrygfhzvyh2t_3mryy3jjnc42y",
+      "label": "meta",
+      "reverse_entailment": 0.03158041089773178,
+      "same_claim": 0.048270686682868796
+    },
+    {
+      "forward_entailment": 0.005128477234393358,
+      "fwd_same_claim": 0.005128477234393358,
+      "id": "hold-coll-3muu2ndkgxv2w_3mt4jopaokg2l",
+      "label": "incidental",
+      "reverse_entailment": 0.0012580988695845008,
+      "same_claim": 0.002540104606365677
+    },
+    {
+      "forward_entailment": 0.993756890296936,
+      "fwd_same_claim": 0.993756890296936,
+      "id": "hold-head-3mrwgoaf2en2w",
+      "label": "same_verbatim",
+      "reverse_entailment": 0.10321295261383057,
+      "same_claim": 0.32026330234337697
+    },
+    {
+      "forward_entailment": 0.014096001163125038,
+      "fwd_same_claim": 0.014096001163125038,
+      "id": "hold-coll-3mrxzjjn3ri2c_3muphohoy6r2n",
+      "label": "incidental",
+      "reverse_entailment": 0.04619668424129486,
+      "same_claim": 0.025518395615669345
+    },
+    {
+      "forward_entailment": 0.2656635344028473,
+      "fwd_same_claim": 0.2656635344028473,
+      "id": "hold-trunc-3mrwfx7ds672g",
+      "label": "same_verbatim",
+      "reverse_entailment": 0.034783151000738144,
+      "same_claim": 0.09612811676364012
+    },
+    {
+      "forward_entailment": 0.23797725141048431,
+      "fwd_same_claim": 0.23797725141048431,
+      "id": "hold-bsky-3mu2sdtm7nq2d_3mtzq5rbvtj2b",
+      "label": "same_paraphrase",
+      "reverse_entailment": 0.0007524056709371507,
+      "same_claim": 0.013381159647627124
+    },
+    {
+      "forward_entailment": 0.9768689274787903,
+      "fwd_same_claim": 0.9768689274787903,
+      "id": "hold-head-3mutql54lgd22",
+      "label": "same_verbatim",
+      "reverse_entailment": 0.11036452651023865,
+      "same_claim": 0.32834688462624606
+    },
+    {
+      "forward_entailment": 0.03383320942521095,
+      "fwd_same_claim": 0.03383320942521095,
+      "id": "hold-neg-3mrxkq2b4s32j_3muxfnl46f32c",
+      "label": "unrelated",
+      "reverse_entailment": 0.003734565805643797,
+      "same_claim": 0.011240655986844284
+    },
+    {
+      "forward_entailment": 0.009089633822441101,
+      "fwd_same_claim": 0.009089633822441101,
+      "id": "hold-bsky-3mrxzjjn3ri2c_3mryemx7d462i",
+      "label": "same_paraphrase",
+      "reverse_entailment": 0.11226744949817657,
+      "same_claim": 0.03194479622908595
+    },
+    {
+      "forward_entailment": 0.09358148276805878,
+      "fwd_same_claim": 0.09358148276805878,
+      "id": "hold-bsky-3mupy656c6r2e_3muq5a4c5ps2c",
+      "label": "meta",
+      "reverse_entailment": 0.0023128585889935493,
+      "same_claim": 0.014711924965512045
+    },
+    {
+      "forward_entailment": 0.007218925282359123,
+      "fwd_same_claim": 0.007218925282359123,
+      "id": "hold-neg-3mupyh3hog62h_3ms37g5zdpl2t",
+      "label": "unrelated",
+      "reverse_entailment": 0.025853672996163368,
+      "same_claim": 0.01366146894129065
+    },
+    {
+      "forward_entailment": 0.0035236291587352753,
+      "fwd_same_claim": 0.0035236291587352753,
+      "id": "hold-coll-3mrxkgmivrj2y_3mu6hoynsbb2w",
+      "label": "incidental",
+      "reverse_entailment": 0.027115916833281517,
+      "same_claim": 0.009774785686632287
+    },
+    {
+      "forward_entailment": 0.007876546122133732,
+      "fwd_same_claim": 0.007876546122133732,
+      "id": "hold-neg-3muui427nby2w_3mtsoihz7ej2c",
+      "label": "unrelated",
+      "reverse_entailment": 0.0007254632073454559,
+      "same_claim": 0.002390427663111258
+    },
+    {
+      "forward_entailment": 0.8580974340438843,
+      "fwd_same_claim": 0.8580974340438843,
+      "id": "hold-bsky-3muo3emlhqg2r_3mupmfbronh2d",
+      "label": "meta",
+      "reverse_entailment": 0.5262561440467834,
+      "same_claim": 0.6719963146151723
+    },
+    {
+      "forward_entailment": 0.001405901275575161,
+      "fwd_same_claim": 0.001405901275575161,
+      "id": "hold-coll-3muq2y5npgk2i_3msif4njpcr2r",
+      "label": "incidental",
+      "reverse_entailment": 0.001955036073923111,
+      "same_claim": 0.0016578865190729902
+    },
+    {
+      "forward_entailment": 0.0026094825007021427,
+      "fwd_same_claim": 0.0026094825007021427,
+      "id": "hold-neg-3mrz5vp6rul2m_3muk6ljcbrc25",
+      "label": "unrelated",
+      "reverse_entailment": 0.0072138989344239235,
+      "same_claim": 0.004338725968670188
+    },
+    {
+      "forward_entailment": 0.02453467808663845,
+      "fwd_same_claim": 0.02453467808663845,
+      "id": "hold-bsky-3mutargizgp2j_3mutcvo2gy224",
+      "label": "meta",
+      "reverse_entailment": 0.010869079269468784,
+      "same_claim": 0.01633001411434087
+    },
+    {
+      "forward_entailment": 0.07004070281982422,
+      "fwd_same_claim": 0.07004070281982422,
+      "id": "hold-bsky-3mu3kvx2pq42f_3mu3lcibqhc2p",
+      "label": "meta",
+      "reverse_entailment": 0.03270212933421135,
+      "same_claim": 0.04785896073122518
+    },
+    {
+      "forward_entailment": 0.11577408760786057,
+      "fwd_same_claim": 0.11577408760786057,
+      "id": "hold-bsky-3mtzwy2teat2t_3mtzq5rbvtj2b",
+      "label": "same_paraphrase",
+      "reverse_entailment": 0.0009420561837032437,
+      "same_claim": 0.010443452261756461
+    },
+    {
+      "forward_entailment": 0.001051956438459456,
+      "fwd_same_claim": 0.001051956438459456,
+      "id": "hold-neg-3mrx7wdwrjr2w_3mu2bvldvdc2k",
+      "label": "unrelated",
+      "reverse_entailment": 0.008528557606041431,
+      "same_claim": 0.002995274792810778
+    },
+    {
+      "forward_entailment": 0.1030592992901802,
+      "fwd_same_claim": 0.1030592992901802,
+      "id": "hold-bsky-3muueyn62az2c_3muugmevk5k2v",
+      "label": "meta",
+      "reverse_entailment": 0.00807669572532177,
+      "same_claim": 0.0288509722891908
+    },
+    {
+      "forward_entailment": 0.020434077829122543,
+      "fwd_same_claim": 0.020434077829122543,
+      "id": "hold-bsky-3mu2ptmk7lt2l_3mu2r5why6k2h",
+      "label": "meta",
+      "reverse_entailment": 0.4335426092147827,
+      "same_claim": 0.09412249156782734
+    },
+    {
+      "forward_entailment": 0.0011535760713741183,
+      "fwd_same_claim": 0.0011535760713741183,
+      "id": "hold-coll-3mrvprijnju2e_3mtu3pgti2e2l",
+      "label": "incidental",
+      "reverse_entailment": 0.002946560038253665,
+      "same_claim": 0.0018436597172462805
+    },
+    {
+      "forward_entailment": 0.24769559502601624,
+      "fwd_same_claim": 0.24769559502601624,
+      "id": "hold-trunc-3muo2b335g22m",
+      "label": "same_verbatim",
+      "reverse_entailment": 0.006135978735983372,
+      "same_claim": 0.038985316518868794
+    },
+    {
+      "forward_entailment": 0.02681669592857361,
+      "fwd_same_claim": 0.02681669592857361,
+      "id": "hold-bsky-3mtqlhimhwc23_3mtqq34v5g22e",
+      "label": "same_paraphrase",
+      "reverse_entailment": 0.09602363407611847,
+      "same_claim": 0.050744818424898204
+    },
+    {
+      "forward_entailment": 0.003938463982194662,
+      "fwd_same_claim": 0.003938463982194662,
+      "id": "hold-coll-3mrxpqsbcpg2f_3mtuknjabu323",
+      "label": "incidental",
+      "reverse_entailment": 0.0026390189304947853,
+      "same_claim": 0.003223923232039434
+    },
+    {
+      "forward_entailment": 0.004571483936160803,
+      "fwd_same_claim": 0.004571483936160803,
+      "id": "hold-neg-3mut5ucnn3e2m_3mta6qmfa2u2s",
+      "label": "unrelated",
+      "reverse_entailment": 0.002218663925305009,
+      "same_claim": 0.0031847427673630598
+    },
+    {
+      "forward_entailment": 0.0041637117974460125,
+      "fwd_same_claim": 0.0041637117974460125,
+      "id": "hold-coll-3mrx47cqccb2o_3muu5qheep62m",
+      "label": "incidental",
+      "reverse_entailment": 0.0014502248959615827,
+      "same_claim": 0.002457299027034593
+    },
+    {
+      "forward_entailment": 0.0016019610920920968,
+      "fwd_same_claim": 0.0016019610920920968,
+      "id": "hold-coll-3mtr3mjyemq2b_3mvewkhuo6i2j",
+      "label": "unrelated",
+      "reverse_entailment": 0.0010202181292697787,
+      "same_claim": 0.0012784168915252845
+    },
+    {
+      "forward_entailment": 0.31830668449401855,
+      "fwd_same_claim": 0.31830668449401855,
+      "id": "hold-head-3muuputjjcr27",
+      "label": "same_verbatim",
+      "reverse_entailment": 0.15748421847820282,
+      "same_claim": 0.22389345556297172
+    },
+    {
+      "forward_entailment": 0.9573618173599243,
+      "fwd_same_claim": 0.9573618173599243,
+      "id": "hold-head-3mrxlpl7mr72w",
+      "label": "same_verbatim",
+      "reverse_entailment": 0.5481624007225037,
+      "same_claim": 0.7244237379904631
+    },
+    {
+      "forward_entailment": 0.009435689076781273,
+      "fwd_same_claim": 0.009435689076781273,
+      "id": "hold-bsky-3mu2xeqt7ga2p_3mu2s6oljoz2f",
+      "label": "same_paraphrase",
+      "reverse_entailment": 0.5080835223197937,
+      "same_claim": 0.06923957063446763
+    },
+    {
+      "forward_entailment": 0.04426823928952217,
+      "fwd_same_claim": 0.04426823928952217,
+      "id": "hold-bsky-3mrwxkj5dza2g_3mrzztiae4h2w",
+      "label": "incidental",
+      "reverse_entailment": 0.05011633038520813,
+      "same_claim": 0.04710161043749082
+    },
+    {
+      "forward_entailment": 0.8935995101928711,
+      "fwd_same_claim": 0.8935995101928711,
+      "id": "hold-trunc-3mrwmjvltgi23",
+      "label": "same_verbatim",
+      "reverse_entailment": 0.017963876947760582,
+      "same_claim": 0.12669850686446096
+    },
+    {
+      "forward_entailment": 0.9844414591789246,
+      "fwd_same_claim": 0.9844414591789246,
+      "id": "hold-trunc-3mtztfosj5m2d",
+      "label": "same_verbatim",
+      "reverse_entailment": 0.002061812672764063,
+      "same_claim": 0.04505256791937006
+    },
+    {
+      "forward_entailment": 0.1136818528175354,
+      "fwd_same_claim": 0.1136818528175354,
+      "id": "hold-bsky-3mupf67p4hu2o_3mupcuoqic426",
+      "label": "same_paraphrase",
+      "reverse_entailment": 0.28058862686157227,
+      "same_claim": 0.17859965000288108
+    },
+    {
+      "forward_entailment": 0.000509939098265022,
+      "fwd_same_claim": 0.000509939098265022,
+      "id": "hold-bsky-3mrzaefv6tq2w_3mrzlb3sy4p2r",
+      "label": "same_paraphrase",
+      "reverse_entailment": 0.004888078197836876,
+      "same_claim": 0.0015788040373820465
+    },
+    {
+      "forward_entailment": 0.007652796804904938,
+      "fwd_same_claim": 0.007652796804904938,
+      "id": "hold-coll-3mry62p5jjz2w_3mu5lkmkzgx2g",
+      "label": "unrelated",
+      "reverse_entailment": 0.0012942975154146552,
+      "same_claim": 0.003147220343503402
+    },
+    {
+      "forward_entailment": 0.09498144686222076,
+      "fwd_same_claim": 0.09498144686222076,
+      "id": "hold-bsky-3mut46pptf32q_3mut5upvydk2n",
+      "label": "same_paraphrase",
+      "reverse_entailment": 0.8114789128303528,
+      "same_claim": 0.2776246409071227
+    },
+    {
+      "forward_entailment": 0.5851821303367615,
+      "fwd_same_claim": 0.5851821303367615,
+      "id": "hold-trunc-3mu3v2raodt2s",
+      "label": "same_verbatim",
+      "reverse_entailment": 0.01422969251871109,
+      "same_claim": 0.09125218782109519
+    },
+    {
+      "forward_entailment": 0.7134432792663574,
+      "fwd_same_claim": 0.7134432792663574,
+      "id": "hold-trunc-3mrxyyunvzt2f",
+      "label": "same_verbatim",
+      "reverse_entailment": 0.006309511139988899,
+      "same_claim": 0.06709305715408483
+    },
+    {
+      "forward_entailment": 0.1262028068304062,
+      "fwd_same_claim": 0.1262028068304062,
+      "id": "hold-bsky-3mtpxgfwh4i2g_3mtqeunbxh223",
+      "label": "meta",
+      "reverse_entailment": 0.05453834310173988,
+      "same_claim": 0.08296319653508594
+    },
+    {
+      "forward_entailment": 0.3396749794483185,
+      "fwd_same_claim": 0.3396749794483185,
+      "id": "hold-bsky-3muph4pt6qc2x_3munx2xhidb2a",
+      "label": "incidental",
+      "reverse_entailment": 0.7938096523284912,
+      "same_claim": 0.5192660949268275
+    },
+    {
+      "forward_entailment": 0.9676482081413269,
+      "fwd_same_claim": 0.9676482081413269,
+      "id": "hold-trunc-3mrzb7axzda2j",
+      "label": "same_verbatim",
+      "reverse_entailment": 0.015245006419718266,
+      "same_claim": 0.1214570012191286
+    },
+    {
+      "forward_entailment": 0.016190066933631897,
+      "fwd_same_claim": 0.016190066933631897,
+      "id": "hold-neg-3mu37ubyvx32t_3mtjhagelcj24",
+      "label": "unrelated",
+      "reverse_entailment": 0.0033904369920492172,
+      "same_claim": 0.00740887318257901
+    },
+    {
+      "forward_entailment": 0.3404400646686554,
+      "fwd_same_claim": 0.3404400646686554,
+      "id": "hold-coll-3ms23chna7k22_3mufdajkvmk2f",
+      "label": "same_paraphrase",
+      "reverse_entailment": 0.02066953480243683,
+      "same_claim": 0.08388526548096881
+    },
+    {
+      "forward_entailment": 0.6862297058105469,
+      "fwd_same_claim": 0.6862297058105469,
+      "id": "hold-trunc-3muozymhzbq25",
+      "label": "same_verbatim",
+      "reverse_entailment": 0.008780527859926224,
+      "same_claim": 0.0776238304271213
+    },
+    {
+      "forward_entailment": 0.6956023573875427,
+      "fwd_same_claim": 0.6956023573875427,
+      "id": "hold-bsky-3mupf5z4r6q2g_3muoiommadl23",
+      "label": "same_paraphrase",
+      "reverse_entailment": 0.17158973217010498,
+      "same_claim": 0.3454825931954056
+    },
+    {
+      "forward_entailment": 0.018325641751289368,
+      "fwd_same_claim": 0.018325641751289368,
+      "id": "hold-coll-3mrz465d2qr2h_3mupnkuanbx2v",
+      "label": "incidental",
+      "reverse_entailment": 0.02001962438225746,
+      "same_claim": 0.019153915120012095
+    },
+    {
+      "forward_entailment": 0.9845304489135742,
+      "fwd_same_claim": 0.9845304489135742,
+      "id": "hold-head-3mrwhaantdt2q",
+      "label": "same_verbatim",
+      "reverse_entailment": 0.22392113506793976,
+      "same_claim": 0.4695286739163816
+    },
+    {
+      "forward_entailment": 0.28221896290779114,
+      "fwd_same_claim": 0.28221896290779114,
+      "id": "hold-bsky-3muub3lfio72d_3mut5ucnn3e2m",
+      "label": "same_paraphrase",
+      "reverse_entailment": 0.04570326581597328,
+      "same_claim": 0.11357080734098478
+    },
+    {
+      "forward_entailment": 0.003062650328502059,
+      "fwd_same_claim": 0.003062650328502059,
+      "id": "hold-neg-3mupztrgpbz2r_3mu32raqmhg22",
+      "label": "unrelated",
+      "reverse_entailment": 0.023302841931581497,
+      "same_claim": 0.008447985351359792
+    },
+    {
+      "forward_entailment": 0.0017059342935681343,
+      "fwd_same_claim": 0.0017059342935681343,
+      "id": "hold-neg-3mu2gdm53r725_3msvm56tsp42h",
+      "label": "unrelated",
+      "reverse_entailment": 0.002372614573687315,
+      "same_claim": 0.0020118460593874297
+    },
+    {
+      "forward_entailment": 0.10687375068664551,
+      "fwd_same_claim": 0.10687375068664551,
+      "id": "hold-bsky-3mry4wdvooc2g_3mrycb5ktcs2m",
+      "label": "meta",
+      "reverse_entailment": 0.007288032677024603,
+      "same_claim": 0.02790876900403264
+    },
+    {
+      "forward_entailment": 0.567158579826355,
+      "fwd_same_claim": 0.567158579826355,
+      "id": "hold-bsky-3mrvp7oyf662y_3mrxeypraih2f",
+      "label": "same_paraphrase",
+      "reverse_entailment": 0.0497870147228241,
+      "same_claim": 0.16803908046639252
+    },
+    {
+      "forward_entailment": 0.6244437098503113,
+      "fwd_same_claim": 0.6244437098503113,
+      "id": "hold-trunc-3mtznhmvf622d",
+      "label": "same_verbatim",
+      "reverse_entailment": 0.005931101273745298,
+      "same_claim": 0.06085752938524058
+    },
+    {
+      "forward_entailment": 0.20810779929161072,
+      "fwd_same_claim": 0.20810779929161072,
+      "id": "hold-head-3mu2rjgwnef2c",
+      "label": "same_verbatim",
+      "reverse_entailment": 0.046609241515398026,
+      "same_claim": 0.09848729196409384
+    },
+    {
+      "forward_entailment": 0.983060896396637,
+      "fwd_same_claim": 0.983060896396637,
+      "id": "hold-head-3mu2fznkoxe2f",
+      "label": "same_verbatim",
+      "reverse_entailment": 0.6908129453659058,
+      "same_claim": 0.824082030694644
+    },
+    {
+      "forward_entailment": 0.025103528052568436,
+      "fwd_same_claim": 0.025103528052568436,
+      "id": "hold-bsky-3mrx25lcfnh2s_3mrxeawgfhs2f",
+      "label": "meta",
+      "reverse_entailment": 0.005698711145669222,
+      "same_claim": 0.01196067536173404
+    },
+    {
+      "forward_entailment": 0.003980456385761499,
+      "fwd_same_claim": 0.003980456385761499,
+      "id": "hold-coll-3mrwzo3dkdx2p_3mutdhuknrv25",
+      "label": "incidental",
+      "reverse_entailment": 0.0030274097807705402,
+      "same_claim": 0.003471379062301453
+    },
+    {
+      "forward_entailment": 0.991568386554718,
+      "fwd_same_claim": 0.991568386554718,
+      "id": "hold-head-3ms2lelrum722",
+      "label": "same_verbatim",
+      "reverse_entailment": 0.8573846220970154,
+      "same_claim": 0.9220387662075625
+    },
+    {
+      "forward_entailment": 0.008818002417683601,
+      "fwd_same_claim": 0.008818002417683601,
+      "id": "hold-bsky-3mtzu6brg3x2y_3mu2hithcvs2q",
+      "label": "same_paraphrase",
+      "reverse_entailment": 0.024480292573571205,
+      "same_claim": 0.014692422506154415
+    },
+    {
+      "forward_entailment": 0.0030340414959937334,
+      "fwd_same_claim": 0.0030340414959937334,
+      "id": "fresh-3mvn5vahar22n_3mvmokveemb25",
+      "label": "incidental",
+      "reverse_entailment": 0.0008908411837182939,
+      "same_claim": 0.0016440344028460841
+    },
+    {
+      "forward_entailment": 0.8661123514175415,
+      "fwd_same_claim": 0.8661123514175415,
+      "id": "fresh-3mvmq6qpf652d_3mvn7cgpp672b",
+      "label": "same_paraphrase",
+      "reverse_entailment": 0.01785852015018463,
+      "same_claim": 0.12436834356102826
+    },
+    {
+      "forward_entailment": 0.015949083492159843,
+      "fwd_same_claim": 0.015949083492159843,
+      "id": "fresh-3mvnj3xlvym2y_3mvlycyh7i22s",
+      "label": "incidental",
+      "reverse_entailment": 0.005035335198044777,
+      "same_claim": 0.008961527854368772
+    },
+    {
+      "forward_entailment": 0.005722579546272755,
+      "fwd_same_claim": 0.005722579546272755,
+      "id": "fresh-3mvo577gqau2f_3mvo4hop2n424",
+      "label": "incidental",
+      "reverse_entailment": 0.09083767980337143,
+      "same_claim": 0.022799689657397686
+    },
+    {
+      "forward_entailment": 0.005620489362627268,
+      "fwd_same_claim": 0.005620489362627268,
+      "id": "fresh-3mvntpfkscl2v_3mvmokveemb25",
+      "label": "unrelated",
+      "reverse_entailment": 0.044857416301965714,
+      "same_claim": 0.015878306936198874
+    },
+    {
+      "forward_entailment": 0.11163941025733948,
+      "fwd_same_claim": 0.11163941025733948,
+      "id": "fresh-3mvnkqz53b42s_3mvo577gqau2f",
+      "label": "same_paraphrase",
+      "reverse_entailment": 0.4530656337738037,
+      "same_claim": 0.22489993366467495
+    },
+    {
+      "forward_entailment": 0.00467216782271862,
+      "fwd_same_claim": 0.00467216782271862,
+      "id": "fresh-3mvnxdllf3g2p_3mvlxpzownd2n",
+      "label": "incidental",
+      "reverse_entailment": 0.006558750756084919,
+      "same_claim": 0.00553566475139268
+    },
+    {
+      "forward_entailment": 0.14466525614261627,
+      "fwd_same_claim": 0.14466525614261627,
+      "id": "fresh-3mvmifjhy6k27_3mvmtca2ypv2f",
+      "label": "incidental",
+      "reverse_entailment": 0.006213275250047445,
+      "same_claim": 0.029980744746131504
+    },
+    {
+      "forward_entailment": 0.002795462030917406,
+      "fwd_same_claim": 0.002795462030917406,
+      "id": "fresh-3mvocs65w2b27_3mvnqmb3gfb2c",
+      "label": "same_paraphrase",
+      "reverse_entailment": 0.03306080400943756,
+      "same_claim": 0.009613543692103587
+    },
+    {
+      "forward_entailment": 0.007859980687499046,
+      "fwd_same_claim": 0.007859980687499046,
+      "id": "fresh-3mvmunh4ba22n_3mvngkwch7m2g",
+      "label": "same_paraphrase",
+      "reverse_entailment": 0.13680125772953033,
+      "same_claim": 0.03279108482163541
+    },
+    {
+      "forward_entailment": 0.1429147571325302,
+      "fwd_same_claim": 0.1429147571325302,
+      "id": "fresh-3mvmu4xv6jn2e_3mvmlyib6iz2t",
+      "label": "incidental",
+      "reverse_entailment": 0.005362716969102621,
+      "same_claim": 0.027684136129014384
+    },
+    {
+      "forward_entailment": 0.050060395151376724,
+      "fwd_same_claim": 0.050060395151376724,
+      "id": "fresh-3mvnscfkxer2p_3mvm74shctk2c",
+      "label": "same_paraphrase",
+      "reverse_entailment": 0.15886333584785461,
+      "same_claim": 0.08917825613684915
+    },
+    {
+      "forward_entailment": 0.1278686821460724,
+      "fwd_same_claim": 0.1278686821460724,
+      "id": "fresh-3mvmuougejn2v_3mvmqd3qpcp2m",
+      "label": "same_paraphrase",
+      "reverse_entailment": 0.24937626719474792,
+      "same_claim": 0.17857047528832767
+    },
+    {
+      "forward_entailment": 0.00428323308005929,
+      "fwd_same_claim": 0.00428323308005929,
+      "id": "fresh-3mvmzpsr7cr2y_3mvo7hbwye224",
+      "label": "unrelated",
+      "reverse_entailment": 0.0006513740518130362,
+      "same_claim": 0.0016703253833363877
+    },
+    {
+      "forward_entailment": 0.015173329971730709,
+      "fwd_same_claim": 0.015173329971730709,
+      "id": "fresh-3mvm6mmuf4a2x_3mvntnqdycz2g",
+      "label": "same_paraphrase",
+      "reverse_entailment": 0.006760865915566683,
+      "same_claim": 0.01012841791355
+    },
+    {
+      "forward_entailment": 0.007138295564800501,
+      "fwd_same_claim": 0.007138295564800501,
+      "id": "fresh-3mvnmhahsho2w_3mvn4znbr5v23",
+      "label": "same_paraphrase",
+      "reverse_entailment": 0.04580053314566612,
+      "same_claim": 0.018081419817569826
+    },
+    {
+      "forward_entailment": 0.0012996273580938578,
+      "fwd_same_claim": 0.0012996273580938578,
+      "id": "fresh-3mvmzpsr7cr2y_3mvnkn5a6z324",
+      "label": "unrelated",
+      "reverse_entailment": 0.000606460205744952,
+      "same_claim": 0.0008877906706996697
+    },
+    {
+      "forward_entailment": 0.0051212371326982975,
+      "fwd_same_claim": 0.0051212371326982975,
+      "id": "fresh-3mvn3olzrnj2c_3mvnpwjdxyi2a",
+      "label": "incidental",
+      "reverse_entailment": 0.020644748583436012,
+      "same_claim": 0.0102823466699345
+    },
+    {
+      "forward_entailment": 0.0012758850352838635,
+      "fwd_same_claim": 0.0012758850352838635,
+      "id": "fresh-3mvnfqhgqxg2p_3mvmqldq2fj2a",
+      "label": "incidental",
+      "reverse_entailment": 0.005002635531127453,
+      "same_claim": 0.0025264179802924258
+    },
+    {
+      "forward_entailment": 0.01334395445883274,
+      "fwd_same_claim": 0.01334395445883274,
+      "id": "fresh-3mvmqrrehms2g_3mvmqd3qpcp2m",
+      "label": "incidental",
+      "reverse_entailment": 0.00023349604452960193,
+      "same_claim": 0.0017651517171395183
+    },
+    {
+      "forward_entailment": 0.007623881567269564,
+      "fwd_same_claim": 0.007623881567269564,
+      "id": "fresh-3mvocaq7daj2q_3mvnpythrqm2k",
+      "label": "incidental",
+      "reverse_entailment": 0.009302719496190548,
+      "same_claim": 0.008421569431672835
+    },
+    {
+      "forward_entailment": 0.15003633499145508,
+      "fwd_same_claim": 0.15003633499145508,
+      "id": "fresh-3mvn4znbr5v23_3mvnqvyvr452n",
+      "label": "incidental",
+      "reverse_entailment": 0.0057795993052423,
+      "same_claim": 0.029447409011281702
+    },
+    {
+      "forward_entailment": 0.032590288668870926,
+      "fwd_same_claim": 0.032590288668870926,
+      "id": "fresh-3mvno4dhhga2n_3mvmudwuljl24",
+      "label": "incidental",
+      "reverse_entailment": 0.10002994537353516,
+      "same_claim": 0.057096451687078595
+    },
+    {
+      "forward_entailment": 0.022598128765821457,
+      "fwd_same_claim": 0.022598128765821457,
+      "id": "fresh-3mvo3apfmpl2v_3mvn4znbr5v23",
+      "label": "incidental",
+      "reverse_entailment": 0.006715603172779083,
+      "same_claim": 0.012319093523414003
+    },
+    {
+      "forward_entailment": 0.09487307816743851,
+      "fwd_same_claim": 0.09487307816743851,
+      "id": "fresh-3mvmpmmwqbl26_3mvnt5uco2q27",
+      "label": "same_paraphrase",
+      "reverse_entailment": 0.04880466312170029,
+      "same_claim": 0.06804593021835012
+    },
+    {
+      "forward_entailment": 0.05289516597986221,
+      "fwd_same_claim": 0.05289516597986221,
+      "id": "fresh-3mvmzxplup52r_3mvmwmgr7qv2m",
+      "label": "same_paraphrase",
+      "reverse_entailment": 0.15418700873851776,
+      "same_claim": 0.09030917682695576
+    },
+    {
+      "forward_entailment": 0.0034712546039372683,
+      "fwd_same_claim": 0.0034712546039372683,
+      "id": "fresh-3mvnt5jouhi2y_3mvnyh3aliz2g",
+      "label": "unrelated",
+      "reverse_entailment": 0.0032333063427358866,
+      "same_claim": 0.0033501685820509866
+    },
+    {
+      "forward_entailment": 0.007887705229222775,
+      "fwd_same_claim": 0.007887705229222775,
+      "id": "fresh-3mvo5zwy2eu2s_3mvnoxxeiv224",
+      "label": "same_paraphrase",
+      "reverse_entailment": 0.2668660581111908,
+      "same_claim": 0.045879851809543896
+    },
+    {
+      "forward_entailment": 0.03614959493279457,
+      "fwd_same_claim": 0.03614959493279457,
+      "id": "fresh-3mvn5ejyghq2d_3mvmnfhtqqt22",
+      "label": "same_paraphrase",
+      "reverse_entailment": 0.311494916677475,
+      "same_claim": 0.10611510289075404
+    },
+    {
+      "forward_entailment": 0.032553523778915405,
+      "fwd_same_claim": 0.032553523778915405,
+      "id": "fresh-3mvnedlkviu2v_3mvo6uz2vjn2z",
+      "label": "incidental",
+      "reverse_entailment": 0.06548961997032166,
+      "same_claim": 0.04617269648803283
+    },
+    {
+      "forward_entailment": 0.1311713010072708,
+      "fwd_same_claim": 0.1311713010072708,
+      "id": "fresh-3mvo577gqau2f_3mvmlyib6iz2t",
+      "label": "same_paraphrase",
+      "reverse_entailment": 0.0301259346306324,
+      "same_claim": 0.06286221472045068
+    },
+    {
+      "forward_entailment": 0.00967937707901001,
+      "fwd_same_claim": 0.00967937707901001,
+      "id": "fresh-3mvn7z3rke22a_3mvlycyh7i22s",
+      "label": "unrelated",
+      "reverse_entailment": 0.0063026598654687405,
+      "same_claim": 0.0078106223464340175
+    },
+    {
+      "forward_entailment": 0.3271724581718445,
+      "fwd_same_claim": 0.3271724581718445,
+      "id": "fresh-3mvnpnyqfpw2y_3mvnhkftogs2x",
+      "label": "same_paraphrase",
+      "reverse_entailment": 0.00810200348496437,
+      "same_claim": 0.05148545810510618
+    },
+    {
+      "forward_entailment": 0.0011828336864709854,
+      "fwd_same_claim": 0.0011828336864709854,
+      "id": "fresh-3mvn3rs2jbo2y_3mvn6tjgsno2c",
+      "label": "incidental",
+      "reverse_entailment": 0.0014451793394982815,
+      "same_claim": 0.0013074428498984023
+    },
+    {
+      "forward_entailment": 0.05078372359275818,
+      "fwd_same_claim": 0.05078372359275818,
+      "id": "fresh-3mvoalf5dbd2b_3mvmydccvks2d",
+      "label": "incidental",
+      "reverse_entailment": 0.22870062291622162,
+      "same_claim": 0.10776951897298705
+    },
+    {
+      "forward_entailment": 0.12583956122398376,
+      "fwd_same_claim": 0.12583956122398376,
+      "id": "fresh-3mvn2m3mvls2k_3mvngaydfkc2x",
+      "label": "incidental",
+      "reverse_entailment": 0.0053289723582565784,
+      "same_claim": 0.025895859579047494
+    },
+    {
+      "forward_entailment": 0.34370577335357666,
+      "fwd_same_claim": 0.34370577335357666,
+      "id": "fresh-3mvnqqblsyq2j_3mvn6v6lwik23",
+      "label": "incidental",
+      "reverse_entailment": 0.04296829178929329,
+      "same_claim": 0.12152551155671466
+    },
+    {
+      "forward_entailment": 0.14153510332107544,
+      "fwd_same_claim": 0.14153510332107544,
+      "id": "fresh-3mvnqmb3gfb2c_3mvo2ci5zpq2a",
+      "label": "same_paraphrase",
+      "reverse_entailment": 0.00104881776496768,
+      "same_claim": 0.012183781462652718
+    },
+    {
+      "forward_entailment": 0.001575835864059627,
+      "fwd_same_claim": 0.001575835864059627,
+      "id": "fresh-3mvn6tjgsno2c_3mvne2s465e2v",
+      "label": "unrelated",
+      "reverse_entailment": 0.0007610365864820778,
+      "same_claim": 0.0010951112942710318
+    },
+    {
+      "forward_entailment": 0.013906273059546947,
+      "fwd_same_claim": 0.013906273059546947,
+      "id": "fresh-3mvnj3xlvym2y_3mvnwg5fskm2a",
+      "label": "unrelated",
+      "reverse_entailment": 0.0053397915326058865,
+      "same_claim": 0.008617226881861366
+    },
+    {
+      "forward_entailment": 0.008931451477110386,
+      "fwd_same_claim": 0.008931451477110386,
+      "id": "fresh-3mvmpmmwqbl26_3mvn2tn6vtr2v",
+      "label": "incidental",
+      "reverse_entailment": 0.0025989122223109007,
+      "same_claim": 0.004817889414135502
+    },
+    {
+      "forward_entailment": 0.015145043842494488,
+      "fwd_same_claim": 0.015145043842494488,
+      "id": "fresh-3mvn3oasasf2b_3mvo6uz2vjn2z",
+      "label": "incidental",
+      "reverse_entailment": 0.46302422881126404,
+      "same_claim": 0.08374080394576944
+    },
+    {
+      "forward_entailment": 0.012610101141035557,
+      "fwd_same_claim": 0.012610101141035557,
+      "id": "fresh-3mvmxiekdsz2s_3mvmwnnbexu2z",
+      "label": "incidental",
+      "reverse_entailment": 0.04890700429677963,
+      "same_claim": 0.02483389358693984
+    },
+    {
+      "forward_entailment": 0.0018046351615339518,
+      "fwd_same_claim": 0.0018046351615339518,
+      "id": "fresh-3mvnj3fqnfp2y_3mvn3rs2jbo2y",
+      "label": "incidental",
+      "reverse_entailment": 0.0011402965756133199,
+      "same_claim": 0.0014345101236758685
+    },
+    {
+      "forward_entailment": 0.017548149451613426,
+      "fwd_same_claim": 0.017548149451613426,
+      "id": "fresh-3mvnq6ehhra2y_3mvocs65w2b27",
+      "label": "same_paraphrase",
+      "reverse_entailment": 0.009234790690243244,
+      "same_claim": 0.012730023063088172
+    },
+    {
+      "forward_entailment": 0.954422116279602,
+      "fwd_same_claim": 0.954422116279602,
+      "id": "fresh-3mvnj3fqnfp2y_3mvn6tjgsno2c",
+      "label": "same_paraphrase",
+      "reverse_entailment": 0.9273395538330078,
+      "same_claim": 0.940783386056047
+    },
+    {
+      "forward_entailment": 0.010154228657484055,
+      "fwd_same_claim": 0.010154228657484055,
+      "id": "fresh-3mvnq6ehhra2y_3mvnpythrqm2k",
+      "label": "same_paraphrase",
+      "reverse_entailment": 0.0029635862447321415,
+      "same_claim": 0.0054857025416244235
+    },
+    {
+      "forward_entailment": 0.8332600593566895,
+      "fwd_same_claim": 0.8332600593566895,
+      "id": "fresh-3mvng5h36eg2t_3mvnhlmavvv2a",
+      "label": "same_paraphrase",
+      "reverse_entailment": 0.02015029266476631,
+      "same_claim": 0.12957790730636856
+    },
+    {
+      "forward_entailment": 0.019592154771089554,
+      "fwd_same_claim": 0.019592154771089554,
+      "id": "fresh-3mvmwnnbexu2z_3mvo2ci5zpq2a",
+      "label": "incidental",
+      "reverse_entailment": 0.022206854075193405,
+      "same_claim": 0.020858574304592103
+    },
+    {
+      "forward_entailment": 0.00027508026687428355,
+      "fwd_same_claim": 0.00027508026687428355,
+      "id": "fresh-3mvmqrrehms2g_3mvocrtpxop2c",
+      "label": "incidental",
+      "reverse_entailment": 0.0011507500894367695,
+      "same_claim": 0.0005626265561701404
+    },
+    {
+      "forward_entailment": 0.008321311324834824,
+      "fwd_same_claim": 0.008321311324834824,
+      "id": "fresh-3mvocs65w2b27_3mvmkke2xdi24",
+      "label": "incidental",
+      "reverse_entailment": 0.009479361586272717,
+      "same_claim": 0.008881481797541182
+    },
+    {
+      "forward_entailment": 0.06844019889831543,
+      "fwd_same_claim": 0.06844019889831543,
+      "id": "fresh-3mvmp2t7zl72g_3mvocrtpxop2c",
+      "label": "same_paraphrase",
+      "reverse_entailment": 0.05189963057637215,
+      "same_claim": 0.0595988342117193
+    },
+    {
+      "forward_entailment": 0.0017474485794082284,
+      "fwd_same_claim": 0.0017474485794082284,
+      "id": "fresh-3mvnqqblsyq2j_3mvn3kafk2624",
+      "label": "incidental",
+      "reverse_entailment": 0.03965650126338005,
+      "same_claim": 0.008324523818032722
+    },
+    {
+      "forward_entailment": 0.45511114597320557,
+      "fwd_same_claim": 0.45511114597320557,
+      "id": "fresh-3mvnq6ehhra2y_3mvnqvyvr452n",
+      "label": "same_paraphrase",
+      "reverse_entailment": 0.010910645127296448,
+      "same_claim": 0.07046670282616363
+    },
+    {
+      "forward_entailment": 0.025280093774199486,
+      "fwd_same_claim": 0.025280093774199486,
+      "id": "fresh-3mvnoxz2ubm2z_3mvo2ci5zpq2a",
+      "label": "same_paraphrase",
+      "reverse_entailment": 0.22495584189891815,
+      "same_claim": 0.07541156926001902
+    },
+    {
+      "forward_entailment": 0.742634117603302,
+      "fwd_same_claim": 0.742634117603302,
+      "id": "fresh-3mvnqqblsyq2j_3mvntmjwwcc2a",
+      "label": "same_paraphrase",
+      "reverse_entailment": 0.3235190212726593,
+      "same_claim": 0.4901594259939364
+    },
+    {
+      "forward_entailment": 0.0015943285543471575,
+      "fwd_same_claim": 0.0015943285543471575,
+      "id": "fresh-3mvnzrxdyha2c_3mvnofg5iex2v",
+      "label": "unrelated",
+      "reverse_entailment": 0.003150983713567257,
+      "same_claim": 0.00224136193168866
+    },
+    {
+      "forward_entailment": 0.419455349445343,
+      "fwd_same_claim": 0.419455349445343,
+      "id": "fresh-3mvnqpjan3t2r_3mvnqvyvr452n",
+      "label": "same_paraphrase",
+      "reverse_entailment": 0.004897421225905418,
+      "same_claim": 0.04532382962298307
+    },
+    {
+      "forward_entailment": 0.6662929058074951,
+      "fwd_same_claim": 0.6662929058074951,
+      "id": "fresh-3mvo7gxgwxw2v_3mvmvc4mkc324",
+      "label": "incidental",
+      "reverse_entailment": 0.09346382319927216,
+      "same_claim": 0.24954815636930885
+    },
+    {
+      "forward_entailment": 0.0012686265399679542,
+      "fwd_same_claim": 0.0012686265399679542,
+      "id": "fresh-3mvlz5xcxm32y_3mvmijte5ja2v",
+      "label": "unrelated",
+      "reverse_entailment": 0.003295249305665493,
+      "same_claim": 0.002044612610001762
+    },
+    {
+      "forward_entailment": 0.009921272285282612,
+      "fwd_same_claim": 0.009921272285282612,
+      "id": "fresh-3mvmkvrobky2h_3mvntnqdycz2g",
+      "label": "same_paraphrase",
+      "reverse_entailment": 0.002232786500826478,
+      "same_claim": 0.004706599922407138
+    },
+    {
+      "forward_entailment": 0.012853859923779964,
+      "fwd_same_claim": 0.012853859923779964,
+      "id": "fresh-3mvm6mmuf4a2x_3mvmeciigks26",
+      "label": "same_paraphrase",
+      "reverse_entailment": 0.04819182679057121,
+      "same_claim": 0.024888772389112905
+    },
+    {
+      "forward_entailment": 0.02344731241464615,
+      "fwd_same_claim": 0.02344731241464615,
+      "id": "fresh-3mvn6ztv2d52k_3mvnb5ezjlv2a",
+      "label": "unrelated",
+      "reverse_entailment": 0.0410633347928524,
+      "same_claim": 0.03102941893873005
+    },
+    {
+      "forward_entailment": 0.0038135696668177843,
+      "fwd_same_claim": 0.0038135696668177843,
+      "id": "fresh-3mvmaurvytk2b_3mvlycyh7i22s",
+      "label": "incidental",
+      "reverse_entailment": 0.0007275408133864403,
+      "same_claim": 0.0016656913211344011
+    },
+    {
+      "forward_entailment": 0.008993876166641712,
+      "fwd_same_claim": 0.008993876166641712,
+      "id": "fresh-3mvo4oaruld2k_3mvntnqdycz2g",
+      "label": "same_paraphrase",
+      "reverse_entailment": 0.11554268002510071,
+      "same_claim": 0.03223626150948126
+    },
+    {
+      "forward_entailment": 0.014099279418587685,
+      "fwd_same_claim": 0.014099279418587685,
+      "id": "fresh-3mvnrie6b2j2e_3mvnqfrbwbs2n",
+      "label": "incidental",
+      "reverse_entailment": 0.0003401565190870315,
+      "same_claim": 0.0021899684492389868
+    },
+    {
+      "forward_entailment": 0.37841594219207764,
+      "fwd_same_claim": 0.37841594219207764,
+      "id": "fresh-3mvnkch6uns2u_3mvnxdble2b2v",
+      "label": "same_paraphrase",
+      "reverse_entailment": 0.8944133520126343,
+      "same_claim": 0.5817733848424448
+    },
+    {
+      "forward_entailment": 0.06566479057073593,
+      "fwd_same_claim": 0.06566479057073593,
+      "id": "fresh-3mvnd7ut5mo2q_3mvnzu4mb542f",
+      "label": "same_paraphrase",
+      "reverse_entailment": 0.014786677435040474,
+      "same_claim": 0.031160296484612587
+    }
+  ],
+  "targets": {
+    "ptf-02": {
+      "label": "same_verbatim",
+      "local_epoch1": 0.905,
+      "same_claim": 0.08850468917980082
+    },
+    "ptf-05": {
+      "label": "meta",
+      "local_epoch1": 0.026,
+      "same_claim": 0.007833396216911792
+    },
+    "ssi-03": {
+      "label": "same_paraphrase",
+      "local_epoch1": 0.036,
+      "same_claim": 0.1104063579550756
+    },
+    "ssi-05": {
+      "label": "incidental",
+      "local_epoch1": 0.825,
+      "same_claim": 0.0030500338431801786
+    }
+  }
+}

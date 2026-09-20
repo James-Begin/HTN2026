@@ -1,0 +1,235 @@
+{
+  "metrics": {
+    "accuracy_at_0.5": 0.76,
+    "f1_at_0.5": 0.625,
+    "n": 25,
+    "negative_max": 0.2534775089453865,
+    "positive_min": 0.002334497766872513,
+    "roc_auc": 0.8766233766233766,
+    "separation_margin": -0.251143011178514
+  },
+  "rows": [
+    {
+      "forward_entailment": 0.982166588306427,
+      "fwd_same_claim": 0.982166588306427,
+      "id": "ssi-01",
+      "label": "same_verbatim",
+      "reverse_entailment": 0.982166588306427,
+      "same_claim": 0.982166588306427
+    },
+    {
+      "forward_entailment": 0.5415160059928894,
+      "fwd_same_claim": 0.5415160059928894,
+      "id": "ssi-02",
+      "label": "same_verbatim",
+      "reverse_entailment": 0.001945693395100534,
+      "same_claim": 0.0324595766485268
+    },
+    {
+      "forward_entailment": 0.9803017973899841,
+      "fwd_same_claim": 0.9803017973899841,
+      "id": "ssi-03",
+      "label": "same_paraphrase",
+      "reverse_entailment": 0.012434501200914383,
+      "same_claim": 0.1104063579550756
+    },
+    {
+      "forward_entailment": 0.011793108657002449,
+      "fwd_same_claim": 0.011793108657002449,
+      "id": "ssi-04",
+      "label": "incidental",
+      "reverse_entailment": 0.0021269882563501596,
+      "same_claim": 0.005008373350630483
+    },
+    {
+      "forward_entailment": 0.0020464137196540833,
+      "fwd_same_claim": 0.0020464137196540833,
+      "id": "ssi-05",
+      "label": "incidental",
+      "reverse_entailment": 0.004545858129858971,
+      "same_claim": 0.0030500338431801786
+    },
+    {
+      "forward_entailment": 0.0040860045701265335,
+      "fwd_same_claim": 0.0040860045701265335,
+      "id": "ssi-06",
+      "label": "unrelated",
+      "reverse_entailment": 0.002468870021402836,
+      "same_claim": 0.003176131954201585
+    },
+    {
+      "forward_entailment": 0.04273757338523865,
+      "fwd_same_claim": 0.04273757338523865,
+      "id": "ssi-07",
+      "label": "unrelated",
+      "reverse_entailment": 0.010900826193392277,
+      "same_claim": 0.021584134437123814
+    },
+    {
+      "forward_entailment": 0.10004650801420212,
+      "fwd_same_claim": 0.10004650801420212,
+      "id": "ssi-08",
+      "label": "unrelated",
+      "reverse_entailment": 0.01667424850165844,
+      "same_claim": 0.040843608268026084
+    },
+    {
+      "forward_entailment": 0.19445447623729706,
+      "fwd_same_claim": 0.19445447623729706,
+      "id": "ssi-09",
+      "label": "meta",
+      "reverse_entailment": 0.004949655849486589,
+      "same_claim": 0.031023905875417885
+    },
+    {
+      "forward_entailment": 0.012153830379247665,
+      "fwd_same_claim": 0.012153830379247665,
+      "id": "ssi-10",
+      "label": "meta",
+      "reverse_entailment": 0.000499188550747931,
+      "same_claim": 0.0024631388456708685
+    },
+    {
+      "forward_entailment": 0.9770458340644836,
+      "fwd_same_claim": 0.9770458340644836,
+      "id": "ptf-01",
+      "label": "same_verbatim",
+      "reverse_entailment": 0.9738075733184814,
+      "same_claim": 0.9754253598770469
+    },
+    {
+      "forward_entailment": 0.5075053572654724,
+      "fwd_same_claim": 0.5075053572654724,
+      "id": "ptf-02",
+      "label": "same_verbatim",
+      "reverse_entailment": 0.015434477478265762,
+      "same_claim": 0.08850468917980082
+    },
+    {
+      "forward_entailment": 0.217604860663414,
+      "fwd_same_claim": 0.217604860663414,
+      "id": "ptf-03",
+      "label": "same_paraphrase",
+      "reverse_entailment": 0.0708250030875206,
+      "same_claim": 0.12414453241422188
+    },
+    {
+      "forward_entailment": 0.04988769441843033,
+      "fwd_same_claim": 0.04988769441843033,
+      "id": "ptf-04",
+      "label": "meta",
+      "reverse_entailment": 0.007741729728877544,
+      "same_claim": 0.01965240562842932
+    },
+    {
+      "forward_entailment": 0.0026371015701442957,
+      "fwd_same_claim": 0.0026371015701442957,
+      "id": "ptf-05",
+      "label": "meta",
+      "reverse_entailment": 0.023268764838576317,
+      "same_claim": 0.007833396216911792
+    },
+    {
+      "forward_entailment": 0.01042089331895113,
+      "fwd_same_claim": 0.01042089331895113,
+      "id": "ptf-06",
+      "label": "meta",
+      "reverse_entailment": 0.031101318076252937,
+      "same_claim": 0.01800287526345162
+    },
+    {
+      "forward_entailment": 0.039640847593545914,
+      "fwd_same_claim": 0.039640847593545914,
+      "id": "ptf-07",
+      "label": "meta",
+      "reverse_entailment": 0.004942125640809536,
+      "same_claim": 0.01399678710688586
+    },
+    {
+      "forward_entailment": 0.12772737443447113,
+      "fwd_same_claim": 0.12772737443447113,
+      "id": "ptf-08",
+      "label": "incidental",
+      "reverse_entailment": 0.00624482985585928,
+      "same_claim": 0.02824244538418907
+    },
+    {
+      "forward_entailment": 0.10417470335960388,
+      "fwd_same_claim": 0.10417470335960388,
+      "id": "boom-01",
+      "label": "incidental",
+      "reverse_entailment": 0.6167605519294739,
+      "same_claim": 0.2534775089453865
+    },
+    {
+      "forward_entailment": 0.9430086612701416,
+      "fwd_same_claim": 0.9430086612701416,
+      "id": "boom-02",
+      "label": "same_paraphrase",
+      "reverse_entailment": 0.6278257369995117,
+      "same_claim": 0.769444674917469
+    },
+    {
+      "forward_entailment": 0.9586572051048279,
+      "fwd_same_claim": 0.9586572051048279,
+      "id": "twtr-01",
+      "label": "same_verbatim",
+      "reverse_entailment": 0.9586572051048279,
+      "same_claim": 0.9586572051048279
+    },
+    {
+      "forward_entailment": 0.002106825588271022,
+      "fwd_same_claim": 0.002106825588271022,
+      "id": "twtr-02",
+      "label": "same_paraphrase",
+      "reverse_entailment": 0.002586773131042719,
+      "same_claim": 0.002334497766872513
+    },
+    {
+      "forward_entailment": 0.9629326462745667,
+      "fwd_same_claim": 0.9629326462745667,
+      "id": "dril-01",
+      "label": "same_paraphrase",
+      "reverse_entailment": 0.9530513286590576,
+      "same_claim": 0.9579792471349043
+    },
+    {
+      "forward_entailment": 0.24666868150234222,
+      "fwd_same_claim": 0.24666868150234222,
+      "id": "cov-01",
+      "label": "same_verbatim",
+      "reverse_entailment": 0.9087044596672058,
+      "same_claim": 0.47344369352797167
+    },
+    {
+      "forward_entailment": 0.033920641988515854,
+      "fwd_same_claim": 0.033920641988515854,
+      "id": "cov-02",
+      "label": "meta",
+      "reverse_entailment": 0.012548919767141342,
+      "same_claim": 0.020631708963724047
+    }
+  ],
+  "targets": {
+    "ptf-02": {
+      "label": "same_verbatim",
+      "local_epoch1": 0.905,
+      "same_claim": 0.08850468917980082
+    },
+    "ptf-05": {
+      "label": "meta",
+      "local_epoch1": 0.026,
+      "same_claim": 0.007833396216911792
+    },
+    "ssi-03": {
+      "label": "same_paraphrase",
+      "local_epoch1": 0.036,
+      "same_claim": 0.1104063579550756
+    },
+    "ssi-05": {
+      "label": "incidental",
+      "local_epoch1": 0.825,
+      "same_claim": 0.0030500338431801786
+    }
+  }
+}

@@ -1,4 +1,16 @@
-# Eval runs are measurements, not source. Keep the committed baseline only.
+# Eval runs are measurements, not source. Keep the committed baseline and final benchmark summaries.
 *
 !.gitignore
 !baseline-off-the-shelf.json
+!baseten-gpt-oss-120b-baseline.json
+!runpod-bge-3epoch.json
+!runpod-data-report.json
+!suite/
+!suite/*.json
+
+# Exclude all heavy model checkpoints (.safetensors, .bin) from git
+runs/*/model.safetensors
+runs/*/adapter_model.safetensors
+runs/*/*.bin
+runs/*/*.pt
+baseten_openjev_4bit/model/adapter/*.safetensors

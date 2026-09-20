@@ -1,0 +1,469 @@
+{
+  "model": "openai/gpt-oss-120b",
+  "metrics": {
+    "n": 25,
+    "roc_auc": 0.9025974025974026,
+    "f1_at_0.5": 0.8,
+    "positive_min": 0.02,
+    "negative_max": 0.8200000000000001,
+    "separation_margin": -0.8
+  },
+  "targets": {
+    "ssi-03": {
+      "id": "ssi-03",
+      "label": "same_paraphrase",
+      "same_claim": 0.72,
+      "predicted_label": "same_paraphrase",
+      "distribution": {
+        "unrelated": 0.03,
+        "incidental": 0.2,
+        "meta": 0.05,
+        "same_paraphrase": 0.7,
+        "same_verbatim": 0.02
+      }
+    },
+    "ssi-05": {
+      "id": "ssi-05",
+      "label": "incidental",
+      "same_claim": 0.02,
+      "predicted_label": "incidental",
+      "distribution": {
+        "unrelated": 0.2,
+        "incidental": 0.75,
+        "meta": 0.03,
+        "same_paraphrase": 0.02,
+        "same_verbatim": 0.0
+      }
+    },
+    "ptf-02": {
+      "id": "ptf-02",
+      "label": "same_verbatim",
+      "same_claim": 0.15000000000000002,
+      "predicted_label": "incidental",
+      "distribution": {
+        "unrelated": 0.0,
+        "incidental": 0.85,
+        "meta": 0.0,
+        "same_paraphrase": 0.1,
+        "same_verbatim": 0.05
+      }
+    },
+    "ptf-05": {
+      "id": "ptf-05",
+      "label": "meta",
+      "same_claim": 0.05,
+      "predicted_label": "meta",
+      "distribution": {
+        "unrelated": 0.0,
+        "incidental": 0.1,
+        "meta": 0.85,
+        "same_paraphrase": 0.03,
+        "same_verbatim": 0.02
+      }
+    }
+  },
+  "rows": [
+    {
+      "id": "ssi-01",
+      "label": "same_verbatim",
+      "same_claim": 0.99,
+      "predicted_label": "same_verbatim",
+      "distribution": {
+        "unrelated": 0.0,
+        "incidental": 0.01,
+        "meta": 0.0,
+        "same_paraphrase": 0.05,
+        "same_verbatim": 0.94
+      }
+    },
+    {
+      "id": "ssi-02",
+      "label": "same_verbatim",
+      "same_claim": 0.88,
+      "predicted_label": "same_paraphrase",
+      "distribution": {
+        "unrelated": 0.01,
+        "incidental": 0.1,
+        "meta": 0.01,
+        "same_paraphrase": 0.85,
+        "same_verbatim": 0.03
+      }
+    },
+    {
+      "id": "ssi-03",
+      "label": "same_paraphrase",
+      "same_claim": 0.72,
+      "predicted_label": "same_paraphrase",
+      "distribution": {
+        "unrelated": 0.03,
+        "incidental": 0.2,
+        "meta": 0.05,
+        "same_paraphrase": 0.7,
+        "same_verbatim": 0.02
+      }
+    },
+    {
+      "id": "ssi-04",
+      "label": "incidental",
+      "same_claim": 0.01,
+      "predicted_label": "unrelated",
+      "distribution": {
+        "unrelated": 0.92,
+        "incidental": 0.06,
+        "meta": 0.01,
+        "same_paraphrase": 0.01,
+        "same_verbatim": 0.0
+      }
+    },
+    {
+      "id": "ssi-05",
+      "label": "incidental",
+      "same_claim": 0.02,
+      "predicted_label": "incidental",
+      "distribution": {
+        "unrelated": 0.2,
+        "incidental": 0.75,
+        "meta": 0.03,
+        "same_paraphrase": 0.02,
+        "same_verbatim": 0.0
+      }
+    },
+    {
+      "id": "ssi-06",
+      "label": "unrelated",
+      "same_claim": 0.02,
+      "predicted_label": "incidental",
+      "distribution": {
+        "unrelated": 0.1,
+        "incidental": 0.85,
+        "meta": 0.03,
+        "same_paraphrase": 0.01,
+        "same_verbatim": 0.01
+      }
+    },
+    {
+      "id": "ssi-07",
+      "label": "unrelated",
+      "same_claim": 0.01,
+      "predicted_label": "unrelated",
+      "distribution": {
+        "unrelated": 0.9,
+        "incidental": 0.07,
+        "meta": 0.02,
+        "same_paraphrase": 0.005,
+        "same_verbatim": 0.005
+      }
+    },
+    {
+      "id": "ssi-08",
+      "label": "unrelated",
+      "same_claim": 0.01,
+      "predicted_label": "incidental",
+      "distribution": {
+        "unrelated": 0.35,
+        "incidental": 0.6,
+        "meta": 0.04,
+        "same_paraphrase": 0.005,
+        "same_verbatim": 0.005
+      }
+    },
+    {
+      "id": "ssi-09",
+      "label": "meta",
+      "same_claim": 0.01,
+      "predicted_label": "meta",
+      "distribution": {
+        "unrelated": 0.1,
+        "incidental": 0.04,
+        "meta": 0.85,
+        "same_paraphrase": 0.005,
+        "same_verbatim": 0.005
+      }
+    },
+    {
+      "id": "ssi-10",
+      "label": "meta",
+      "same_claim": 0.03,
+      "predicted_label": "meta",
+      "distribution": {
+        "unrelated": 0.1,
+        "incidental": 0.07,
+        "meta": 0.8,
+        "same_paraphrase": 0.015,
+        "same_verbatim": 0.015
+      }
+    },
+    {
+      "id": "ptf-01",
+      "label": "same_verbatim",
+      "same_claim": 0.99,
+      "predicted_label": "same_verbatim",
+      "distribution": {
+        "unrelated": 0.0,
+        "incidental": 0.01,
+        "meta": 0.0,
+        "same_paraphrase": 0.04,
+        "same_verbatim": 0.95
+      }
+    },
+    {
+      "id": "ptf-02",
+      "label": "same_verbatim",
+      "same_claim": 0.15000000000000002,
+      "predicted_label": "incidental",
+      "distribution": {
+        "unrelated": 0.0,
+        "incidental": 0.85,
+        "meta": 0.0,
+        "same_paraphrase": 0.1,
+        "same_verbatim": 0.05
+      }
+    },
+    {
+      "id": "ptf-03",
+      "label": "same_paraphrase",
+      "same_claim": 0.92,
+      "predicted_label": "same_paraphrase",
+      "distribution": {
+        "unrelated": 0.0,
+        "incidental": 0.08,
+        "meta": 0.0,
+        "same_paraphrase": 0.9,
+        "same_verbatim": 0.02
+      }
+    },
+    {
+      "id": "ptf-04",
+      "label": "meta",
+      "same_claim": 0.05,
+      "predicted_label": "meta",
+      "distribution": {
+        "unrelated": 0.0,
+        "incidental": 0.07,
+        "meta": 0.88,
+        "same_paraphrase": 0.03,
+        "same_verbatim": 0.02
+      }
+    },
+    {
+      "id": "ptf-05",
+      "label": "meta",
+      "same_claim": 0.05,
+      "predicted_label": "meta",
+      "distribution": {
+        "unrelated": 0.0,
+        "incidental": 0.1,
+        "meta": 0.85,
+        "same_paraphrase": 0.03,
+        "same_verbatim": 0.02
+      }
+    },
+    {
+      "id": "ptf-06",
+      "label": "meta",
+      "same_claim": 0.0,
+      "predicted_label": "meta",
+      "distribution": {
+        "unrelated": 0.05,
+        "incidental": 0.1,
+        "meta": 0.85,
+        "same_paraphrase": 0.0,
+        "same_verbatim": 0.0
+      }
+    },
+    {
+      "id": "ptf-07",
+      "label": "meta",
+      "same_claim": 0.05,
+      "predicted_label": "incidental",
+      "distribution": {
+        "unrelated": 0.2,
+        "incidental": 0.7,
+        "meta": 0.05,
+        "same_paraphrase": 0.03,
+        "same_verbatim": 0.02
+      }
+    },
+    {
+      "id": "ptf-08",
+      "label": "incidental",
+      "same_claim": 0.8200000000000001,
+      "predicted_label": "same_paraphrase",
+      "distribution": {
+        "unrelated": 0.05,
+        "incidental": 0.1,
+        "meta": 0.03,
+        "same_paraphrase": 0.8,
+        "same_verbatim": 0.02
+      }
+    },
+    {
+      "id": "boom-01",
+      "label": "incidental",
+      "same_claim": 0.03,
+      "predicted_label": "incidental",
+      "distribution": {
+        "unrelated": 0.15,
+        "incidental": 0.75,
+        "meta": 0.07,
+        "same_paraphrase": 0.02,
+        "same_verbatim": 0.01
+      }
+    },
+    {
+      "id": "boom-02",
+      "label": "same_paraphrase",
+      "same_claim": 0.02,
+      "predicted_label": "incidental",
+      "distribution": {
+        "unrelated": 0.15,
+        "incidental": 0.8,
+        "meta": 0.03,
+        "same_paraphrase": 0.01,
+        "same_verbatim": 0.01
+      }
+    },
+    {
+      "id": "twtr-01",
+      "label": "same_verbatim",
+      "same_claim": 1.0,
+      "predicted_label": "same_verbatim",
+      "distribution": {
+        "unrelated": 0.0,
+        "incidental": 0.0,
+        "meta": 0.0,
+        "same_paraphrase": 0.02,
+        "same_verbatim": 0.98
+      }
+    },
+    {
+      "id": "twtr-02",
+      "label": "same_paraphrase",
+      "same_claim": 0.04,
+      "predicted_label": "incidental",
+      "distribution": {
+        "unrelated": 0.0,
+        "incidental": 0.92,
+        "meta": 0.04,
+        "same_paraphrase": 0.03,
+        "same_verbatim": 0.01
+      }
+    },
+    {
+      "id": "dril-01",
+      "label": "same_paraphrase",
+      "same_claim": 0.96,
+      "predicted_label": "same_paraphrase",
+      "distribution": {
+        "unrelated": 0.0,
+        "incidental": 0.04,
+        "meta": 0.0,
+        "same_paraphrase": 0.95,
+        "same_verbatim": 0.01
+      }
+    },
+    {
+      "id": "cov-01",
+      "label": "same_verbatim",
+      "same_claim": 0.9,
+      "predicted_label": "same_paraphrase",
+      "distribution": {
+        "unrelated": 0.0,
+        "incidental": 0.02,
+        "meta": 0.08,
+        "same_paraphrase": 0.8,
+        "same_verbatim": 0.1
+      }
+    },
+    {
+      "id": "cov-02",
+      "label": "meta",
+      "same_claim": 0.05,
+      "predicted_label": "incidental",
+      "distribution": {
+        "unrelated": 0.05,
+        "incidental": 0.85,
+        "meta": 0.05,
+        "same_paraphrase": 0.03,
+        "same_verbatim": 0.02
+      }
+    }
+  ],
+  "usage": [
+    {
+      "prompt_tokens": 735,
+      "completion_tokens": 1272,
+      "total_tokens": 2007,
+      "prompt_tokens_details": {
+        "audio_tokens": 0,
+        "cached_tokens": 64
+      },
+      "completion_tokens_details": {
+        "accepted_prediction_tokens": 0,
+        "audio_tokens": 0,
+        "reasoning_tokens": 0,
+        "rejected_prediction_tokens": 0
+      }
+    },
+    {
+      "prompt_tokens": 724,
+      "completion_tokens": 909,
+      "total_tokens": 1633,
+      "prompt_tokens_details": {
+        "audio_tokens": 0,
+        "cached_tokens": 416
+      },
+      "completion_tokens_details": {
+        "accepted_prediction_tokens": 0,
+        "audio_tokens": 0,
+        "reasoning_tokens": 0,
+        "rejected_prediction_tokens": 0
+      }
+    },
+    {
+      "prompt_tokens": 764,
+      "completion_tokens": 783,
+      "total_tokens": 1547,
+      "prompt_tokens_details": {
+        "audio_tokens": 0,
+        "cached_tokens": 416
+      },
+      "completion_tokens_details": {
+        "accepted_prediction_tokens": 0,
+        "audio_tokens": 0,
+        "reasoning_tokens": 0,
+        "rejected_prediction_tokens": 0
+      }
+    },
+    {
+      "prompt_tokens": 723,
+      "completion_tokens": 1118,
+      "total_tokens": 1841,
+      "prompt_tokens_details": {
+        "audio_tokens": 0,
+        "cached_tokens": 416
+      },
+      "completion_tokens_details": {
+        "accepted_prediction_tokens": 0,
+        "audio_tokens": 0,
+        "reasoning_tokens": 0,
+        "rejected_prediction_tokens": 0
+      }
+    },
+    {
+      "prompt_tokens": 645,
+      "completion_tokens": 1022,
+      "total_tokens": 1667,
+      "prompt_tokens_details": {
+        "audio_tokens": 0,
+        "cached_tokens": 64
+      },
+      "completion_tokens_details": {
+        "accepted_prediction_tokens": 0,
+        "audio_tokens": 0,
+        "reasoning_tokens": 0,
+        "rejected_prediction_tokens": 0
+      }
+    }
+  ]
+}

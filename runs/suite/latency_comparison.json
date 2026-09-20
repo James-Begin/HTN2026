@@ -1,0 +1,180 @@
+{
+  "timestamp": 1789871528.707412,
+  "gpu": "NVIDIA H100 80GB HBM3",
+  "models": {
+    "bge_base": {
+      "model_name": "Fine-Tuned BGE-Base (110M)",
+      "load_time_sec": 18.35,
+      "base_vram_mb": 530.3,
+      "peak_vram_mb": 676.3,
+      "single_pair_latency": {
+        "p50_ms": 3.250704050064087,
+        "p90_ms": 3.72728967666626,
+        "p95_ms": 6.395233488082885,
+        "p99_ms": 8.568927354812637,
+        "mean_ms": 3.575105607509613,
+        "std_ms": 1.1336936141817247,
+        "min_ms": 3.1783359050750732,
+        "max_ms": 11.356736183166504
+      },
+      "batch_scaling": {
+        "1": {
+          "batch_size": 1,
+          "avg_batch_latency_ms": 3.11,
+          "latency_per_pair_ms": 3.108,
+          "throughput_pairs_per_sec": 321.8
+        },
+        "4": {
+          "batch_size": 4,
+          "avg_batch_latency_ms": 3.83,
+          "latency_per_pair_ms": 0.957,
+          "throughput_pairs_per_sec": 1044.5
+        },
+        "8": {
+          "batch_size": 8,
+          "avg_batch_latency_ms": 3.79,
+          "latency_per_pair_ms": 0.473,
+          "throughput_pairs_per_sec": 2112.1
+        },
+        "16": {
+          "batch_size": 16,
+          "avg_batch_latency_ms": 3.74,
+          "latency_per_pair_ms": 0.234,
+          "throughput_pairs_per_sec": 4279.3
+        },
+        "32": {
+          "batch_size": 32,
+          "avg_batch_latency_ms": 3.76,
+          "latency_per_pair_ms": 0.117,
+          "throughput_pairs_per_sec": 8515.3
+        },
+        "64": {
+          "batch_size": 64,
+          "avg_batch_latency_ms": 3.79,
+          "latency_per_pair_ms": 0.059,
+          "throughput_pairs_per_sec": 16888.1
+        },
+        "128": {
+          "batch_size": 128,
+          "avg_batch_latency_ms": 4.43,
+          "latency_per_pair_ms": 0.035,
+          "throughput_pairs_per_sec": 28892.0
+        }
+      }
+    },
+    "bge_large": {
+      "model_name": "Fine-Tuned BGE-Large (560M)",
+      "load_time_sec": 51.01,
+      "base_vram_mb": 1099.9,
+      "peak_vram_mb": 1251.7,
+      "single_pair_latency": {
+        "p50_ms": 5.873584032058716,
+        "p90_ms": 10.051750183105469,
+        "p95_ms": 10.395419216155995,
+        "p99_ms": 14.280452804565478,
+        "mean_ms": 7.535239663124084,
+        "std_ms": 2.793629528537085,
+        "min_ms": 5.768896102905273,
+        "max_ms": 23.57587242126465
+      },
+      "batch_scaling": {
+        "1": {
+          "batch_size": 1,
+          "avg_batch_latency_ms": 5.82,
+          "latency_per_pair_ms": 5.819,
+          "throughput_pairs_per_sec": 171.8
+        },
+        "4": {
+          "batch_size": 4,
+          "avg_batch_latency_ms": 7.08,
+          "latency_per_pair_ms": 1.77,
+          "throughput_pairs_per_sec": 564.9
+        },
+        "8": {
+          "batch_size": 8,
+          "avg_batch_latency_ms": 6.83,
+          "latency_per_pair_ms": 0.854,
+          "throughput_pairs_per_sec": 1171.5
+        },
+        "16": {
+          "batch_size": 16,
+          "avg_batch_latency_ms": 6.7,
+          "latency_per_pair_ms": 0.419,
+          "throughput_pairs_per_sec": 2388.8
+        },
+        "32": {
+          "batch_size": 32,
+          "avg_batch_latency_ms": 6.83,
+          "latency_per_pair_ms": 0.213,
+          "throughput_pairs_per_sec": 4688.6
+        },
+        "64": {
+          "batch_size": 64,
+          "avg_batch_latency_ms": 7.0,
+          "latency_per_pair_ms": 0.109,
+          "throughput_pairs_per_sec": 9148.7
+        },
+        "128": {
+          "batch_size": 128,
+          "avg_batch_latency_ms": 11.62,
+          "latency_per_pair_ms": 0.091,
+          "throughput_pairs_per_sec": 11011.0
+        }
+      }
+    },
+    "openjev_4b_ft": {
+      "model_name": "Fine-Tuned OpenJev-4B (LoRA)",
+      "load_time_sec": 60.67,
+      "base_vram_mb": 8771.0,
+      "peak_vram_mb": 13440.3,
+      "single_pair_latency": {
+        "p50_ms": 51.43943977355957,
+        "p90_ms": 53.57574539184571,
+        "p95_ms": 55.99714317321777,
+        "p99_ms": 63.19705718994143,
+        "mean_ms": 52.120702514648436,
+        "std_ms": 2.3668166095139247,
+        "min_ms": 50.47683334350586,
+        "max_ms": 67.98397064208984
+      },
+      "batch_scaling": {
+        "1": {
+          "batch_size": 1,
+          "avg_batch_latency_ms": 51.42,
+          "latency_per_pair_ms": 51.419,
+          "throughput_pairs_per_sec": 19.4
+        },
+        "4": {
+          "batch_size": 4,
+          "avg_batch_latency_ms": 52.64,
+          "latency_per_pair_ms": 13.161,
+          "throughput_pairs_per_sec": 76.0
+        },
+        "8": {
+          "batch_size": 8,
+          "avg_batch_latency_ms": 53.19,
+          "latency_per_pair_ms": 6.648,
+          "throughput_pairs_per_sec": 150.4
+        },
+        "16": {
+          "batch_size": 16,
+          "avg_batch_latency_ms": 68.67,
+          "latency_per_pair_ms": 4.292,
+          "throughput_pairs_per_sec": 233.0
+        },
+        "32": {
+          "batch_size": 32,
+          "avg_batch_latency_ms": 121.46,
+          "latency_per_pair_ms": 3.796,
+          "throughput_pairs_per_sec": 263.5
+        },
+        "64": {
+          "batch_size": 64,
+          "avg_batch_latency_ms": 225.09,
+          "latency_per_pair_ms": 3.517,
+          "throughput_pairs_per_sec": 284.3
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,2633 @@
+{
+  "best_val_auc": 0.9901781696938465,
+  "eval_170": {
+    "metrics": {
+      "accuracy_at_0.5": 0.9,
+      "f1_at_0.5": 0.896969696969697,
+      "n": 170,
+      "negative_max": 0.993092954158783,
+      "positive_min": 0.0031997859477996826,
+      "roc_auc": 0.9506172839506173,
+      "separation_margin": -0.9898931682109833
+    },
+    "rows": [
+      {
+        "distribution": {
+          "incidental": 0.0036122011952102184,
+          "meta": 0.007382859941571951,
+          "same_paraphrase": 0.004425761755555868,
+          "same_verbatim": 0.9783621430397034,
+          "unrelated": 0.006216991227120161
+        },
+        "id": "ssi-01",
+        "label": "same_verbatim",
+        "predicted_label": "same_verbatim",
+        "same_claim": 0.9827879071235657
+      },
+      {
+        "distribution": {
+          "incidental": 0.004886357579380274,
+          "meta": 0.0073066940531134605,
+          "same_paraphrase": 0.01614741049706936,
+          "same_verbatim": 0.9607335925102234,
+          "unrelated": 0.01092588435858488
+        },
+        "id": "ssi-02",
+        "label": "same_verbatim",
+        "predicted_label": "same_verbatim",
+        "same_claim": 0.9768810272216797
+      },
+      {
+        "distribution": {
+          "incidental": 0.0013549822615459561,
+          "meta": 0.0019108311971649528,
+          "same_paraphrase": 0.9821321964263916,
+          "same_verbatim": 0.012278993614017963,
+          "unrelated": 0.0023229799699038267
+        },
+        "id": "ssi-03",
+        "label": "same_paraphrase",
+        "predicted_label": "same_paraphrase",
+        "same_claim": 0.9944111704826355
+      },
+      {
+        "distribution": {
+          "incidental": 0.12958164513111115,
+          "meta": 0.8384028077125549,
+          "same_paraphrase": 0.00326945586130023,
+          "same_verbatim": 0.005649113561958075,
+          "unrelated": 0.023096976801753044
+        },
+        "id": "ssi-04",
+        "label": "incidental",
+        "predicted_label": "meta",
+        "same_claim": 0.008918569423258305
+      },
+      {
+        "distribution": {
+          "incidental": 0.8373218774795532,
+          "meta": 0.14779609441757202,
+          "same_paraphrase": 0.0037290221080183983,
+          "same_verbatim": 0.0056418306194245815,
+          "unrelated": 0.005511137656867504
+        },
+        "id": "ssi-05",
+        "label": "incidental",
+        "predicted_label": "incidental",
+        "same_claim": 0.009370852261781693
+      },
+      {
+        "distribution": {
+          "incidental": 0.9886924028396606,
+          "meta": 0.0035104993730783463,
+          "same_paraphrase": 0.0017242992762476206,
+          "same_verbatim": 0.0027879024855792522,
+          "unrelated": 0.0032849519047886133
+        },
+        "id": "ssi-06",
+        "label": "unrelated",
+        "predicted_label": "incidental",
+        "same_claim": 0.0045122019946575165
+      },
+      {
+        "distribution": {
+          "incidental": 0.1676677167415619,
+          "meta": 0.28744935989379883,
+          "same_paraphrase": 0.0012901992304250598,
+          "same_verbatim": 0.04692481458187103,
+          "unrelated": 0.49666792154312134
+        },
+        "id": "ssi-07",
+        "label": "unrelated",
+        "predicted_label": "unrelated",
+        "same_claim": 0.04821501299738884
+      },
+      {
+        "distribution": {
+          "incidental": 0.01836281083524227,
+          "meta": 0.9535163640975952,
+          "same_paraphrase": 0.007964548654854298,
+          "same_verbatim": 0.002806762233376503,
+          "unrelated": 0.017349518835544586
+        },
+        "id": "ssi-08",
+        "label": "unrelated",
+        "predicted_label": "meta",
+        "same_claim": 0.0107713108882308
+      },
+      {
+        "distribution": {
+          "incidental": 0.0025553489103913307,
+          "meta": 0.9684421420097351,
+          "same_paraphrase": 0.004925563465803862,
+          "same_verbatim": 0.015828263014554977,
+          "unrelated": 0.008248766884207726
+        },
+        "id": "ssi-09",
+        "label": "meta",
+        "predicted_label": "meta",
+        "same_claim": 0.020753826946020126
+      },
+      {
+        "distribution": {
+          "incidental": 0.318783700466156,
+          "meta": 0.6644023060798645,
+          "same_paraphrase": 0.00322445179335773,
+          "same_verbatim": 0.008595438674092293,
+          "unrelated": 0.004994128365069628
+        },
+        "id": "ssi-10",
+        "label": "meta",
+        "predicted_label": "meta",
+        "same_claim": 0.011819890700280666
+      },
+      {
+        "distribution": {
+          "incidental": 0.0022244213614612818,
+          "meta": 0.007554573006927967,
+          "same_paraphrase": 0.008712259121239185,
+          "same_verbatim": 0.9779263138771057,
+          "unrelated": 0.003582494566217065
+        },
+        "id": "ptf-01",
+        "label": "same_verbatim",
+        "predicted_label": "same_verbatim",
+        "same_claim": 0.9866385459899902
+      },
+      {
+        "distribution": {
+          "incidental": 0.003421523841097951,
+          "meta": 0.011597496457397938,
+          "same_paraphrase": 0.02375008538365364,
+          "same_verbatim": 0.9561344981193542,
+          "unrelated": 0.005096344742923975
+        },
+        "id": "ptf-02",
+        "label": "same_verbatim",
+        "predicted_label": "same_verbatim",
+        "same_claim": 0.9798845648765564
+      },
+      {
+        "distribution": {
+          "incidental": 0.0027782528195530176,
+          "meta": 0.003004007274284959,
+          "same_paraphrase": 0.9891263842582703,
+          "same_verbatim": 0.004203361924737692,
+          "unrelated": 0.0008879828383214772
+        },
+        "id": "ptf-03",
+        "label": "same_paraphrase",
+        "predicted_label": "same_paraphrase",
+        "same_claim": 0.9933297634124756
+      },
+      {
+        "distribution": {
+          "incidental": 0.011175804771482944,
+          "meta": 0.9807921051979065,
+          "same_paraphrase": 0.00357898510992527,
+          "same_verbatim": 0.004023960791528225,
+          "unrelated": 0.00042912180651910603
+        },
+        "id": "ptf-04",
+        "label": "meta",
+        "predicted_label": "meta",
+        "same_claim": 0.007602945901453495
+      },
+      {
+        "distribution": {
+          "incidental": 0.25531652569770813,
+          "meta": 0.6368706226348877,
+          "same_paraphrase": 0.019687896594405174,
+          "same_verbatim": 0.011305807158350945,
+          "unrelated": 0.07681916654109955
+        },
+        "id": "ptf-05",
+        "label": "meta",
+        "predicted_label": "meta",
+        "same_claim": 0.03099370375275612
+      },
+      {
+        "distribution": {
+          "incidental": 0.003447405295446515,
+          "meta": 0.9900723695755005,
+          "same_paraphrase": 0.0026535624638199806,
+          "same_verbatim": 0.0022171344608068466,
+          "unrelated": 0.0016094669699668884
+        },
+        "id": "ptf-06",
+        "label": "meta",
+        "predicted_label": "meta",
+        "same_claim": 0.004870696924626827
+      },
+      {
+        "distribution": {
+          "incidental": 0.01468004658818245,
+          "meta": 0.13605396449565887,
+          "same_paraphrase": 0.008629954420030117,
+          "same_verbatim": 0.039132680743932724,
+          "unrelated": 0.8015033602714539
+        },
+        "id": "ptf-07",
+        "label": "meta",
+        "predicted_label": "unrelated",
+        "same_claim": 0.047762636095285416
+      },
+      {
+        "distribution": {
+          "incidental": 0.010647074319422245,
+          "meta": 0.12042971700429916,
+          "same_paraphrase": 0.7641182541847229,
+          "same_verbatim": 0.09415784478187561,
+          "unrelated": 0.010647074319422245
+        },
+        "id": "ptf-08",
+        "label": "incidental",
+        "predicted_label": "same_paraphrase",
+        "same_claim": 0.8582761287689209
+      },
+      {
+        "distribution": {
+          "incidental": 0.02745644561946392,
+          "meta": 0.9528675675392151,
+          "same_paraphrase": 0.00777475768700242,
+          "same_verbatim": 0.004276889842003584,
+          "unrelated": 0.007624379824846983
+        },
+        "id": "boom-01",
+        "label": "incidental",
+        "predicted_label": "meta",
+        "same_claim": 0.012051647529006004
+      },
+      {
+        "distribution": {
+          "incidental": 0.0009557318408042192,
+          "meta": 0.025085756555199623,
+          "same_paraphrase": 0.015245026908814907,
+          "same_verbatim": 0.9542942643165588,
+          "unrelated": 0.004419259261339903
+        },
+        "id": "boom-02",
+        "label": "same_paraphrase",
+        "predicted_label": "same_verbatim",
+        "same_claim": 0.9695392847061157
+      },
+      {
+        "distribution": {
+          "incidental": 0.003244582796469331,
+          "meta": 0.003647982608526945,
+          "same_paraphrase": 0.007455992046743631,
+          "same_verbatim": 0.9803643226623535,
+          "unrelated": 0.005287090316414833
+        },
+        "id": "twtr-01",
+        "label": "same_verbatim",
+        "predicted_label": "same_verbatim",
+        "same_claim": 0.9878203272819519
+      },
+      {
+        "distribution": {
+          "incidental": 0.9094628691673279,
+          "meta": 0.0567932054400444,
+          "same_paraphrase": 0.005040682852268219,
+          "same_verbatim": 0.0057118427939713,
+          "unrelated": 0.02299138903617859
+        },
+        "id": "twtr-02",
+        "label": "same_paraphrase",
+        "predicted_label": "incidental",
+        "same_claim": 0.010752525180578232
+      },
+      {
+        "distribution": {
+          "incidental": 0.0022183689288794994,
+          "meta": 0.00477024307474494,
+          "same_paraphrase": 0.012506701052188873,
+          "same_verbatim": 0.9752655625343323,
+          "unrelated": 0.0052390871569514275
+        },
+        "id": "dril-01",
+        "label": "same_paraphrase",
+        "predicted_label": "same_verbatim",
+        "same_claim": 0.9877722859382629
+      },
+      {
+        "distribution": {
+          "incidental": 0.0063884686678647995,
+          "meta": 0.017847051844000816,
+          "same_paraphrase": 0.04486748203635216,
+          "same_verbatim": 0.9189618229866028,
+          "unrelated": 0.011935231275856495
+        },
+        "id": "cov-01",
+        "label": "same_verbatim",
+        "predicted_label": "same_verbatim",
+        "same_claim": 0.9638292789459229
+      },
+      {
+        "distribution": {
+          "incidental": 0.01163389440625906,
+          "meta": 0.9751914143562317,
+          "same_paraphrase": 0.003489718772470951,
+          "same_verbatim": 0.0027177962474524975,
+          "unrelated": 0.006967298220843077
+        },
+        "id": "cov-02",
+        "label": "meta",
+        "predicted_label": "meta",
+        "same_claim": 0.0062075150199234486
+      },
+      {
+        "distribution": {
+          "incidental": 0.0037778285332024097,
+          "meta": 0.0025964609812945127,
+          "same_paraphrase": 0.007939300499856472,
+          "same_verbatim": 0.9840230941772461,
+          "unrelated": 0.001663355389609933
+        },
+        "id": "hold-trunc-3muuxqvqexx2x",
+        "label": "same_verbatim",
+        "predicted_label": "same_verbatim",
+        "same_claim": 0.9919623732566833
+      },
+      {
+        "distribution": {
+          "incidental": 0.0047525642439723015,
+          "meta": 0.003436541650444269,
+          "same_paraphrase": 0.0049612270668148994,
+          "same_verbatim": 0.9831046462059021,
+          "unrelated": 0.0037449304945766926
+        },
+        "id": "hold-head-3mupqdx5yyq2w",
+        "label": "same_verbatim",
+        "predicted_label": "same_verbatim",
+        "same_claim": 0.9880658984184265
+      },
+      {
+        "distribution": {
+          "incidental": 0.0028526820242404938,
+          "meta": 0.002764914184808731,
+          "same_paraphrase": 0.006991841364651918,
+          "same_verbatim": 0.9843776226043701,
+          "unrelated": 0.003013032488524914
+        },
+        "id": "hold-head-3mrwqyzrz4p2a",
+        "label": "same_verbatim",
+        "predicted_label": "same_verbatim",
+        "same_claim": 0.9913694858551025
+      },
+      {
+        "distribution": {
+          "incidental": 0.0025122975930571556,
+          "meta": 0.004046127200126648,
+          "same_paraphrase": 0.9747052788734436,
+          "same_verbatim": 0.014814577996730804,
+          "unrelated": 0.003921640571206808
+        },
+        "id": "hold-head-3muq2y5npgk2i",
+        "label": "same_paraphrase",
+        "predicted_label": "same_paraphrase",
+        "same_claim": 0.9895198345184326
+      },
+      {
+        "distribution": {
+          "incidental": 0.0031957211904227734,
+          "meta": 0.0027764905244112015,
+          "same_paraphrase": 0.01026566606014967,
+          "same_verbatim": 0.9808065295219421,
+          "unrelated": 0.0029555587098002434
+        },
+        "id": "hold-head-3mrwsblbxtw2f",
+        "label": "same_verbatim",
+        "predicted_label": "same_verbatim",
+        "same_claim": 0.9910721778869629
+      },
+      {
+        "distribution": {
+          "incidental": 0.0030890509951859713,
+          "meta": 0.002139722928404808,
+          "same_paraphrase": 0.006167354993522167,
+          "same_verbatim": 0.9858348965644836,
+          "unrelated": 0.0027690075803548098
+        },
+        "id": "hold-head-3mtqfpwoizo2g",
+        "label": "same_verbatim",
+        "predicted_label": "same_verbatim",
+        "same_claim": 0.9920022487640381
+      },
+      {
+        "distribution": {
+          "incidental": 0.9766829609870911,
+          "meta": 0.009725848212838173,
+          "same_paraphrase": 0.0019452921114861965,
+          "same_verbatim": 0.0020707526709884405,
+          "unrelated": 0.009575063362717628
+        },
+        "id": "hold-coll-3mrxkgmivrj2y_3mtl2ctjyoy22",
+        "label": "incidental",
+        "predicted_label": "incidental",
+        "same_claim": 0.004016044549643993
+      },
+      {
+        "distribution": {
+          "incidental": 0.9856809377670288,
+          "meta": 0.004709504544734955,
+          "same_paraphrase": 0.00538893835619092,
+          "same_verbatim": 0.0019786113407462835,
+          "unrelated": 0.0022420601453632116
+        },
+        "id": "hold-coll-3mrxfdxaeeq2y_3mtvfmobaxu2z",
+        "label": "incidental",
+        "predicted_label": "incidental",
+        "same_claim": 0.00736754946410656
+      },
+      {
+        "distribution": {
+          "incidental": 0.03381919488310814,
+          "meta": 0.0051964810118079185,
+          "same_paraphrase": 0.009120107628405094,
+          "same_verbatim": 0.006938212085515261,
+          "unrelated": 0.9449260234832764
+        },
+        "id": "hold-neg-3mrw77qobch2v_3mvidceb6ji2f",
+        "label": "unrelated",
+        "predicted_label": "unrelated",
+        "same_claim": 0.016058320179581642
+      },
+      {
+        "distribution": {
+          "incidental": 0.0034461666364222765,
+          "meta": 0.0014763993676751852,
+          "same_paraphrase": 0.00427210284397006,
+          "same_verbatim": 0.9897167086601257,
+          "unrelated": 0.0010886285454034805
+        },
+        "id": "hold-trunc-3mry4tshkaq22",
+        "label": "same_verbatim",
+        "predicted_label": "same_verbatim",
+        "same_claim": 0.9939888119697571
+      },
+      {
+        "distribution": {
+          "incidental": 0.013863860629498959,
+          "meta": 0.0013201205292716622,
+          "same_paraphrase": 0.0022632128093391657,
+          "same_verbatim": 0.002998270094394684,
+          "unrelated": 0.9795545935630798
+        },
+        "id": "hold-neg-3mu2sn2ifb225_3mrwvzu4pyt25",
+        "label": "unrelated",
+        "predicted_label": "unrelated",
+        "same_claim": 0.005261482670903206
+      },
+      {
+        "distribution": {
+          "incidental": 0.0039000818505883217,
+          "meta": 0.0026804849039763212,
+          "same_paraphrase": 0.9618034362792969,
+          "same_verbatim": 0.02723102644085884,
+          "unrelated": 0.004384980071336031
+        },
+        "id": "hold-bsky-3mrxwhg3o3p2j_3mry2ngqpay2n",
+        "label": "same_paraphrase",
+        "predicted_label": "same_paraphrase",
+        "same_claim": 0.9890344738960266
+      },
+      {
+        "distribution": {
+          "incidental": 0.00228659575805068,
+          "meta": 0.0027366969734430313,
+          "same_paraphrase": 0.0034058743622153997,
+          "same_verbatim": 0.9896751046180725,
+          "unrelated": 0.0018956545973196626
+        },
+        "id": "hold-head-3mutargizgp2j",
+        "label": "same_verbatim",
+        "predicted_label": "same_verbatim",
+        "same_claim": 0.9930809736251831
+      },
+      {
+        "distribution": {
+          "incidental": 0.0008785358513705432,
+          "meta": 0.0015061608282849193,
+          "same_paraphrase": 0.0025821602903306484,
+          "same_verbatim": 0.9940140843391418,
+          "unrelated": 0.0010191194014623761
+        },
+        "id": "hold-trunc-3mtzlxq5tj227",
+        "label": "same_verbatim",
+        "predicted_label": "same_verbatim",
+        "same_claim": 0.9965962171554565
+      },
+      {
+        "distribution": {
+          "incidental": 0.0029865000396966934,
+          "meta": 0.0036878350656479597,
+          "same_paraphrase": 0.9833617806434631,
+          "same_verbatim": 0.006472351960837841,
+          "unrelated": 0.0034915723372250795
+        },
+        "id": "hold-bsky-3mu32q3kyuy2f_3mu2v5o44x22o",
+        "label": "same_paraphrase",
+        "predicted_label": "same_paraphrase",
+        "same_claim": 0.9898341298103333
+      },
+      {
+        "distribution": {
+          "incidental": 0.0015612004790455103,
+          "meta": 0.9908667802810669,
+          "same_paraphrase": 0.002772290725260973,
+          "same_verbatim": 0.002456113463267684,
+          "unrelated": 0.002343639498576522
+        },
+        "id": "hold-bsky-3mrygfhzvyh2t_3mryy3jjnc42y",
+        "label": "meta",
+        "predicted_label": "meta",
+        "same_claim": 0.005228403955698013
+      },
+      {
+        "distribution": {
+          "incidental": 0.9866943359375,
+          "meta": 0.004209437873214483,
+          "same_paraphrase": 0.0028593959286808968,
+          "same_verbatim": 0.002996621187776327,
+          "unrelated": 0.0032401196658611298
+        },
+        "id": "hold-coll-3muu2ndkgxv2w_3mt4jopaokg2l",
+        "label": "incidental",
+        "predicted_label": "incidental",
+        "same_claim": 0.005856017116457224
+      },
+      {
+        "distribution": {
+          "incidental": 0.0031615965999662876,
+          "meta": 0.002443092642351985,
+          "same_paraphrase": 0.007166637107729912,
+          "same_verbatim": 0.9856138825416565,
+          "unrelated": 0.0016147855203598738
+        },
+        "id": "hold-head-3mrwgoaf2en2w",
+        "label": "same_verbatim",
+        "predicted_label": "same_verbatim",
+        "same_claim": 0.9927805066108704
+      },
+      {
+        "distribution": {
+          "incidental": 0.9049929976463318,
+          "meta": 0.02074979990720749,
+          "same_paraphrase": 0.05392610654234886,
+          "same_verbatim": 0.013528549112379551,
+          "unrelated": 0.006802581716328859
+        },
+        "id": "hold-coll-3mrxzjjn3ri2c_3muphohoy6r2n",
+        "label": "incidental",
+        "predicted_label": "incidental",
+        "same_claim": 0.06745465844869614
+      },
+      {
+        "distribution": {
+          "incidental": 0.006407697685062885,
+          "meta": 0.005743823014199734,
+          "same_paraphrase": 0.014681696891784668,
+          "same_verbatim": 0.9659625291824341,
+          "unrelated": 0.007204368710517883
+        },
+        "id": "hold-trunc-3mrwfx7ds672g",
+        "label": "same_verbatim",
+        "predicted_label": "same_verbatim",
+        "same_claim": 0.9806442260742188
+      },
+      {
+        "distribution": {
+          "incidental": 0.0038912449963390827,
+          "meta": 0.002914407756179571,
+          "same_paraphrase": 0.9823809862136841,
+          "same_verbatim": 0.007129191886633635,
+          "unrelated": 0.003684156807139516
+        },
+        "id": "hold-bsky-3mu2sdtm7nq2d_3mtzq5rbvtj2b",
+        "label": "same_paraphrase",
+        "predicted_label": "same_paraphrase",
+        "same_claim": 0.989510178565979
+      },
+      {
+        "distribution": {
+          "incidental": 0.002965932711958885,
+          "meta": 0.003360842354595661,
+          "same_paraphrase": 0.006315778009593487,
+          "same_verbatim": 0.9842491745948792,
+          "unrelated": 0.0031082709319889545
+        },
+        "id": "hold-head-3mutql54lgd22",
+        "label": "same_verbatim",
+        "predicted_label": "same_verbatim",
+        "same_claim": 0.9905649423599243
+      },
+      {
+        "distribution": {
+          "incidental": 0.016572918742895126,
+          "meta": 0.001971636200323701,
+          "same_paraphrase": 0.0036548362113535404,
+          "same_verbatim": 0.003238005330786109,
+          "unrelated": 0.9745625853538513
+        },
+        "id": "hold-neg-3mrxkq2b4s32j_3muxfnl46f32c",
+        "label": "unrelated",
+        "predicted_label": "unrelated",
+        "same_claim": 0.006892841309309006
+      },
+      {
+        "distribution": {
+          "incidental": 0.00395570695400238,
+          "meta": 0.005240460392087698,
+          "same_paraphrase": 0.9831722974777222,
+          "same_verbatim": 0.004113284405320883,
+          "unrelated": 0.0035182784777134657
+        },
+        "id": "hold-bsky-3mrxzjjn3ri2c_3mryemx7d462i",
+        "label": "same_paraphrase",
+        "predicted_label": "same_paraphrase",
+        "same_claim": 0.9872855544090271
+      },
+      {
+        "distribution": {
+          "incidental": 0.0004907564725726843,
+          "meta": 0.9898641705513,
+          "same_paraphrase": 0.0009097188012674451,
+          "same_verbatim": 0.0016217490192502737,
+          "unrelated": 0.007113688159734011
+        },
+        "id": "hold-bsky-3mupy656c6r2e_3muq5a4c5ps2c",
+        "label": "meta",
+        "predicted_label": "meta",
+        "same_claim": 0.0025314679369330406
+      },
+      {
+        "distribution": {
+          "incidental": 0.16930001974105835,
+          "meta": 0.004765296820551157,
+          "same_paraphrase": 0.00574804563075304,
+          "same_verbatim": 0.006166752427816391,
+          "unrelated": 0.8140199184417725
+        },
+        "id": "hold-neg-3mupyh3hog62h_3ms37g5zdpl2t",
+        "label": "unrelated",
+        "predicted_label": "unrelated",
+        "same_claim": 0.011914798058569431
+      },
+      {
+        "distribution": {
+          "incidental": 0.9823858141899109,
+          "meta": 0.002612471114844084,
+          "same_paraphrase": 0.000983865698799491,
+          "same_verbatim": 0.0017955234507098794,
+          "unrelated": 0.01222233846783638
+        },
+        "id": "hold-coll-3mrxkgmivrj2y_3mu6hoynsbb2w",
+        "label": "incidental",
+        "predicted_label": "incidental",
+        "same_claim": 0.002779389265924692
+      },
+      {
+        "distribution": {
+          "incidental": 0.0553649440407753,
+          "meta": 0.0032226264011114836,
+          "same_paraphrase": 0.006875807419419289,
+          "same_verbatim": 0.0053968834690749645,
+          "unrelated": 0.9291397333145142
+        },
+        "id": "hold-neg-3muui427nby2w_3mtsoihz7ej2c",
+        "label": "unrelated",
+        "predicted_label": "unrelated",
+        "same_claim": 0.01227269135415554
+      },
+      {
+        "distribution": {
+          "incidental": 0.0012743283296003938,
+          "meta": 0.9909550547599792,
+          "same_paraphrase": 0.0008422796381637454,
+          "same_verbatim": 0.0027295532636344433,
+          "unrelated": 0.00419881334528327
+        },
+        "id": "hold-bsky-3muo3emlhqg2r_3mupmfbronh2d",
+        "label": "meta",
+        "predicted_label": "meta",
+        "same_claim": 0.0035718330182135105
+      },
+      {
+        "distribution": {
+          "incidental": 0.9596469402313232,
+          "meta": 0.0020505907014012337,
+          "same_paraphrase": 0.0018096402054652572,
+          "same_verbatim": 0.0018096402054652572,
+          "unrelated": 0.034683115780353546
+        },
+        "id": "hold-coll-3muq2y5npgk2i_3msif4njpcr2r",
+        "label": "incidental",
+        "predicted_label": "incidental",
+        "same_claim": 0.0036192804109305143
+      },
+      {
+        "distribution": {
+          "incidental": 0.007388691883534193,
+          "meta": 0.0010896844323724508,
+          "same_paraphrase": 0.0003537687298376113,
+          "same_verbatim": 0.0004911592695862055,
+          "unrelated": 0.9906766414642334
+        },
+        "id": "hold-neg-3mrz5vp6rul2m_3muk6ljcbrc25",
+        "label": "unrelated",
+        "predicted_label": "unrelated",
+        "same_claim": 0.0008449279703199863
+      },
+      {
+        "distribution": {
+          "incidental": 0.9868329167366028,
+          "meta": 0.007880746386945248,
+          "same_paraphrase": 0.0023524051066488028,
+          "same_verbatim": 0.0014268058585003018,
+          "unrelated": 0.001507007284089923
+        },
+        "id": "hold-bsky-3mutargizgp2j_3mutcvo2gy224",
+        "label": "meta",
+        "predicted_label": "incidental",
+        "same_claim": 0.0037792110815644264
+      },
+      {
+        "distribution": {
+          "incidental": 0.004684095270931721,
+          "meta": 0.9841998815536499,
+          "same_paraphrase": 0.0036337547935545444,
+          "same_verbatim": 0.0014912900514900684,
+          "unrelated": 0.005991049110889435
+        },
+        "id": "hold-bsky-3mu3kvx2pq42f_3mu3lcibqhc2p",
+        "label": "meta",
+        "predicted_label": "meta",
+        "same_claim": 0.005125044845044613
+      },
+      {
+        "distribution": {
+          "incidental": 0.005975599400699139,
+          "meta": 0.0036671075504273176,
+          "same_paraphrase": 0.9778347611427307,
+          "same_verbatim": 0.008167675696313381,
+          "unrelated": 0.0043547977693378925
+        },
+        "id": "hold-bsky-3mtzwy2teat2t_3mtzq5rbvtj2b",
+        "label": "same_paraphrase",
+        "predicted_label": "same_paraphrase",
+        "same_claim": 0.9860024452209473
+      },
+      {
+        "distribution": {
+          "incidental": 0.037137627601623535,
+          "meta": 0.0014856921043246984,
+          "same_paraphrase": 0.0016317135887220502,
+          "same_verbatim": 0.0019529053242877126,
+          "unrelated": 0.9577920436859131
+        },
+        "id": "hold-neg-3mrx7wdwrjr2w_3mu2bvldvdc2k",
+        "label": "unrelated",
+        "predicted_label": "unrelated",
+        "same_claim": 0.0035846189130097628
+      },
+      {
+        "distribution": {
+          "incidental": 0.004591936245560646,
+          "meta": 0.9762090444564819,
+          "same_paraphrase": 0.008250215090811253,
+          "same_verbatim": 0.0054958276450634,
+          "unrelated": 0.005453058984130621
+        },
+        "id": "hold-bsky-3muueyn62az2c_3muugmevk5k2v",
+        "label": "meta",
+        "predicted_label": "meta",
+        "same_claim": 0.013746042735874653
+      },
+      {
+        "distribution": {
+          "incidental": 0.030505025759339333,
+          "meta": 0.9601699113845825,
+          "same_paraphrase": 0.0011599307181313634,
+          "same_verbatim": 0.0023431244771927595,
+          "unrelated": 0.005821986589580774
+        },
+        "id": "hold-bsky-3mu2ptmk7lt2l_3mu2r5why6k2h",
+        "label": "meta",
+        "predicted_label": "meta",
+        "same_claim": 0.0035030553117394447
+      },
+      {
+        "distribution": {
+          "incidental": 0.9805479049682617,
+          "meta": 0.003808861132711172,
+          "same_paraphrase": 0.001907748868688941,
+          "same_verbatim": 0.0031208691652864218,
+          "unrelated": 0.010614623315632343
+        },
+        "id": "hold-coll-3mrvprijnju2e_3mtu3pgti2e2l",
+        "label": "incidental",
+        "predicted_label": "incidental",
+        "same_claim": 0.005028618033975363
+      },
+      {
+        "distribution": {
+          "incidental": 0.0037305508740246296,
+          "meta": 0.006445813924074173,
+          "same_paraphrase": 0.005777990445494652,
+          "same_verbatim": 0.9793297648429871,
+          "unrelated": 0.004715858493000269
+        },
+        "id": "hold-trunc-3muo2b335g22m",
+        "label": "same_verbatim",
+        "predicted_label": "same_verbatim",
+        "same_claim": 0.9851077795028687
+      },
+      {
+        "distribution": {
+          "incidental": 0.2891511619091034,
+          "meta": 0.3860674500465393,
+          "same_paraphrase": 0.2960081994533539,
+          "same_verbatim": 0.01848481595516205,
+          "unrelated": 0.010288349352777004
+        },
+        "id": "hold-bsky-3mtqlhimhwc23_3mtqq34v5g22e",
+        "label": "same_paraphrase",
+        "predicted_label": "meta",
+        "same_claim": 0.31449300050735474
+      },
+      {
+        "distribution": {
+          "incidental": 0.9905575513839722,
+          "meta": 0.0030083537567406893,
+          "same_paraphrase": 0.0015009234193712473,
+          "same_verbatim": 0.0026445125695317984,
+          "unrelated": 0.002288634655997157
+        },
+        "id": "hold-coll-3mrxpqsbcpg2f_3mtuknjabu323",
+        "label": "incidental",
+        "predicted_label": "incidental",
+        "same_claim": 0.004145435988903046
+      },
+      {
+        "distribution": {
+          "incidental": 0.005338852293789387,
+          "meta": 0.0007951009320095181,
+          "same_paraphrase": 0.0025268252938985825,
+          "same_verbatim": 0.003308500163257122,
+          "unrelated": 0.988030731678009
+        },
+        "id": "hold-neg-3mut5ucnn3e2m_3mta6qmfa2u2s",
+        "label": "unrelated",
+        "predicted_label": "unrelated",
+        "same_claim": 0.0058353254571557045
+      },
+      {
+        "distribution": {
+          "incidental": 0.9915858507156372,
+          "meta": 0.0017158876871690154,
+          "same_paraphrase": 0.003143696114420891,
+          "same_verbatim": 0.0017703557386994362,
+          "unrelated": 0.0017842408269643784
+        },
+        "id": "hold-coll-3mrx47cqccb2o_3muu5qheep62m",
+        "label": "incidental",
+        "predicted_label": "incidental",
+        "same_claim": 0.004914051853120327
+      },
+      {
+        "distribution": {
+          "incidental": 0.3508809208869934,
+          "meta": 0.0038676015101373196,
+          "same_paraphrase": 0.0038979349192231894,
+          "same_verbatim": 0.005990257952362299,
+          "unrelated": 0.6353633403778076
+        },
+        "id": "hold-coll-3mtr3mjyemq2b_3mvewkhuo6i2j",
+        "label": "unrelated",
+        "predicted_label": "unrelated",
+        "same_claim": 0.009888192638754845
+      },
+      {
+        "distribution": {
+          "incidental": 0.0021245372481644154,
+          "meta": 0.0027926515322178602,
+          "same_paraphrase": 0.006064075510948896,
+          "same_verbatim": 0.9865154027938843,
+          "unrelated": 0.002503316616639495
+        },
+        "id": "hold-head-3muuputjjcr27",
+        "label": "same_verbatim",
+        "predicted_label": "same_verbatim",
+        "same_claim": 0.992579460144043
+      },
+      {
+        "distribution": {
+          "incidental": 0.0016472055576741695,
+          "meta": 0.0019257784588262439,
+          "same_paraphrase": 0.004289248958230019,
+          "same_verbatim": 0.9898147583007812,
+          "unrelated": 0.0023229322396218777
+        },
+        "id": "hold-head-3mrxlpl7mr72w",
+        "label": "same_verbatim",
+        "predicted_label": "same_verbatim",
+        "same_claim": 0.9941040277481079
+      },
+      {
+        "distribution": {
+          "incidental": 0.003989979159086943,
+          "meta": 0.0024106097407639027,
+          "same_paraphrase": 0.9878242015838623,
+          "same_verbatim": 0.0026064906269311905,
+          "unrelated": 0.0031686867587268353
+        },
+        "id": "hold-bsky-3mu2xeqt7ga2p_3mu2s6oljoz2f",
+        "label": "same_paraphrase",
+        "predicted_label": "same_paraphrase",
+        "same_claim": 0.9904307126998901
+      },
+      {
+        "distribution": {
+          "incidental": 0.9852994680404663,
+          "meta": 0.004991764202713966,
+          "same_paraphrase": 0.0049529182724654675,
+          "same_verbatim": 0.002461468568071723,
+          "unrelated": 0.002294340869411826
+        },
+        "id": "hold-bsky-3mrwxkj5dza2g_3mrzztiae4h2w",
+        "label": "incidental",
+        "predicted_label": "incidental",
+        "same_claim": 0.007414386607706547
+      },
+      {
+        "distribution": {
+          "incidental": 0.0015557040460407734,
+          "meta": 0.002525156829506159,
+          "same_paraphrase": 0.005679425783455372,
+          "same_verbatim": 0.9873782992362976,
+          "unrelated": 0.0028613777831196785
+        },
+        "id": "hold-trunc-3mrwmjvltgi23",
+        "label": "same_verbatim",
+        "predicted_label": "same_verbatim",
+        "same_claim": 0.9930577278137207
+      },
+      {
+        "distribution": {
+          "incidental": 0.0014663240872323513,
+          "meta": 0.001304175704717636,
+          "same_paraphrase": 0.005312763620167971,
+          "same_verbatim": 0.9906721711158752,
+          "unrelated": 0.0012444532476365566
+        },
+        "id": "hold-trunc-3mtztfosj5m2d",
+        "label": "same_verbatim",
+        "predicted_label": "same_verbatim",
+        "same_claim": 0.9959849119186401
+      },
+      {
+        "distribution": {
+          "incidental": 0.0011104934383183718,
+          "meta": 0.0012682232772931457,
+          "same_paraphrase": 0.9939425587654114,
+          "same_verbatim": 0.0021489097271114588,
+          "unrelated": 0.0015297693898901343
+        },
+        "id": "hold-bsky-3mupf67p4hu2o_3mupcuoqic426",
+        "label": "same_paraphrase",
+        "predicted_label": "same_paraphrase",
+        "same_claim": 0.9960914850234985
+      },
+      {
+        "distribution": {
+          "incidental": 0.9902892112731934,
+          "meta": 0.002532601123675704,
+          "same_paraphrase": 0.004640005994588137,
+          "same_verbatim": 0.0013877510791644454,
+          "unrelated": 0.001150486059486866
+        },
+        "id": "hold-bsky-3mrzaefv6tq2w_3mrzlb3sy4p2r",
+        "label": "same_paraphrase",
+        "predicted_label": "incidental",
+        "same_claim": 0.006027757190167904
+      },
+      {
+        "distribution": {
+          "incidental": 0.9153852462768555,
+          "meta": 0.0024342958349734545,
+          "same_paraphrase": 0.004272322170436382,
+          "same_verbatim": 0.0033533840905874968,
+          "unrelated": 0.07455465942621231
+        },
+        "id": "hold-coll-3mry62p5jjz2w_3mu5lkmkzgx2g",
+        "label": "unrelated",
+        "predicted_label": "incidental",
+        "same_claim": 0.007625706493854523
+      },
+      {
+        "distribution": {
+          "incidental": 0.002215587766841054,
+          "meta": 0.002049083821475506,
+          "same_paraphrase": 0.9893816709518433,
+          "same_verbatim": 0.0037835922557860613,
+          "unrelated": 0.002570126438513398
+        },
+        "id": "hold-bsky-3mut46pptf32q_3mut5upvydk2n",
+        "label": "same_paraphrase",
+        "predicted_label": "same_paraphrase",
+        "same_claim": 0.9931652545928955
+      },
+      {
+        "distribution": {
+          "incidental": 0.0005939203547313809,
+          "meta": 0.0018509678775444627,
+          "same_paraphrase": 0.003051730105653405,
+          "same_verbatim": 0.9931333661079407,
+          "unrelated": 0.001370159792713821
+        },
+        "id": "hold-trunc-3mu3v2raodt2s",
+        "label": "same_verbatim",
+        "predicted_label": "same_verbatim",
+        "same_claim": 0.9961851239204407
+      },
+      {
+        "distribution": {
+          "incidental": 0.0033322570379823446,
+          "meta": 0.001958932727575302,
+          "same_paraphrase": 0.0015496434643864632,
+          "same_verbatim": 0.9912455677986145,
+          "unrelated": 0.0019135541515424848
+        },
+        "id": "hold-trunc-3mrxyyunvzt2f",
+        "label": "same_verbatim",
+        "predicted_label": "same_verbatim",
+        "same_claim": 0.9927952289581299
+      },
+      {
+        "distribution": {
+          "incidental": 0.006627206224948168,
+          "meta": 0.9835646152496338,
+          "same_paraphrase": 0.002963869832456112,
+          "same_verbatim": 0.002917919307947159,
+          "unrelated": 0.003926489967852831
+        },
+        "id": "hold-bsky-3mtpxgfwh4i2g_3mtqeunbxh223",
+        "label": "meta",
+        "predicted_label": "meta",
+        "same_claim": 0.005881789140403271
+      },
+      {
+        "distribution": {
+          "incidental": 0.0019717009272426367,
+          "meta": 0.0026120792608708143,
+          "same_paraphrase": 0.989942193031311,
+          "same_verbatim": 0.0031507692765444517,
+          "unrelated": 0.002323231426998973
+        },
+        "id": "hold-bsky-3muph4pt6qc2x_3munx2xhidb2a",
+        "label": "incidental",
+        "predicted_label": "same_paraphrase",
+        "same_claim": 0.993092954158783
+      },
+      {
+        "distribution": {
+          "incidental": 0.0008519576513208449,
+          "meta": 0.0007062976947054267,
+          "same_paraphrase": 0.002848557662218809,
+          "same_verbatim": 0.9945412278175354,
+          "unrelated": 0.0010520273353904486
+        },
+        "id": "hold-trunc-3mrzb7axzda2j",
+        "label": "same_verbatim",
+        "predicted_label": "same_verbatim",
+        "same_claim": 0.9973897933959961
+      },
+      {
+        "distribution": {
+          "incidental": 0.014959626831114292,
+          "meta": 0.0019168199505656958,
+          "same_paraphrase": 0.003286193823441863,
+          "same_verbatim": 0.0022941329516470432,
+          "unrelated": 0.9775431752204895
+        },
+        "id": "hold-neg-3mu37ubyvx32t_3mtjhagelcj24",
+        "label": "unrelated",
+        "predicted_label": "unrelated",
+        "same_claim": 0.005580326542258263
+      },
+      {
+        "distribution": {
+          "incidental": 0.9772704243659973,
+          "meta": 0.005480354186147451,
+          "same_paraphrase": 0.0009941555326804519,
+          "same_verbatim": 0.0022056305315345526,
+          "unrelated": 0.014049346558749676
+        },
+        "id": "hold-coll-3ms23chna7k22_3mufdajkvmk2f",
+        "label": "same_paraphrase",
+        "predicted_label": "incidental",
+        "same_claim": 0.0031997859477996826
+      },
+      {
+        "distribution": {
+          "incidental": 0.001897332607768476,
+          "meta": 0.0026756678707897663,
+          "same_paraphrase": 0.003278296673670411,
+          "same_verbatim": 0.9905511140823364,
+          "unrelated": 0.0015977141447365284
+        },
+        "id": "hold-trunc-3muozymhzbq25",
+        "label": "same_verbatim",
+        "predicted_label": "same_verbatim",
+        "same_claim": 0.9938294291496277
+      },
+      {
+        "distribution": {
+          "incidental": 0.0026862286031246185,
+          "meta": 0.0025833211839199066,
+          "same_paraphrase": 0.9867219924926758,
+          "same_verbatim": 0.004940731450915337,
+          "unrelated": 0.0030677695758640766
+        },
+        "id": "hold-bsky-3mupf5z4r6q2g_3muoiommadl23",
+        "label": "same_paraphrase",
+        "predicted_label": "same_paraphrase",
+        "same_claim": 0.9916627407073975
+      },
+      {
+        "distribution": {
+          "incidental": 0.9937888979911804,
+          "meta": 0.0014594903914257884,
+          "same_paraphrase": 0.0017536181258037686,
+          "same_verbatim": 0.002002694411203265,
+          "unrelated": 0.0009952860418707132
+        },
+        "id": "hold-coll-3mrz465d2qr2h_3mupnkuanbx2v",
+        "label": "incidental",
+        "predicted_label": "incidental",
+        "same_claim": 0.0037563126534223557
+      },
+      {
+        "distribution": {
+          "incidental": 0.003279132302850485,
+          "meta": 0.0024084539618343115,
+          "same_paraphrase": 0.004642416723072529,
+          "same_verbatim": 0.9869408011436462,
+          "unrelated": 0.0027291360311210155
+        },
+        "id": "hold-head-3mrwhaantdt2q",
+        "label": "same_verbatim",
+        "predicted_label": "same_verbatim",
+        "same_claim": 0.9915832281112671
+      },
+      {
+        "distribution": {
+          "incidental": 0.002505612326785922,
+          "meta": 0.0016887723468244076,
+          "same_paraphrase": 0.9912847280502319,
+          "same_verbatim": 0.0027092124801129103,
+          "unrelated": 0.001811788184568286
+        },
+        "id": "hold-bsky-3muub3lfio72d_3mut5ucnn3e2m",
+        "label": "same_paraphrase",
+        "predicted_label": "same_paraphrase",
+        "same_claim": 0.9939939379692078
+      },
+      {
+        "distribution": {
+          "incidental": 0.017628589645028114,
+          "meta": 0.0030994999688118696,
+          "same_paraphrase": 0.003222969826310873,
+          "same_verbatim": 0.0022151125594973564,
+          "unrelated": 0.9738338589668274
+        },
+        "id": "hold-neg-3mupztrgpbz2r_3mu32raqmhg22",
+        "label": "unrelated",
+        "predicted_label": "unrelated",
+        "same_claim": 0.0054380823858082294
+      },
+      {
+        "distribution": {
+          "incidental": 0.028494669124484062,
+          "meta": 0.0015826362650841475,
+          "same_paraphrase": 0.0013223421992734075,
+          "same_verbatim": 0.002609326271340251,
+          "unrelated": 0.9659910202026367
+        },
+        "id": "hold-neg-3mu2gdm53r725_3msvm56tsp42h",
+        "label": "unrelated",
+        "predicted_label": "unrelated",
+        "same_claim": 0.00393166858702898
+      },
+      {
+        "distribution": {
+          "incidental": 0.001659963745623827,
+          "meta": 0.9897186756134033,
+          "same_paraphrase": 0.0027690783608704805,
+          "same_verbatim": 0.0028347449842840433,
+          "unrelated": 0.0030175703577697277
+        },
+        "id": "hold-bsky-3mry4wdvooc2g_3mrycb5ktcs2m",
+        "label": "meta",
+        "predicted_label": "meta",
+        "same_claim": 0.005603823345154524
+      },
+      {
+        "distribution": {
+          "incidental": 0.0012452680384740233,
+          "meta": 0.0017424430698156357,
+          "same_paraphrase": 0.991320788860321,
+          "same_verbatim": 0.003106240648776293,
+          "unrelated": 0.002585242735221982
+        },
+        "id": "hold-bsky-3mrvp7oyf662y_3mrxeypraih2f",
+        "label": "same_paraphrase",
+        "predicted_label": "same_paraphrase",
+        "same_claim": 0.9944270253181458
+      },
+      {
+        "distribution": {
+          "incidental": 0.003219130914658308,
+          "meta": 0.002127715852111578,
+          "same_paraphrase": 0.011080596596002579,
+          "same_verbatim": 0.9803028106689453,
+          "unrelated": 0.003269825130701065
+        },
+        "id": "hold-trunc-3mtznhmvf622d",
+        "label": "same_verbatim",
+        "predicted_label": "same_verbatim",
+        "same_claim": 0.99138343334198
+      },
+      {
+        "distribution": {
+          "incidental": 0.003898453898727894,
+          "meta": 0.005716704297810793,
+          "same_paraphrase": 0.0056061334908008575,
+          "same_verbatim": 0.9765417575836182,
+          "unrelated": 0.00823692325502634
+        },
+        "id": "hold-head-3mu2rjgwnef2c",
+        "label": "same_verbatim",
+        "predicted_label": "same_verbatim",
+        "same_claim": 0.9821478724479675
+      },
+      {
+        "distribution": {
+          "incidental": 0.0022124326787889004,
+          "meta": 0.0029539852403104305,
+          "same_paraphrase": 0.0035911323502659798,
+          "same_verbatim": 0.9879727363586426,
+          "unrelated": 0.003269763430580497
+        },
+        "id": "hold-head-3mu2fznkoxe2f",
+        "label": "same_verbatim",
+        "predicted_label": "same_verbatim",
+        "same_claim": 0.9915638566017151
+      },
+      {
+        "distribution": {
+          "incidental": 0.0015418127877637744,
+          "meta": 0.005195550620555878,
+          "same_paraphrase": 0.986236572265625,
+          "same_verbatim": 0.004443989600986242,
+          "unrelated": 0.002582050394266844
+        },
+        "id": "hold-bsky-3mrx25lcfnh2s_3mrxeawgfhs2f",
+        "label": "meta",
+        "predicted_label": "same_paraphrase",
+        "same_claim": 0.9906805753707886
+      },
+      {
+        "distribution": {
+          "incidental": 0.9840490818023682,
+          "meta": 0.004037323407828808,
+          "same_paraphrase": 0.0032567777670919895,
+          "same_verbatim": 0.003181334352120757,
+          "unrelated": 0.0054754228331148624
+        },
+        "id": "hold-coll-3mrwzo3dkdx2p_3mutdhuknrv25",
+        "label": "incidental",
+        "predicted_label": "incidental",
+        "same_claim": 0.006438111886382103
+      },
+      {
+        "distribution": {
+          "incidental": 0.0015394054353237152,
+          "meta": 0.0011439889203757048,
+          "same_paraphrase": 0.010748385451734066,
+          "same_verbatim": 0.9846967458724976,
+          "unrelated": 0.001871441025286913
+        },
+        "id": "hold-head-3ms2lelrum722",
+        "label": "same_verbatim",
+        "predicted_label": "same_verbatim",
+        "same_claim": 0.9954451322555542
+      },
+      {
+        "distribution": {
+          "incidental": 0.0030143731273710728,
+          "meta": 0.006481920834630728,
+          "same_paraphrase": 0.9848155975341797,
+          "same_verbatim": 0.0032848776318132877,
+          "unrelated": 0.002403267892077565
+        },
+        "id": "hold-bsky-3mtzu6brg3x2y_3mu2hithcvs2q",
+        "label": "same_paraphrase",
+        "predicted_label": "same_paraphrase",
+        "same_claim": 0.9881004691123962
+      },
+      {
+        "distribution": {
+          "incidental": 0.5107322931289673,
+          "meta": 0.008001232519745827,
+          "same_paraphrase": 0.006737713236361742,
+          "same_verbatim": 0.009501698426902294,
+          "unrelated": 0.4650270640850067
+        },
+        "id": "fresh-3mvn5vahar22n_3mvmokveemb25",
+        "label": "incidental",
+        "predicted_label": "incidental",
+        "same_claim": 0.016239412128925323
+      },
+      {
+        "distribution": {
+          "incidental": 0.009321875870227814,
+          "meta": 0.0014073927886784077,
+          "same_paraphrase": 0.9810406565666199,
+          "same_verbatim": 0.006558758672326803,
+          "unrelated": 0.00167132040951401
+        },
+        "id": "fresh-3mvmq6qpf652d_3mvn7cgpp672b",
+        "label": "same_paraphrase",
+        "predicted_label": "same_paraphrase",
+        "same_claim": 0.9875994324684143
+      },
+      {
+        "distribution": {
+          "incidental": 0.9921464323997498,
+          "meta": 0.0015329814050346613,
+          "same_paraphrase": 0.0017303233034908772,
+          "same_verbatim": 0.0014570782659575343,
+          "unrelated": 0.003133210586383939
+        },
+        "id": "fresh-3mvnj3xlvym2y_3mvlycyh7i22s",
+        "label": "incidental",
+        "predicted_label": "incidental",
+        "same_claim": 0.0031874016858637333
+      },
+      {
+        "distribution": {
+          "incidental": 0.9719992280006409,
+          "meta": 0.002929018810391426,
+          "same_paraphrase": 0.01902514137327671,
+          "same_verbatim": 0.003560781478881836,
+          "unrelated": 0.002485825913026929
+        },
+        "id": "fresh-3mvo577gqau2f_3mvo4hop2n424",
+        "label": "incidental",
+        "predicted_label": "incidental",
+        "same_claim": 0.022585922852158546
+      },
+      {
+        "distribution": {
+          "incidental": 0.44205307960510254,
+          "meta": 0.004910765681415796,
+          "same_paraphrase": 0.00530980434268713,
+          "same_verbatim": 0.006111546885222197,
+          "unrelated": 0.5416147112846375
+        },
+        "id": "fresh-3mvntpfkscl2v_3mvmokveemb25",
+        "label": "unrelated",
+        "predicted_label": "unrelated",
+        "same_claim": 0.01142135076224804
+      },
+      {
+        "distribution": {
+          "incidental": 0.0017609752248972654,
+          "meta": 0.0014039719244465232,
+          "same_paraphrase": 0.9940676689147949,
+          "same_verbatim": 0.0014485386200249195,
+          "unrelated": 0.0013189094606786966
+        },
+        "id": "fresh-3mvnkqz53b42s_3mvo577gqau2f",
+        "label": "same_paraphrase",
+        "predicted_label": "same_paraphrase",
+        "same_claim": 0.9955161809921265
+      },
+      {
+        "distribution": {
+          "incidental": 0.9893502593040466,
+          "meta": 0.0010713542578741908,
+          "same_paraphrase": 0.005987216252833605,
+          "same_verbatim": 0.0023676366545259953,
+          "unrelated": 0.001223525032401085
+        },
+        "id": "fresh-3mvnxdllf3g2p_3mvlxpzownd2n",
+        "label": "incidental",
+        "predicted_label": "incidental",
+        "same_claim": 0.0083548529073596
+      },
+      {
+        "distribution": {
+          "incidental": 0.013109010644257069,
+          "meta": 0.003399711102247238,
+          "same_paraphrase": 0.9725684523582458,
+          "same_verbatim": 0.006401311606168747,
+          "unrelated": 0.004521512892097235
+        },
+        "id": "fresh-3mvmifjhy6k27_3mvmtca2ypv2f",
+        "label": "incidental",
+        "predicted_label": "same_paraphrase",
+        "same_claim": 0.9789697527885437
+      },
+      {
+        "distribution": {
+          "incidental": 0.01056993380188942,
+          "meta": 0.003274412825703621,
+          "same_paraphrase": 0.9740386605262756,
+          "same_verbatim": 0.00712409196421504,
+          "unrelated": 0.004992883186787367
+        },
+        "id": "fresh-3mvocs65w2b27_3mvnqmb3gfb2c",
+        "label": "same_paraphrase",
+        "predicted_label": "same_paraphrase",
+        "same_claim": 0.9811627268791199
+      },
+      {
+        "distribution": {
+          "incidental": 0.16060365736484528,
+          "meta": 0.006733295042067766,
+          "same_paraphrase": 0.828456699848175,
+          "same_verbatim": 0.002477040747180581,
+          "unrelated": 0.0017292530974373221
+        },
+        "id": "fresh-3mvmunh4ba22n_3mvngkwch7m2g",
+        "label": "same_paraphrase",
+        "predicted_label": "same_paraphrase",
+        "same_claim": 0.8309337496757507
+      },
+      {
+        "distribution": {
+          "incidental": 0.2714826166629791,
+          "meta": 0.004090166185051203,
+          "same_paraphrase": 0.7152613997459412,
+          "same_verbatim": 0.00399541761726141,
+          "unrelated": 0.005170454271137714
+        },
+        "id": "fresh-3mvmu4xv6jn2e_3mvmlyib6iz2t",
+        "label": "incidental",
+        "predicted_label": "same_paraphrase",
+        "same_claim": 0.7192568182945251
+      },
+      {
+        "distribution": {
+          "incidental": 0.9637876152992249,
+          "meta": 0.005077288020402193,
+          "same_paraphrase": 0.024033883586525917,
+          "same_verbatim": 0.0033427991438657045,
+          "unrelated": 0.003758409759029746
+        },
+        "id": "fresh-3mvnscfkxer2p_3mvm74shctk2c",
+        "label": "same_paraphrase",
+        "predicted_label": "incidental",
+        "same_claim": 0.027376683428883553
+      },
+      {
+        "distribution": {
+          "incidental": 0.0021137886215001345,
+          "meta": 0.001752392272464931,
+          "same_paraphrase": 0.9815244078636169,
+          "same_verbatim": 0.011151431128382683,
+          "unrelated": 0.003457927145063877
+        },
+        "id": "fresh-3mvmuougejn2v_3mvmqd3qpcp2m",
+        "label": "same_paraphrase",
+        "predicted_label": "same_paraphrase",
+        "same_claim": 0.9926758408546448
+      },
+      {
+        "distribution": {
+          "incidental": 0.19024468958377838,
+          "meta": 0.0023948270827531815,
+          "same_paraphrase": 0.003511781571432948,
+          "same_verbatim": 0.0028887127991765738,
+          "unrelated": 0.8009600043296814
+        },
+        "id": "fresh-3mvmzpsr7cr2y_3mvo7hbwye224",
+        "label": "unrelated",
+        "predicted_label": "unrelated",
+        "same_claim": 0.006400494370609522
+      },
+      {
+        "distribution": {
+          "incidental": 0.0026340889744460583,
+          "meta": 0.0023983654100447893,
+          "same_paraphrase": 0.990514874458313,
+          "same_verbatim": 0.0020354660227894783,
+          "unrelated": 0.0024171757977455854
+        },
+        "id": "fresh-3mvm6mmuf4a2x_3mvntnqdycz2g",
+        "label": "same_paraphrase",
+        "predicted_label": "same_paraphrase",
+        "same_claim": 0.9925503134727478
+      },
+      {
+        "distribution": {
+          "incidental": 0.04441531375050545,
+          "meta": 0.005151496734470129,
+          "same_paraphrase": 0.9294564127922058,
+          "same_verbatim": 0.012213828042149544,
+          "unrelated": 0.008762991987168789
+        },
+        "id": "fresh-3mvnmhahsho2w_3mvn4znbr5v23",
+        "label": "same_paraphrase",
+        "predicted_label": "same_paraphrase",
+        "same_claim": 0.9416702389717102
+      },
+      {
+        "distribution": {
+          "incidental": 0.3802855908870697,
+          "meta": 0.005382268223911524,
+          "same_paraphrase": 0.0036418254021555185,
+          "same_verbatim": 0.002995683578774333,
+          "unrelated": 0.6076946258544922
+        },
+        "id": "fresh-3mvmzpsr7cr2y_3mvnkn5a6z324",
+        "label": "unrelated",
+        "predicted_label": "unrelated",
+        "same_claim": 0.0066375089809298515
+      },
+      {
+        "distribution": {
+          "incidental": 0.9787982106208801,
+          "meta": 0.008385968394577503,
+          "same_paraphrase": 0.002174830064177513,
+          "same_verbatim": 0.0026233457028865814,
+          "unrelated": 0.008017591200768948
+        },
+        "id": "fresh-3mvn3olzrnj2c_3mvnpwjdxyi2a",
+        "label": "incidental",
+        "predicted_label": "incidental",
+        "same_claim": 0.0047981757670640945
+      },
+      {
+        "distribution": {
+          "incidental": 0.6971293687820435,
+          "meta": 0.003032753709703684,
+          "same_paraphrase": 0.0015981488395482302,
+          "same_verbatim": 0.003056539688259363,
+          "unrelated": 0.2951831519603729
+        },
+        "id": "fresh-3mvnfqhgqxg2p_3mvmqldq2fj2a",
+        "label": "incidental",
+        "predicted_label": "incidental",
+        "same_claim": 0.004654688760638237
+      },
+      {
+        "distribution": {
+          "incidental": 0.9770020246505737,
+          "meta": 0.0035791085101664066,
+          "same_paraphrase": 0.0038699388969689608,
+          "same_verbatim": 0.004524417221546173,
+          "unrelated": 0.011024430394172668
+        },
+        "id": "fresh-3mvmqrrehms2g_3mvmqd3qpcp2m",
+        "label": "incidental",
+        "predicted_label": "incidental",
+        "same_claim": 0.00839435588568449
+      },
+      {
+        "distribution": {
+          "incidental": 0.9089813232421875,
+          "meta": 0.052497316151857376,
+          "same_paraphrase": 0.020023267716169357,
+          "same_verbatim": 0.007622273173183203,
+          "unrelated": 0.010875835083425045
+        },
+        "id": "fresh-3mvocaq7daj2q_3mvnpythrqm2k",
+        "label": "incidental",
+        "predicted_label": "incidental",
+        "same_claim": 0.027645541355013847
+      },
+      {
+        "distribution": {
+          "incidental": 0.0368027463555336,
+          "meta": 0.00954448152333498,
+          "same_paraphrase": 0.9289807677268982,
+          "same_verbatim": 0.019318073987960815,
+          "unrelated": 0.005353968590497971
+        },
+        "id": "fresh-3mvn4znbr5v23_3mvnqvyvr452n",
+        "label": "incidental",
+        "predicted_label": "same_paraphrase",
+        "same_claim": 0.9482988119125366
+      },
+      {
+        "distribution": {
+          "incidental": 0.978244960308075,
+          "meta": 0.0020579237025231123,
+          "same_paraphrase": 0.015325377695262432,
+          "same_verbatim": 0.002705089747905731,
+          "unrelated": 0.0016665576258674264
+        },
+        "id": "fresh-3mvno4dhhga2n_3mvmudwuljl24",
+        "label": "incidental",
+        "predicted_label": "incidental",
+        "same_claim": 0.018030468374490738
+      },
+      {
+        "distribution": {
+          "incidental": 0.7766668200492859,
+          "meta": 0.008901871740818024,
+          "same_paraphrase": 0.19946452975273132,
+          "same_verbatim": 0.0069871582090854645,
+          "unrelated": 0.00797958578914404
+        },
+        "id": "fresh-3mvo3apfmpl2v_3mvn4znbr5v23",
+        "label": "incidental",
+        "predicted_label": "incidental",
+        "same_claim": 0.2064516842365265
+      },
+      {
+        "distribution": {
+          "incidental": 0.005767831578850746,
+          "meta": 0.0037678892258554697,
+          "same_paraphrase": 0.9814341068267822,
+          "same_verbatim": 0.005050482228398323,
+          "unrelated": 0.003979683853685856
+        },
+        "id": "fresh-3mvmpmmwqbl26_3mvnt5uco2q27",
+        "label": "same_paraphrase",
+        "predicted_label": "same_paraphrase",
+        "same_claim": 0.9864845871925354
+      },
+      {
+        "distribution": {
+          "incidental": 0.9851609468460083,
+          "meta": 0.002312010619789362,
+          "same_paraphrase": 0.008914925158023834,
+          "same_verbatim": 0.0019469079561531544,
+          "unrelated": 0.0016652786871418357
+        },
+        "id": "fresh-3mvmzxplup52r_3mvmwmgr7qv2m",
+        "label": "same_paraphrase",
+        "predicted_label": "incidental",
+        "same_claim": 0.010861832648515701
+      },
+      {
+        "distribution": {
+          "incidental": 0.11503647267818451,
+          "meta": 0.003473800839856267,
+          "same_paraphrase": 0.005638535134494305,
+          "same_verbatim": 0.005682758521288633,
+          "unrelated": 0.8701683878898621
+        },
+        "id": "fresh-3mvnt5jouhi2y_3mvnyh3aliz2g",
+        "label": "unrelated",
+        "predicted_label": "unrelated",
+        "same_claim": 0.01132129319012165
+      },
+      {
+        "distribution": {
+          "incidental": 0.018468618392944336,
+          "meta": 0.003449877491220832,
+          "same_paraphrase": 0.9716189503669739,
+          "same_verbatim": 0.002583838766440749,
+          "unrelated": 0.0038788015954196453
+        },
+        "id": "fresh-3mvo5zwy2eu2s_3mvnoxxeiv224",
+        "label": "same_paraphrase",
+        "predicted_label": "same_paraphrase",
+        "same_claim": 0.9742028117179871
+      },
+      {
+        "distribution": {
+          "incidental": 0.00396359758451581,
+          "meta": 0.001620315364561975,
+          "same_paraphrase": 0.9889891743659973,
+          "same_verbatim": 0.0034571115393191576,
+          "unrelated": 0.0019698028918355703
+        },
+        "id": "fresh-3mvn5ejyghq2d_3mvmnfhtqqt22",
+        "label": "same_paraphrase",
+        "predicted_label": "same_paraphrase",
+        "same_claim": 0.9924463033676147
+      },
+      {
+        "distribution": {
+          "incidental": 0.033216413110494614,
+          "meta": 0.0043912180699408054,
+          "same_paraphrase": 0.9556761384010315,
+          "same_verbatim": 0.003187682246789336,
+          "unrelated": 0.0035284426994621754
+        },
+        "id": "fresh-3mvnedlkviu2v_3mvo6uz2vjn2z",
+        "label": "incidental",
+        "predicted_label": "same_paraphrase",
+        "same_claim": 0.9588637948036194
+      },
+      {
+        "distribution": {
+          "incidental": 0.9403898119926453,
+          "meta": 0.0042208838276565075,
+          "same_paraphrase": 0.04609338566660881,
+          "same_verbatim": 0.0035266801714897156,
+          "unrelated": 0.0057692634873092175
+        },
+        "id": "fresh-3mvo577gqau2f_3mvmlyib6iz2t",
+        "label": "same_paraphrase",
+        "predicted_label": "incidental",
+        "same_claim": 0.049620065838098526
+      },
+      {
+        "distribution": {
+          "incidental": 0.985469400882721,
+          "meta": 0.00233087339438498,
+          "same_paraphrase": 0.0017186782788485289,
+          "same_verbatim": 0.0022415791172534227,
+          "unrelated": 0.008239489048719406
+        },
+        "id": "fresh-3mvn7z3rke22a_3mvlycyh7i22s",
+        "label": "unrelated",
+        "predicted_label": "incidental",
+        "same_claim": 0.003960257396101952
+      },
+      {
+        "distribution": {
+          "incidental": 0.00526084192097187,
+          "meta": 0.005578303709626198,
+          "same_paraphrase": 0.9793151617050171,
+          "same_verbatim": 0.004942103289067745,
+          "unrelated": 0.004903643857687712
+        },
+        "id": "fresh-3mvnpnyqfpw2y_3mvnhkftogs2x",
+        "label": "same_paraphrase",
+        "predicted_label": "same_paraphrase",
+        "same_claim": 0.9842572808265686
+      },
+      {
+        "distribution": {
+          "incidental": 0.9765432476997375,
+          "meta": 0.0017031109891831875,
+          "same_paraphrase": 0.0023645353503525257,
+          "same_verbatim": 0.0034809326753020287,
+          "unrelated": 0.015908150002360344
+        },
+        "id": "fresh-3mvn3rs2jbo2y_3mvn6tjgsno2c",
+        "label": "incidental",
+        "predicted_label": "incidental",
+        "same_claim": 0.005845468025654554
+      },
+      {
+        "distribution": {
+          "incidental": 0.951482892036438,
+          "meta": 0.022729113698005676,
+          "same_paraphrase": 0.016515688970685005,
+          "same_verbatim": 0.00228592730127275,
+          "unrelated": 0.006986356806010008
+        },
+        "id": "fresh-3mvoalf5dbd2b_3mvmydccvks2d",
+        "label": "incidental",
+        "predicted_label": "incidental",
+        "same_claim": 0.0188016165047884
+      },
+      {
+        "distribution": {
+          "incidental": 0.3008960783481598,
+          "meta": 0.0051772031001746655,
+          "same_paraphrase": 0.6780797839164734,
+          "same_verbatim": 0.007244209758937359,
+          "unrelated": 0.008602713234722614
+        },
+        "id": "fresh-3mvn2m3mvls2k_3mvngaydfkc2x",
+        "label": "incidental",
+        "predicted_label": "same_paraphrase",
+        "same_claim": 0.6853240132331848
+      },
+      {
+        "distribution": {
+          "incidental": 0.9592337012290955,
+          "meta": 0.0020022261887788773,
+          "same_paraphrase": 0.028406089171767235,
+          "same_verbatim": 0.006119296886026859,
+          "unrelated": 0.0042387135326862335
+        },
+        "id": "fresh-3mvnqqblsyq2j_3mvn6v6lwik23",
+        "label": "incidental",
+        "predicted_label": "incidental",
+        "same_claim": 0.03452538698911667
+      },
+      {
+        "distribution": {
+          "incidental": 0.005764826666563749,
+          "meta": 0.005331593565642834,
+          "same_paraphrase": 0.9694948196411133,
+          "same_verbatim": 0.01459218468517065,
+          "unrelated": 0.004816693253815174
+        },
+        "id": "fresh-3mvnqmb3gfb2c_3mvo2ci5zpq2a",
+        "label": "same_paraphrase",
+        "predicted_label": "same_paraphrase",
+        "same_claim": 0.9840869903564453
+      },
+      {
+        "distribution": {
+          "incidental": 0.9848847389221191,
+          "meta": 0.0028430242091417313,
+          "same_paraphrase": 0.0019463622011244297,
+          "same_verbatim": 0.0021713238675147295,
+          "unrelated": 0.008154576644301414
+        },
+        "id": "fresh-3mvn6tjgsno2c_3mvne2s465e2v",
+        "label": "unrelated",
+        "predicted_label": "incidental",
+        "same_claim": 0.004117686301469803
+      },
+      {
+        "distribution": {
+          "incidental": 0.9839330911636353,
+          "meta": 0.0037334738299250603,
+          "same_paraphrase": 0.001456349273212254,
+          "same_verbatim": 0.0024389263708144426,
+          "unrelated": 0.008438197895884514
+        },
+        "id": "fresh-3mvnj3xlvym2y_3mvnwg5fskm2a",
+        "label": "unrelated",
+        "predicted_label": "incidental",
+        "same_claim": 0.0038952757604420185
+      },
+      {
+        "distribution": {
+          "incidental": 0.9844267964363098,
+          "meta": 0.002617898862808943,
+          "same_paraphrase": 0.004967899061739445,
+          "same_verbatim": 0.0034817266277968884,
+          "unrelated": 0.004505688790231943
+        },
+        "id": "fresh-3mvmpmmwqbl26_3mvn2tn6vtr2v",
+        "label": "incidental",
+        "predicted_label": "incidental",
+        "same_claim": 0.008449625223875046
+      },
+      {
+        "distribution": {
+          "incidental": 0.06575554609298706,
+          "meta": 0.00418722303584218,
+          "same_paraphrase": 0.9184272885322571,
+          "same_verbatim": 0.005951243452727795,
+          "unrelated": 0.005678716581314802
+        },
+        "id": "fresh-3mvn3oasasf2b_3mvo6uz2vjn2z",
+        "label": "incidental",
+        "predicted_label": "same_paraphrase",
+        "same_claim": 0.924378514289856
+      },
+      {
+        "distribution": {
+          "incidental": 0.7680083513259888,
+          "meta": 0.004976556170731783,
+          "same_paraphrase": 0.0021911479998379946,
+          "same_verbatim": 0.0047859069891273975,
+          "unrelated": 0.22003808617591858
+        },
+        "id": "fresh-3mvmxiekdsz2s_3mvmwnnbexu2z",
+        "label": "incidental",
+        "predicted_label": "incidental",
+        "same_claim": 0.006977055221796036
+      },
+      {
+        "distribution": {
+          "incidental": 0.9821735620498657,
+          "meta": 0.004239542875438929,
+          "same_paraphrase": 0.003951688762754202,
+          "same_verbatim": 0.003514704527333379,
+          "unrelated": 0.006120495498180389
+        },
+        "id": "fresh-3mvnj3fqnfp2y_3mvn3rs2jbo2y",
+        "label": "incidental",
+        "predicted_label": "incidental",
+        "same_claim": 0.007466393522918224
+      },
+      {
+        "distribution": {
+          "incidental": 0.006858834996819496,
+          "meta": 0.003329697297886014,
+          "same_paraphrase": 0.9751281142234802,
+          "same_verbatim": 0.009193588979542255,
+          "unrelated": 0.005489742383360863
+        },
+        "id": "fresh-3mvnq6ehhra2y_3mvocs65w2b27",
+        "label": "same_paraphrase",
+        "predicted_label": "same_paraphrase",
+        "same_claim": 0.9843217134475708
+      },
+      {
+        "distribution": {
+          "incidental": 0.0020221027079969645,
+          "meta": 0.002785563701763749,
+          "same_paraphrase": 0.9763541221618652,
+          "same_verbatim": 0.015176722779870033,
+          "unrelated": 0.0036615547724068165
+        },
+        "id": "fresh-3mvnj3fqnfp2y_3mvn6tjgsno2c",
+        "label": "same_paraphrase",
+        "predicted_label": "same_paraphrase",
+        "same_claim": 0.9915308356285095
+      },
+      {
+        "distribution": {
+          "incidental": 0.0036324122920632362,
+          "meta": 0.00272055109962821,
+          "same_paraphrase": 0.9838362336158752,
+          "same_verbatim": 0.006799506489187479,
+          "unrelated": 0.003011375432834029
+        },
+        "id": "fresh-3mvnq6ehhra2y_3mvnpythrqm2k",
+        "label": "same_paraphrase",
+        "predicted_label": "same_paraphrase",
+        "same_claim": 0.9906357526779175
+      },
+      {
+        "distribution": {
+          "incidental": 0.0026331294793635607,
+          "meta": 0.0035156889352947474,
+          "same_paraphrase": 0.9824486374855042,
+          "same_verbatim": 0.007356003392487764,
+          "unrelated": 0.00404653325676918
+        },
+        "id": "fresh-3mvng5h36eg2t_3mvnhlmavvv2a",
+        "label": "same_paraphrase",
+        "predicted_label": "same_paraphrase",
+        "same_claim": 0.9898046255111694
+      },
+      {
+        "distribution": {
+          "incidental": 0.977953314781189,
+          "meta": 0.005233044270426035,
+          "same_paraphrase": 0.006190166343003511,
+          "same_verbatim": 0.004600141197443008,
+          "unrelated": 0.006023196969181299
+        },
+        "id": "fresh-3mvmwnnbexu2z_3mvo2ci5zpq2a",
+        "label": "incidental",
+        "predicted_label": "incidental",
+        "same_claim": 0.010790307074785233
+      },
+      {
+        "distribution": {
+          "incidental": 0.9891381859779358,
+          "meta": 0.0017250768141821027,
+          "same_paraphrase": 0.0011051256442442536,
+          "same_verbatim": 0.0020485795103013515,
+          "unrelated": 0.005983010400086641
+        },
+        "id": "fresh-3mvmqrrehms2g_3mvocrtpxop2c",
+        "label": "incidental",
+        "predicted_label": "incidental",
+        "same_claim": 0.0031537050381302834
+      },
+      {
+        "distribution": {
+          "incidental": 0.9677796959877014,
+          "meta": 0.004310017451643944,
+          "same_paraphrase": 0.00733158690854907,
+          "same_verbatim": 0.007303003221750259,
+          "unrelated": 0.013275789096951485
+        },
+        "id": "fresh-3mvocs65w2b27_3mvmkke2xdi24",
+        "label": "incidental",
+        "predicted_label": "incidental",
+        "same_claim": 0.014634590595960617
+      },
+      {
+        "distribution": {
+          "incidental": 0.0028096723835915327,
+          "meta": 0.004088049288839102,
+          "same_paraphrase": 0.9848042726516724,
+          "same_verbatim": 0.005188005045056343,
+          "unrelated": 0.0031100239139050245
+        },
+        "id": "fresh-3mvmp2t7zl72g_3mvocrtpxop2c",
+        "label": "same_paraphrase",
+        "predicted_label": "same_paraphrase",
+        "same_claim": 0.9899922609329224
+      },
+      {
+        "distribution": {
+          "incidental": 0.981670618057251,
+          "meta": 0.006093511823564768,
+          "same_paraphrase": 0.0055050295777618885,
+          "same_verbatim": 0.0016593787586316466,
+          "unrelated": 0.0050714705139398575
+        },
+        "id": "fresh-3mvnqqblsyq2j_3mvn3kafk2624",
+        "label": "incidental",
+        "predicted_label": "incidental",
+        "same_claim": 0.007164408452808857
+      },
+      {
+        "distribution": {
+          "incidental": 0.005340232979506254,
+          "meta": 0.004824498668313026,
+          "same_paraphrase": 0.9635090231895447,
+          "same_verbatim": 0.022134654223918915,
+          "unrelated": 0.004191596992313862
+        },
+        "id": "fresh-3mvnq6ehhra2y_3mvnqvyvr452n",
+        "label": "same_paraphrase",
+        "predicted_label": "same_paraphrase",
+        "same_claim": 0.9856436848640442
+      },
+      {
+        "distribution": {
+          "incidental": 0.024210913106799126,
+          "meta": 0.0019186986610293388,
+          "same_paraphrase": 0.9633311033248901,
+          "same_verbatim": 0.005864016246050596,
+          "unrelated": 0.004675201140344143
+        },
+        "id": "fresh-3mvnoxz2ubm2z_3mvo2ci5zpq2a",
+        "label": "same_paraphrase",
+        "predicted_label": "same_paraphrase",
+        "same_claim": 0.9691951274871826
+      },
+      {
+        "distribution": {
+          "incidental": 0.002574497601017356,
+          "meta": 0.0010816275607794523,
+          "same_paraphrase": 0.9910643100738525,
+          "same_verbatim": 0.003305720165371895,
+          "unrelated": 0.00197393586859107
+        },
+        "id": "fresh-3mvnqqblsyq2j_3mvntmjwwcc2a",
+        "label": "same_paraphrase",
+        "predicted_label": "same_paraphrase",
+        "same_claim": 0.9943700432777405
+      },
+      {
+        "distribution": {
+          "incidental": 0.8647133111953735,
+          "meta": 0.002013547345995903,
+          "same_paraphrase": 0.002077464247122407,
+          "same_verbatim": 0.0026675169356167316,
+          "unrelated": 0.1285281628370285
+        },
+        "id": "fresh-3mvnzrxdyha2c_3mvnofg5iex2v",
+        "label": "unrelated",
+        "predicted_label": "incidental",
+        "same_claim": 0.004744981415569782
+      },
+      {
+        "distribution": {
+          "incidental": 0.002988469321280718,
+          "meta": 0.0060842218808829784,
+          "same_paraphrase": 0.9463134407997131,
+          "same_verbatim": 0.039985280483961105,
+          "unrelated": 0.004628632217645645
+        },
+        "id": "fresh-3mvnqpjan3t2r_3mvnqvyvr452n",
+        "label": "same_paraphrase",
+        "predicted_label": "same_paraphrase",
+        "same_claim": 0.9862987399101257
+      },
+      {
+        "distribution": {
+          "incidental": 0.07005675137042999,
+          "meta": 0.0046569849364459515,
+          "same_paraphrase": 0.9085097908973694,
+          "same_verbatim": 0.010053285397589207,
+          "unrelated": 0.0067231422290205956
+        },
+        "id": "fresh-3mvo7gxgwxw2v_3mvmvc4mkc324",
+        "label": "incidental",
+        "predicted_label": "same_paraphrase",
+        "same_claim": 0.9185630679130554
+      },
+      {
+        "distribution": {
+          "incidental": 0.964047372341156,
+          "meta": 0.002446303144097328,
+          "same_paraphrase": 0.0014158115955069661,
+          "same_verbatim": 0.0027504523750394583,
+          "unrelated": 0.02934003248810768
+        },
+        "id": "fresh-3mvlz5xcxm32y_3mvmijte5ja2v",
+        "label": "unrelated",
+        "predicted_label": "incidental",
+        "same_claim": 0.004166264086961746
+      },
+      {
+        "distribution": {
+          "incidental": 0.003121062647551298,
+          "meta": 0.0028417599387466908,
+          "same_paraphrase": 0.9882997274398804,
+          "same_verbatim": 0.0025673159398138523,
+          "unrelated": 0.0031702120322734118
+        },
+        "id": "fresh-3mvmkvrobky2h_3mvntnqdycz2g",
+        "label": "same_paraphrase",
+        "predicted_label": "same_paraphrase",
+        "same_claim": 0.990867018699646
+      },
+      {
+        "distribution": {
+          "incidental": 0.004054720979183912,
+          "meta": 0.0028864808846265078,
+          "same_paraphrase": 0.988289475440979,
+          "same_verbatim": 0.0020150886848568916,
+          "unrelated": 0.002754299668595195
+        },
+        "id": "fresh-3mvm6mmuf4a2x_3mvmeciigks26",
+        "label": "same_paraphrase",
+        "predicted_label": "same_paraphrase",
+        "same_claim": 0.9903045892715454
+      },
+      {
+        "distribution": {
+          "incidental": 0.39149367809295654,
+          "meta": 0.05058133229613304,
+          "same_paraphrase": 0.006327906157821417,
+          "same_verbatim": 0.008061961270868778,
+          "unrelated": 0.5435351133346558
+        },
+        "id": "fresh-3mvn6ztv2d52k_3mvnb5ezjlv2a",
+        "label": "unrelated",
+        "predicted_label": "unrelated",
+        "same_claim": 0.014389866963028908
+      },
+      {
+        "distribution": {
+          "incidental": 0.9865874648094177,
+          "meta": 0.0033952484373003244,
+          "same_paraphrase": 0.0022617231588810682,
+          "same_verbatim": 0.0020917521324008703,
+          "unrelated": 0.005663804244250059
+        },
+        "id": "fresh-3mvmaurvytk2b_3mvlycyh7i22s",
+        "label": "incidental",
+        "predicted_label": "incidental",
+        "same_claim": 0.0043534752912819386
+      },
+      {
+        "distribution": {
+          "incidental": 0.0014239562442526221,
+          "meta": 0.0014463802799582481,
+          "same_paraphrase": 0.9925864338874817,
+          "same_verbatim": 0.002422231249511242,
+          "unrelated": 0.0021209765691310167
+        },
+        "id": "fresh-3mvo4oaruld2k_3mvntnqdycz2g",
+        "label": "same_paraphrase",
+        "predicted_label": "same_paraphrase",
+        "same_claim": 0.995008647441864
+      },
+      {
+        "distribution": {
+          "incidental": 0.8636284470558167,
+          "meta": 0.006441137753427029,
+          "same_paraphrase": 0.116879403591156,
+          "same_verbatim": 0.006194381043314934,
+          "unrelated": 0.006856554187834263
+        },
+        "id": "fresh-3mvnrie6b2j2e_3mvnqfrbwbs2n",
+        "label": "incidental",
+        "predicted_label": "incidental",
+        "same_claim": 0.12307378649711609
+      },
+      {
+        "distribution": {
+          "incidental": 0.002740071853622794,
+          "meta": 0.005846227053552866,
+          "same_paraphrase": 0.983184278011322,
+          "same_verbatim": 0.0036584758199751377,
+          "unrelated": 0.004570866469293833
+        },
+        "id": "fresh-3mvnkch6uns2u_3mvnxdble2b2v",
+        "label": "same_paraphrase",
+        "predicted_label": "same_paraphrase",
+        "same_claim": 0.9868427515029907
+      },
+      {
+        "distribution": {
+          "incidental": 0.005616022739559412,
+          "meta": 0.002182151423767209,
+          "same_paraphrase": 0.9820932149887085,
+          "same_verbatim": 0.0076164561323821545,
+          "unrelated": 0.0024920948781073093
+        },
+        "id": "fresh-3mvnd7ut5mo2q_3mvnzu4mb542f",
+        "label": "same_paraphrase",
+        "predicted_label": "same_paraphrase",
+        "same_claim": 0.9897096753120422
+      }
+    ],
+    "targets": {
+      "ptf-02": {
+        "label": "same_verbatim",
+        "local_epoch1": 0.905,
+        "same_claim": 0.9798845648765564
+      },
+      "ptf-05": {
+        "label": "meta",
+        "local_epoch1": 0.026,
+        "same_claim": 0.03099370375275612
+      },
+      "ssi-03": {
+        "label": "same_paraphrase",
+        "local_epoch1": 0.036,
+        "same_claim": 0.9944111704826355
+      },
+      "ssi-05": {
+        "label": "incidental",
+        "local_epoch1": 0.825,
+        "same_claim": 0.009370852261781693
+      }
+    }
+  },
+  "eval_25": {
+    "metrics": {
+      "accuracy_at_0.5": 0.92,
+      "f1_at_0.5": 0.9090909090909091,
+      "n": 25,
+      "negative_max": 0.8582045435905457,
+      "positive_min": 0.010649392381310463,
+      "roc_auc": 0.9545454545454546,
+      "separation_margin": -0.8475551512092352
+    },
+    "rows": [
+      {
+        "distribution": {
+          "incidental": 0.0035842950455844402,
+          "meta": 0.007354496046900749,
+          "same_paraphrase": 0.004426013678312302,
+          "same_verbatim": 0.9784178137779236,
+          "unrelated": 0.006217345129698515
+        },
+        "id": "ssi-01",
+        "label": "same_verbatim",
+        "predicted_label": "same_verbatim",
+        "same_claim": 0.982843816280365
+      },
+      {
+        "distribution": {
+          "incidental": 0.004847949370741844,
+          "meta": 0.0073061175644397736,
+          "same_paraphrase": 0.016432464122772217,
+          "same_verbatim": 0.9606577754020691,
+          "unrelated": 0.010755646042525768
+        },
+        "id": "ssi-02",
+        "label": "same_verbatim",
+        "predicted_label": "same_verbatim",
+        "same_claim": 0.9770902395248413
+      },
+      {
+        "distribution": {
+          "incidental": 0.0013546578120440245,
+          "meta": 0.0018955070991069078,
+          "same_paraphrase": 0.9818969964981079,
+          "same_verbatim": 0.01253040786832571,
+          "unrelated": 0.0023224237374961376
+        },
+        "id": "ssi-03",
+        "label": "same_paraphrase",
+        "predicted_label": "same_paraphrase",
+        "same_claim": 0.9944273829460144
+      },
+      {
+        "distribution": {
+          "incidental": 0.1252887099981308,
+          "meta": 0.8429189324378967,
+          "same_paraphrase": 0.0033388310112059116,
+          "same_verbatim": 0.005814229603856802,
+          "unrelated": 0.022639209404587746
+        },
+        "id": "ssi-04",
+        "label": "incidental",
+        "predicted_label": "meta",
+        "same_claim": 0.009153060615062714
+      },
+      {
+        "distribution": {
+          "incidental": 0.8415436148643494,
+          "meta": 0.14397114515304565,
+          "same_paraphrase": 0.0037478238809853792,
+          "same_verbatim": 0.0054106153547763824,
+          "unrelated": 0.005326731596142054
+        },
+        "id": "ssi-05",
+        "label": "incidental",
+        "predicted_label": "incidental",
+        "same_claim": 0.009158439002931118
+      },
+      {
+        "distribution": {
+          "incidental": 0.9886835217475891,
+          "meta": 0.0035518479999154806,
+          "same_paraphrase": 0.0017242839094251394,
+          "same_verbatim": 0.00275539793074131,
+          "unrelated": 0.003284922568127513
+        },
+        "id": "ssi-06",
+        "label": "unrelated",
+        "predicted_label": "incidental",
+        "same_claim": 0.004479682072997093
+      },
+      {
+        "distribution": {
+          "incidental": 0.15787547826766968,
+          "meta": 0.2792532742023468,
+          "same_paraphrase": 0.0012053942773491144,
+          "same_verbatim": 0.044012028723955154,
+          "unrelated": 0.5176538228988647
+        },
+        "id": "ssi-07",
+        "label": "unrelated",
+        "predicted_label": "unrelated",
+        "same_claim": 0.045217424631118774
+      },
+      {
+        "distribution": {
+          "incidental": 0.01693774200975895,
+          "meta": 0.9567781686782837,
+          "same_paraphrase": 0.007333682384341955,
+          "same_verbatim": 0.002564328256994486,
+          "unrelated": 0.016386089846491814
+        },
+        "id": "ssi-08",
+        "label": "unrelated",
+        "predicted_label": "meta",
+        "same_claim": 0.009898010641336441
+      },
+      {
+        "distribution": {
+          "incidental": 0.002440639538690448,
+          "meta": 0.9693590402603149,
+          "same_paraphrase": 0.004816018510609865,
+          "same_verbatim": 0.015413082204759121,
+          "unrelated": 0.007971350103616714
+        },
+        "id": "ssi-09",
+        "label": "meta",
+        "predicted_label": "meta",
+        "same_claim": 0.020229101181030273
+      },
+      {
+        "distribution": {
+          "incidental": 0.32536670565605164,
+          "meta": 0.6572588086128235,
+          "same_paraphrase": 0.0033955061808228493,
+          "same_verbatim": 0.008841744624078274,
+          "unrelated": 0.005137237254530191
+        },
+        "id": "ssi-10",
+        "label": "meta",
+        "predicted_label": "meta",
+        "same_claim": 0.012237250804901123
+      },
+      {
+        "distribution": {
+          "incidental": 0.0022417898289859295,
+          "meta": 0.007350545842200518,
+          "same_paraphrase": 0.00898850429803133,
+          "same_verbatim": 0.9778923392295837,
+          "unrelated": 0.003526830580085516
+        },
+        "id": "ptf-01",
+        "label": "same_verbatim",
+        "predicted_label": "same_verbatim",
+        "same_claim": 0.9868808388710022
+      },
+      {
+        "distribution": {
+          "incidental": 0.0034988822881132364,
+          "meta": 0.01188289187848568,
+          "same_paraphrase": 0.024263350293040276,
+          "same_verbatim": 0.9551023840904236,
+          "unrelated": 0.00525244465097785
+        },
+        "id": "ptf-02",
+        "label": "same_verbatim",
+        "predicted_label": "same_verbatim",
+        "same_claim": 0.9793657064437866
+      },
+      {
+        "distribution": {
+          "incidental": 0.002933056326583028,
+          "meta": 0.003146710339933634,
+          "same_paraphrase": 0.9886670112609863,
+          "same_verbatim": 0.004351743031293154,
+          "unrelated": 0.0009015476098284125
+        },
+        "id": "ptf-03",
+        "label": "same_paraphrase",
+        "predicted_label": "same_paraphrase",
+        "same_claim": 0.9930187463760376
+      },
+      {
+        "distribution": {
+          "incidental": 0.011394842527806759,
+          "meta": 0.9806728363037109,
+          "same_paraphrase": 0.0034414578694850206,
+          "same_verbatim": 0.004055028315633535,
+          "unrelated": 0.00043582648504525423
+        },
+        "id": "ptf-04",
+        "label": "meta",
+        "predicted_label": "meta",
+        "same_claim": 0.0074964864179492
+      },
+      {
+        "distribution": {
+          "incidental": 0.25957009196281433,
+          "meta": 0.6324820518493652,
+          "same_paraphrase": 0.019552230834960938,
+          "same_verbatim": 0.011140525341033936,
+          "unrelated": 0.07725508511066437
+        },
+        "id": "ptf-05",
+        "label": "meta",
+        "predicted_label": "meta",
+        "same_claim": 0.030692756175994873
+      },
+      {
+        "distribution": {
+          "incidental": 0.003555466653779149,
+          "meta": 0.9896907806396484,
+          "same_paraphrase": 0.002758204936981201,
+          "same_verbatim": 0.0023226412013173103,
+          "unrelated": 0.0016729357885196805
+        },
+        "id": "ptf-06",
+        "label": "meta",
+        "predicted_label": "meta",
+        "same_claim": 0.0050808461382985115
+      },
+      {
+        "distribution": {
+          "incidental": 0.014863479882478714,
+          "meta": 0.13299526274204254,
+          "same_paraphrase": 0.008535378612577915,
+          "same_verbatim": 0.038402631878852844,
+          "unrelated": 0.8052031993865967
+        },
+        "id": "ptf-07",
+        "label": "meta",
+        "predicted_label": "unrelated",
+        "same_claim": 0.046938009560108185
+      },
+      {
+        "distribution": {
+          "incidental": 0.010729684494435787,
+          "meta": 0.12041967362165451,
+          "same_paraphrase": 0.764054536819458,
+          "same_verbatim": 0.09414999186992645,
+          "unrelated": 0.010646185837686062
+        },
+        "id": "ptf-08",
+        "label": "incidental",
+        "predicted_label": "same_paraphrase",
+        "same_claim": 0.8582045435905457
+      },
+      {
+        "distribution": {
+          "incidental": 0.027666445821523666,
+          "meta": 0.9526836276054382,
+          "same_paraphrase": 0.00774295162409544,
+          "same_verbatim": 0.00434340164065361,
+          "unrelated": 0.007563584949821234
+        },
+        "id": "boom-01",
+        "label": "incidental",
+        "predicted_label": "meta",
+        "same_claim": 0.01208635326474905
+      },
+      {
+        "distribution": {
+          "incidental": 0.000899714301340282,
+          "meta": 0.02394050918519497,
+          "same_paraphrase": 0.014763729646801949,
+          "same_verbatim": 0.9563001990318298,
+          "unrelated": 0.00409573782235384
+        },
+        "id": "boom-02",
+        "label": "same_paraphrase",
+        "predicted_label": "same_verbatim",
+        "same_claim": 0.9710639119148254
+      },
+      {
+        "distribution": {
+          "incidental": 0.003321340773254633,
+          "meta": 0.003705223323777318,
+          "same_paraphrase": 0.007397556211799383,
+          "same_verbatim": 0.9803096652030945,
+          "unrelated": 0.005266184452921152
+        },
+        "id": "twtr-01",
+        "label": "same_verbatim",
+        "predicted_label": "same_verbatim",
+        "same_claim": 0.9877071976661682
+      },
+      {
+        "distribution": {
+          "incidental": 0.9111282229423523,
+          "meta": 0.05557917430996895,
+          "same_paraphrase": 0.004971621558070183,
+          "same_verbatim": 0.005677770357578993,
+          "unrelated": 0.02264319732785225
+        },
+        "id": "twtr-02",
+        "label": "same_paraphrase",
+        "predicted_label": "incidental",
+        "same_claim": 0.010649392381310463
+      },
+      {
+        "distribution": {
+          "incidental": 0.0023230190854519606,
+          "meta": 0.004956402350217104,
+          "same_paraphrase": 0.012855930253863335,
+          "same_verbatim": 0.9745055437088013,
+          "unrelated": 0.005359149072319269
+        },
+        "id": "dril-01",
+        "label": "same_paraphrase",
+        "predicted_label": "same_verbatim",
+        "same_claim": 0.987361490726471
+      },
+      {
+        "distribution": {
+          "incidental": 0.006337587255984545,
+          "meta": 0.01798372156918049,
+          "same_paraphrase": 0.044859230518341064,
+          "same_verbatim": 0.9187928438186646,
+          "unrelated": 0.01202662754803896
+        },
+        "id": "cov-01",
+        "label": "same_verbatim",
+        "predicted_label": "same_verbatim",
+        "same_claim": 0.9636520743370056
+      },
+      {
+        "distribution": {
+          "incidental": 0.011487375944852829,
+          "meta": 0.975212037563324,
+          "same_paraphrase": 0.003572551067918539,
+          "same_verbatim": 0.0027606533840298653,
+          "unrelated": 0.006967445369809866
+        },
+        "id": "cov-02",
+        "label": "meta",
+        "predicted_label": "meta",
+        "same_claim": 0.006333204451948404
+      }
+    ],
+    "targets": {
+      "ptf-02": {
+        "label": "same_verbatim",
+        "local_epoch1": 0.905,
+        "same_claim": 0.9793657064437866
+      },
+      "ptf-05": {
+        "label": "meta",
+        "local_epoch1": 0.026,
+        "same_claim": 0.030692756175994873
+      },
+      "ssi-03": {
+        "label": "same_paraphrase",
+        "local_epoch1": 0.036,
+        "same_claim": 0.9944273829460144
+      },
+      "ssi-05": {
+        "label": "incidental",
+        "local_epoch1": 0.825,
+        "same_claim": 0.009158439002931118
+      }
+    }
+  },
+  "history": [
+    {
+      "epoch": 1,
+      "seconds": 805.8402502536774,
+      "train_loss": 0.7887073077990232,
+      "val_auc": 0.9901781696938465
+    },
+    {
+      "epoch": 2,
+      "seconds": 612.7899525165558,
+      "train_loss": 0.4342979315994522,
+      "val_auc": 0.9885552987505433
+    },
+    {
+      "epoch": 3,
+      "seconds": 638.9620141983032,
+      "train_loss": 0.24692906376815613,
+      "val_auc": 0.9818023097068449
+    }
+  ],
+  "model": "AlexWortega/openjev (Fine-Tuned Qwen3.5-4B LoRA 5-Class)",
+  "speed": {
+    "ms_per_pair": 8.121347427368164,
+    "pairs_per_sec": 123.13227687195054
+  }
+}

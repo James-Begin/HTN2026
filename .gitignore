@@ -11,6 +11,9 @@ creds.env
 .pytest_cache/
 .DS_Store
 
+# Logs
+*.log
+
 # Regenerable bulk mining data and ad-hoc benchmark output.
 mine/out/
 runs_*.json
@@ -22,4 +25,8 @@ runs/*/
 
 # The deployed Truss bundle's weights: a copy of a runs/ checkpoint, staged
 # for `truss push`. Regenerate per deploy/README.md before redeploying.
+# Large binaries and model checkpoints
+*.safetensors
+*.bin
+*.pt
 deploy/xenc/data/

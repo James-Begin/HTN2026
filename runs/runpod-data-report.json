@@ -1,0 +1,40 @@
+{
+  "real_english": 18079,
+  "real_source_counts": {
+    "train-collisions.jsonl": 2908,
+    "train-en-extra.jsonl": 5913,
+    "train-headlines.jsonl": 1000,
+    "train-relabelled.jsonl": 7478,
+    "train-verbatim.jsonl": 780
+  },
+  "structural_train_only": 70,
+  "synthetic_train_only": 431,
+  "teacher_replacements": 84,
+  "train": 16443,
+  "train_labels": {
+    "incidental": 5560,
+    "meta": 3212,
+    "same_paraphrase": 4282,
+    "same_verbatim": 1605,
+    "unrelated": 1784
+  },
+  "val": 1483,
+  "val_candidates": 2137,
+  "val_days": [
+    "2026-08-09",
+    "2026-08-10",
+    "2026-08-18",
+    "2026-08-21",
+    "2026-08-23",
+    "2026-08-28",
+    "2026-08-29"
+  ],
+  "val_dropped_for_uri_leakage": 654,
+  "val_labels": {
+    "incidental": 258,
+    "meta": 444,
+    "same_paraphrase": 340,
+    "same_verbatim": 229,
+    "unrelated": 212
+  }
+}
