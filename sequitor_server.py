@@ -842,7 +842,10 @@ class Sequitor:
                 self.save()
                 if run.get("seed") == DEFAULT_SEED:
                     write_json(CAPTURE_FILE, run)
-            if refreshed_model or any("rankingScore" not in post or "spaceY" not in post or "spaceZ" not in post for post in cached_period["posts"]):
+            needs_openjev_rank = any(str(post.get("rerankerModel") or "").startswith("OpenJev")
+                                     and "OpenJev" not in str(post.get("rankingMethod") or "")
+                                     for post in cached_period["posts"])
+            if refreshed_model or needs_openjev_rank or any("rankingScore" not in post or "spaceY" not in post or "spaceZ" not in post for post in cached_period["posts"]):
                 retrieval = self.rank_posts(run["seedPost"], cached_period["posts"])
                 cached_period["model"] = {**cached_period.get("model", {}), "retrieval": retrieval}
                 if emit:
@@ -1014,7 +1017,10 @@ class Sequitor:
                            or any("spaceY" not in post or "spaceZ" not in post for post in cached.get("posts", [])))
             needs_semantic_upgrade = bool(os.environ.get("OPENAI_API_KEY")) and any(
                 post.get("spaceMethod") == "lexical direction fallback" for post in cached.get("posts", []))
-            if needs_space or needs_semantic_upgrade:
+            needs_openjev_rank = any(str(post.get("rerankerModel") or "").startswith("OpenJev")
+                                     and "OpenJev" not in str(post.get("rankingMethod") or "")
+                                     for post in cached.get("posts", []))
+            if needs_space or needs_semantic_upgrade or needs_openjev_rank:
                 retrieval = self.rank_posts(cached["seedPost"], cached["posts"])
                 cached["model"] = {**cached.get("model", {}), "retrieval": retrieval}
                 self.save()
