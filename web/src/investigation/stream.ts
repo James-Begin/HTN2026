@@ -40,7 +40,7 @@ export function mergeBucket(existing: Bucket[], incoming: Bucket): Bucket[] {
 function validPost(value: unknown): value is Post {
   return record(value) && ['id', 'text', 'publishedAt', 'author'].every(key => typeof value[key] === 'string')
     && ['handle', 'avatar', 'url', 'scope', 'captureTime', 'basetenKind', 'rankingMethod', 'spaceMethod', 'parentId', 'quotedPostId'].every(key => value[key] == null || typeof value[key] === 'string')
-    && ['likes', 'reposts', 'replies', 'rankingScore', 'sameClaimScore', 'semanticScore', 'lexicalScore', 'spaceScore', 'spaceY', 'spaceZ', 'spaceDirectionQuality'].every(key => value[key] == null || typeof value[key] === 'number' && Number.isFinite(value[key]))
+    && ['likes', 'reposts', 'replies', 'followers', 'rankingScore', 'sameClaimScore', 'semanticScore', 'lexicalScore', 'spaceScore', 'spaceY', 'spaceZ', 'spaceDirectionQuality'].every(key => value[key] == null || typeof value[key] === 'number' && Number.isFinite(value[key]))
 }
 
 export function validBucket(value: unknown): value is Bucket {
@@ -52,7 +52,7 @@ export function validBucket(value: unknown): value is Bucket {
 function validPlan(value: unknown) {
   return value === null || record(value)
     && ['contextLabel', 'volumePhrase', 'volumeFallback', 'discoveryPhrase', 'expansionReason', 'whyDiscovery', 'model', 'error'].every(key => value[key] == null || typeof value[key] === 'string')
-    && ['entities', 'angles', 'uncertainties', 'discoveryQueries', 'expansionQueries'].every(key => value[key] == null || Array.isArray(value[key]) && value[key].every(item => typeof item === 'string'))
+    && ['entities', 'angles', 'uncertainties', 'discoveryQueries', 'anchorQueries', 'expansionQueries'].every(key => value[key] == null || Array.isArray(value[key]) && value[key].every(item => typeof item === 'string'))
 }
 
 function validCuration(value: unknown): boolean {
