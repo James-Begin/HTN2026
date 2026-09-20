@@ -3,7 +3,8 @@ import type { CSSProperties } from 'react'
 import './search-intro.css'
 
 export type SearchIntroPhase = 'idle' | 'searching' | 'resolving'
-export type SearchIntroProps = { phase: SearchIntroPhase; className?: string }
+export type SearchIntroPost = { author?: string; handle?: string; text: string; publishedAt?: string }
+export type SearchIntroProps = { phase: SearchIntroPhase; className?: string; posts?: SearchIntroPost[] }
 
 type Card = { author: string; handle: string; text: string; accent: string; year: string }
 type PlacedCard = Card & {
@@ -43,13 +44,14 @@ const CARDS: Card[] = [
 
 const FIELD_SIZE = 120
 const GOLDEN = 2.399963229728653
-const CRUISE_MS = 6500
-const FLY_MS = 1800
-const CRUISE_START = 0
-const CRUISE_TRAVEL = 160
+const CRUISE_MS = 3600
+const FLY_MS = 1500
+const CRUISE_START = 110
+const CRUISE_TRAVEL = 280
 const FLY_TRAVEL = 2600
 const FOCAL = 760
 const PASS_AT = 110
+const ACCENTS = ['#94cfee', '#e8c58d', '#a8d8b9', '#9dbce9', '#f1b4ce', '#bfbcf4', '#dcad9e', '#d8d499', '#c9b1f2', '#e1a7d7', '#78c8e2', '#b9a9f3']
 
 const clamp = (value: number, low: number, high: number) => Math.min(high, Math.max(low, value))
 const easeInCubic = (value: number) => value * value * value
@@ -69,13 +71,30 @@ function project(x: number, y: number, z: number, rx: number, ry: number, travel
   }
 }
 
-function placeField(): PlacedCard[] {
+function cardsFromPosts(posts: SearchIntroPost[]): Card[] {
+  return posts.flatMap(post => {
+    const text = post.text?.trim()
+    if (!text) return []
+    const handle = (post.handle || '').replace(/^@/, '')
+    const author = (post.author || handle || 'Post').replace(/^@/, '').split('·')[0].trim() || 'Post'
+    const published = post.publishedAt ? Date.parse(post.publishedAt) : NaN
+    return [{
+      author,
+      handle: handle ? `@${handle}` : '',
+      text,
+      accent: ACCENTS[Math.abs(Array.from(text).reduce((sum, char) => sum + char.charCodeAt(0), 0)) % ACCENTS.length],
+      year: Number.isFinite(published) ? String(new Date(published).getUTCFullYear()) : '',
+    }]
+  })
+}
+
+function placeField(deck: Card[]): PlacedCard[] {
   return Array.from({ length: FIELD_SIZE }, (_, index) => {
-    const source = CARDS[index % CARDS.length]
+    const source = deck[index % deck.length]
     const ring = index / FIELD_SIZE
     const angle = index * GOLDEN
-    const z = -260 - ring * 1680 - (index % 5) * 14
-    const radius = 160 + (index % 11) * 42 + ring * 90
+    const z = -80 - ring * 1420 - (index % 5) * 10
+    const radius = 150 + (index % 11) * 40 + ring * 82
     return {
       ...source,
       key: `${source.handle}-${index}`,
@@ -89,10 +108,14 @@ function placeField(): PlacedCard[] {
   })
 }
 
-export default function SearchIntro({ phase, className = '' }: SearchIntroProps) {
+export default function SearchIntro({ phase, className = '', posts = [] }: SearchIntroProps) {
   const fieldRef = useRef<HTMLDivElement>(null)
   const phaseRef = useRef(phase)
-  const items = useMemo(placeField, [])
+  const deck = useMemo(() => {
+    const fromPosts = cardsFromPosts(posts)
+    return fromPosts.length >= 6 ? fromPosts : CARDS
+  }, [posts])
+  const items = useMemo(() => placeField(deck), [deck])
 
   useEffect(() => {
     phaseRef.current = phase
@@ -154,7 +177,7 @@ export default function SearchIntro({ phase, className = '' }: SearchIntroProps)
 
     frame = requestAnimationFrame(tick)
     return () => cancelAnimationFrame(frame)
-  }, [])
+  }, [items])
 
   return (
     <section
@@ -164,7 +187,7 @@ export default function SearchIntro({ phase, className = '' }: SearchIntroProps)
       <div className="search-intro-stage">
         <div className="search-intro-field" ref={fieldRef}>
           {items.map(item => {
-            const start = project(item.x, item.y, item.z, item.rx, item.ry)
+            const start = project(item.x, item.y, item.z, item.rx, item.ry, CRUISE_START)
             return (
             <article
               key={item.key}

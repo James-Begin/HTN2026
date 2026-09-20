@@ -57,7 +57,7 @@ const addUnit = (stamp: number, unit: 'hour' | 'day' | 'month') => {
   return stamp + (unit === 'hour' ? 3600000 : 86400000)
 }
 const labelTime = (stamp: number, unit: 'hour' | 'day' | 'month') => new Intl.DateTimeFormat('en-CA', unit === 'hour' ? { month: 'short', day: 'numeric', hour: 'numeric', timeZone: 'UTC' } : unit === 'month' ? { month: 'short', year: 'numeric', timeZone: 'UTC' } : { day: 'numeric', month: 'short', timeZone: 'UTC' }).format(new Date(stamp))
-const LAUNCH_AT = { searching: 1500, resolving: 8000, blackout: 9800, anchor: 10600, forming: 11800, exploring: 17200, reducedSearching: 400 }
+const LAUNCH_AT = { searching: 1100, resolving: 4700, blackout: 6200, anchor: 6900, forming: 8000, exploring: 12600, reducedSearching: 320 }
 
 function ActivityStrip({ buckets, posts }: { buckets: Bucket[]; posts: DarioPost[] }) {
   const [scale, setScale] = useState<'hour' | 'day' | 'month'>('day')
@@ -179,6 +179,11 @@ export default function DarioDemo() {
     launch(input)
   }, [input, launch])
   const context = useMemo(() => ({ title: run?.searchPlan?.contextLabel, entities: run?.searchPlan?.entities }), [run?.searchPlan])
+  const introPosts = useMemo(() => {
+    const recorded = LOCAL_RECORDINGS[entryId]
+    if (recorded?.posts?.length) return recorded.posts
+    return streamPosts
+  }, [entryId, streamPosts])
   const error = fallbackRun ? '' : investigation.error
   const status = error ? 'error' : stage === 'searching' || stage === 'resolving' ? 'searching' : reveal.isComplete ? 'complete' : 'building'
   if (stage === 'landing' || stage === 'departing') return <main className={`dario-landing${stage === 'departing' ? ' is-departing' : ''}`} data-demo-stage={stage}>
@@ -215,7 +220,7 @@ export default function DarioDemo() {
     </div>
     {error && <p className="dario-run-error" role="alert">{error}</p>}
   </main>
-  if (stage === 'searching' || stage === 'resolving') return <main className="dario-transition is-intro-enter" data-demo-stage={stage}><SearchIntro phase={stage === 'searching' ? 'searching' : 'resolving'} />{error && <p className="dario-run-error" role="alert">{error}</p>}</main>
+  if (stage === 'searching' || stage === 'resolving') return <main className="dario-transition is-intro-enter" data-demo-stage={stage}><SearchIntro key={entryId || 'live'} phase={stage === 'searching' ? 'searching' : 'resolving'} posts={introPosts} />{error && <p className="dario-run-error" role="alert">{error}</p>}</main>
   if (stage === 'blackout') return <main className="dario-transition" data-demo-stage="blackout">{error && <p className="dario-run-error" role="alert">{error}</p>}</main>
   const cinematic = stage === 'anchor' || stage === 'forming'
   const seedId = seedPost?.id || ''
