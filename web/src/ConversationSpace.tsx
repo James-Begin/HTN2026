@@ -443,7 +443,8 @@ export default function ConversationSpace({ posts, seedId, referencePosts, onOpe
   const corpus = useMemo(() => [...new Map(posts.filter(post => Number.isFinite(stamp(post)) && post.id !== 'seed-text').map(post => [post.id, post])).values()].sort(order), [posts])
   const referenceCorpus = referencePosts?.length ? referencePosts : corpus
   const anchorId = useRef(seedId)
-  if (!anchorId.current && referenceCorpus.length) anchorId.current = [...referenceCorpus].sort((a, b) => (b.likes ?? -1) - (a.likes ?? -1) || a.id.localeCompare(b.id))[0].id
+  if (seedId) anchorId.current = seedId
+  else if (!anchorId.current && referenceCorpus.length) anchorId.current = [...referenceCorpus].sort((a, b) => (b.likes ?? -1) - (a.likes ?? -1) || a.id.localeCompare(b.id))[0].id
   const reference = referenceCorpus.find(post => post.id === anchorId.current)
   const candidateLayout = reference ? layouts[reference.id] : undefined
   const layout = reference && candidateLayout?.features[reference.id]?.text === reference.text ? candidateLayout : undefined

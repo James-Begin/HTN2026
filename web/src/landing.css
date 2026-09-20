@@ -22,7 +22,8 @@
 }
 
 .dario-landing.is-departing .dario-landing-wordmark,
-.dario-landing.is-departing .dario-example {
+.dario-landing.is-departing .dario-example,
+.dario-landing.is-departing .dario-examples {
   animation: landing-chrome-out .16s ease-out forwards;
 }
 
@@ -98,6 +99,7 @@
 @media (prefers-reduced-motion: reduce) {
   .dario-landing.is-departing .dario-landing-wordmark,
   .dario-landing.is-departing .dario-example,
+  .dario-landing.is-departing .dario-examples,
   .dario-landing.is-departing .dario-composer {
     animation: none;
     opacity: 0;

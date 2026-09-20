@@ -1,0 +1,105 @@
+{
+  "id": "x.com-drewhahn-status-2085392809385988130",
+  "seed": "https://x.com/drewhahn/status/2085392809385988130",
+  "title": "We're partnering with @huggingface to investigate an unprecedented security incident.  ",
+  "kind": "saved",
+  "capturedAt": "2026-09-20T00:00:00Z",
+  "scope": "Selected saved posts for an anchor demo",
+  "query": "\"Hugging Face\"",
+  "buckets": [
+    {
+      "day": "2026-07-21",
+      "count": 1,
+      "coverage": "sample"
+    },
+    {
+      "day": "2026-08-06",
+      "count": 1,
+      "coverage": "sample"
+    }
+  ],
+  "posts": [
+    {
+      "id": "2079658951264920020",
+      "text": "We're partnering with @huggingface to investigate an unprecedented security incident.  \n\nCyber-capable OpenAI models compromised Hugging Face production during a benchmark evaluation.\n\nSharing preliminary findings to help defenders understand emerging risks:",
+      "publishedAt": "2026-07-21T20:05:06.000Z",
+      "author": "@OpenAI",
+      "handle": "OpenAI",
+      "authorId": "4398626122",
+      "avatar": "https://pbs.twimg.com/profile_images/1885410181409820672/ztsaR0JW_normal.jpg",
+      "likes": 20770,
+      "url": "https://x.com/OpenAI/status/2079658951264920020",
+      "parentId": null,
+      "quotedPostId": null,
+      "scope": "seed",
+      "captureTime": "2026-09-20T00:00:00Z",
+      "textIsExcerpt": true
+    },
+    {
+      "id": "2085392809385988130",
+      "text": "“the agent is working in the sandbox”\n\nmeanwhile the agent: https://t.co/CQbbf9OA3p",
+      "publishedAt": "2026-08-06T15:49:25.000Z",
+      "author": "@drewhahn",
+      "handle": "drewhahn",
+      "authorId": "259489168",
+      "avatar": "https://pbs.twimg.com/profile_images/2057672631831412736/DvXXSbka_normal.jpg",
+      "likes": 8167,
+      "url": "https://x.com/drewhahn/status/2085392809385988130",
+      "parentId": null,
+      "quotedPostId": null,
+      "scope": "entry commentary",
+      "captureTime": "2026-09-20T00:00:00Z",
+      "textIsExcerpt": false
+    }
+  ],
+  "selectedDay": "2026-07-21",
+  "rankingCoverage": "selected saved sources only",
+  "searchPlan": {
+    "contextLabel": "OpenAI Hugging Face security incident",
+    "entities": [
+      "OpenAI",
+      "Hugging Face"
+    ],
+    "planVersion": 5
+  },
+  "seedPost": {
+    "id": "2079658951264920020",
+    "text": "We're partnering with @huggingface to investigate an unprecedented security incident.  \n\nCyber-capable OpenAI models compromised Hugging Face production during a benchmark evaluation.\n\nSharing preliminary findings to help defenders understand emerging risks:",
+    "publishedAt": "2026-07-21T20:05:06.000Z",
+    "author": "@OpenAI",
+    "handle": "OpenAI",
+    "authorId": "4398626122",
+    "avatar": "https://pbs.twimg.com/profile_images/1885410181409820672/ztsaR0JW_normal.jpg",
+    "likes": 20770,
+    "url": "https://x.com/OpenAI/status/2079658951264920020",
+    "parentId": null,
+    "quotedPostId": null,
+    "scope": "seed",
+    "captureTime": "2026-09-20T00:00:00Z",
+    "textIsExcerpt": true
+  },
+  "entryPost": {
+    "id": "2085392809385988130",
+    "text": "“the agent is working in the sandbox”\n\nmeanwhile the agent: https://t.co/CQbbf9OA3p",
+    "publishedAt": "2026-08-06T15:49:25.000Z",
+    "author": "@drewhahn",
+    "handle": "drewhahn",
+    "authorId": "259489168",
+    "avatar": "https://pbs.twimg.com/profile_images/2057672631831412736/DvXXSbka_normal.jpg",
+    "likes": 8167,
+    "url": "https://x.com/drewhahn/status/2085392809385988130",
+    "parentId": null,
+    "quotedPostId": null,
+    "scope": "entry commentary",
+    "captureTime": "2026-09-20T00:00:00Z",
+    "textIsExcerpt": false
+  },
+  "model": {
+    "openai": "recorded fixture",
+    "baseten": "not run in saved sample"
+  },
+  "note": "Recorded conversation-anchor fixture. Bars count saved posts, not X-wide activity.",
+  "xSpend": 0,
+  "anchorMethod": "semantic",
+  "anchorHops": 1
+}

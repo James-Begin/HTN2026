@@ -1,0 +1,100 @@
+{
+  "id": "x.com-elonmusk-status-2098789109980332057",
+  "seed": "https://x.com/elonmusk/status/2098789109980332057",
+  "title": "We Must Pace the Frontier: I’ve written a new essay on why the AI industry should slow down, with a three-part",
+  "kind": "saved",
+  "capturedAt": "2026-09-20T00:00:00Z",
+  "scope": "Selected saved posts for an anchor demo",
+  "query": "\"We Must Pace the Frontier\"",
+  "buckets": [
+    {
+      "day": "2026-09-12",
+      "count": 2,
+      "coverage": "sample"
+    }
+  ],
+  "posts": [
+    {
+      "id": "2098773920774074715",
+      "text": "We Must Pace the Frontier: I’ve written a new essay on why the AI industry should slow down, with a three-part plan for doing so.\n\nAnthropic is unilaterally committing to the first of these steps. We’ll provide third-party evaluators with permanent, employee-level access to our",
+      "publishedAt": "2026-09-12T14:01:10.000Z",
+      "author": "@DarioAmodei",
+      "handle": "DarioAmodei",
+      "authorId": "874126509245476864",
+      "avatar": "https://pbs.twimg.com/profile_images/2015835742577012736/uOwdzrEz_normal.jpg",
+      "likes": 87650,
+      "url": "https://x.com/DarioAmodei/status/2098773920774074715",
+      "parentId": null,
+      "quotedPostId": null,
+      "scope": "seed",
+      "captureTime": "2026-09-20T00:00:00Z",
+      "textIsExcerpt": true
+    },
+    {
+      "id": "2098789109980332057",
+      "text": "Dario is right",
+      "publishedAt": "2026-09-12T15:01:32.000Z",
+      "author": "@elonmusk",
+      "handle": "elonmusk",
+      "authorId": "44196397",
+      "avatar": "https://pbs.twimg.com/profile_images/2053244804520427520/m8mdWZCG_normal.jpg",
+      "likes": 58272,
+      "url": "https://x.com/elonmusk/status/2098789109980332057",
+      "parentId": null,
+      "quotedPostId": "2098773920774074715",
+      "scope": "entry commentary",
+      "captureTime": "2026-09-20T00:00:00Z",
+      "textIsExcerpt": false
+    }
+  ],
+  "selectedDay": "2026-09-12",
+  "rankingCoverage": "selected saved sources only",
+  "searchPlan": {
+    "contextLabel": "AI industry pacing and independent evaluation",
+    "entities": [
+      "Anthropic",
+      "Dario Amodei"
+    ],
+    "planVersion": 5
+  },
+  "seedPost": {
+    "id": "2098773920774074715",
+    "text": "We Must Pace the Frontier: I’ve written a new essay on why the AI industry should slow down, with a three-part plan for doing so.\n\nAnthropic is unilaterally committing to the first of these steps. We’ll provide third-party evaluators with permanent, employee-level access to our",
+    "publishedAt": "2026-09-12T14:01:10.000Z",
+    "author": "@DarioAmodei",
+    "handle": "DarioAmodei",
+    "authorId": "874126509245476864",
+    "avatar": "https://pbs.twimg.com/profile_images/2015835742577012736/uOwdzrEz_normal.jpg",
+    "likes": 87650,
+    "url": "https://x.com/DarioAmodei/status/2098773920774074715",
+    "parentId": null,
+    "quotedPostId": null,
+    "scope": "seed",
+    "captureTime": "2026-09-20T00:00:00Z",
+    "textIsExcerpt": true
+  },
+  "entryPost": {
+    "id": "2098789109980332057",
+    "text": "Dario is right",
+    "publishedAt": "2026-09-12T15:01:32.000Z",
+    "author": "@elonmusk",
+    "handle": "elonmusk",
+    "authorId": "44196397",
+    "avatar": "https://pbs.twimg.com/profile_images/2053244804520427520/m8mdWZCG_normal.jpg",
+    "likes": 58272,
+    "url": "https://x.com/elonmusk/status/2098789109980332057",
+    "parentId": null,
+    "quotedPostId": "2098773920774074715",
+    "scope": "entry commentary",
+    "captureTime": "2026-09-20T00:00:00Z",
+    "textIsExcerpt": false
+  },
+  "model": {
+    "openai": "recorded fixture",
+    "baseten": "not run in saved sample"
+  },
+  "note": "Recorded conversation-anchor fixture. Bars count saved posts, not X-wide activity.",
+  "xSpend": 0,
+  "anchorMethod": "quote-walk",
+  "anchorHops": 1
+}

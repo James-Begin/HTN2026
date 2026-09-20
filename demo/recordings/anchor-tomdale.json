@@ -1,0 +1,105 @@
+{
+  "id": "x.com-tomdale-status-2098435855857668156",
+  "seed": "https://x.com/tomdale/status/2098435855857668156",
+  "title": "We’re sharing a solution to the Navier-Stokes Millennium Prize Problem, one of the deepest problems at the fro",
+  "kind": "saved",
+  "capturedAt": "2026-09-20T00:00:00Z",
+  "scope": "Selected saved posts for an anchor demo",
+  "query": "\"Navier-Stokes\"",
+  "buckets": [
+    {
+      "day": "2026-09-08",
+      "count": 1,
+      "coverage": "sample"
+    },
+    {
+      "day": "2026-09-11",
+      "count": 1,
+      "coverage": "sample"
+    }
+  ],
+  "posts": [
+    {
+      "id": "2097374640582668336",
+      "text": "We’re sharing a solution to the Navier-Stokes Millennium Prize Problem, one of the deepest problems at the frontier of mathematics.\n\nThe proof was produced by a group of agents, using an OpenAI next-generation model significantly more capable than GPT-6 Astra.\n\nThe problem https://t.co/8zol3BPTL4",
+      "publishedAt": "2026-09-08T17:20:56.000Z",
+      "author": "@OpenAI",
+      "handle": "OpenAI",
+      "authorId": "4398626122",
+      "avatar": "https://pbs.twimg.com/profile_images/1885410181409820672/ztsaR0JW_normal.jpg",
+      "likes": 120591,
+      "url": "https://x.com/OpenAI/status/2097374640582668336",
+      "parentId": null,
+      "quotedPostId": null,
+      "scope": "seed",
+      "captureTime": "2026-09-20T00:00:00Z",
+      "textIsExcerpt": true
+    },
+    {
+      "id": "2098435855857668156",
+      "text": "After 88 hours and ~10,000 coordinating agents, we're sharing a solution to the two hardest problems in computer science. https://t.co/ai7KiVD2qa",
+      "publishedAt": "2026-09-11T15:37:49.000Z",
+      "author": "@tomdale",
+      "handle": "tomdale",
+      "authorId": "668863",
+      "avatar": "https://pbs.twimg.com/profile_images/1317834118/avatar_normal.png",
+      "likes": 1321,
+      "url": "https://x.com/tomdale/status/2098435855857668156",
+      "parentId": null,
+      "quotedPostId": null,
+      "scope": "entry commentary",
+      "captureTime": "2026-09-20T00:00:00Z",
+      "textIsExcerpt": false
+    }
+  ],
+  "selectedDay": "2026-09-08",
+  "rankingCoverage": "selected saved sources only",
+  "searchPlan": {
+    "contextLabel": "OpenAI Navier-Stokes announcement",
+    "entities": [
+      "OpenAI",
+      "Navier-Stokes"
+    ],
+    "planVersion": 5
+  },
+  "seedPost": {
+    "id": "2097374640582668336",
+    "text": "We’re sharing a solution to the Navier-Stokes Millennium Prize Problem, one of the deepest problems at the frontier of mathematics.\n\nThe proof was produced by a group of agents, using an OpenAI next-generation model significantly more capable than GPT-6 Astra.\n\nThe problem https://t.co/8zol3BPTL4",
+    "publishedAt": "2026-09-08T17:20:56.000Z",
+    "author": "@OpenAI",
+    "handle": "OpenAI",
+    "authorId": "4398626122",
+    "avatar": "https://pbs.twimg.com/profile_images/1885410181409820672/ztsaR0JW_normal.jpg",
+    "likes": 120591,
+    "url": "https://x.com/OpenAI/status/2097374640582668336",
+    "parentId": null,
+    "quotedPostId": null,
+    "scope": "seed",
+    "captureTime": "2026-09-20T00:00:00Z",
+    "textIsExcerpt": true
+  },
+  "entryPost": {
+    "id": "2098435855857668156",
+    "text": "After 88 hours and ~10,000 coordinating agents, we're sharing a solution to the two hardest problems in computer science. https://t.co/ai7KiVD2qa",
+    "publishedAt": "2026-09-11T15:37:49.000Z",
+    "author": "@tomdale",
+    "handle": "tomdale",
+    "authorId": "668863",
+    "avatar": "https://pbs.twimg.com/profile_images/1317834118/avatar_normal.png",
+    "likes": 1321,
+    "url": "https://x.com/tomdale/status/2098435855857668156",
+    "parentId": null,
+    "quotedPostId": null,
+    "scope": "entry commentary",
+    "captureTime": "2026-09-20T00:00:00Z",
+    "textIsExcerpt": false
+  },
+  "model": {
+    "openai": "recorded fixture",
+    "baseten": "not run in saved sample"
+  },
+  "note": "Recorded conversation-anchor fixture. Bars count saved posts, not X-wide activity.",
+  "xSpend": 0,
+  "anchorMethod": "semantic",
+  "anchorHops": 1
+}

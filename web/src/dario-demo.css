@@ -187,13 +187,38 @@ textarea:focus-visible { outline: none; }
 .dario-composer-submit:not(:disabled):hover { background: #d7dbdc; }
 
 .dario-example {
-  margin-top: 18px;
+  margin-top: 0;
   color: #71767b;
   font-size: 12px;
   text-decoration: none;
 }
 
+.dario-examples {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px 18px;
+  margin-top: 18px;
+  max-width: 560px;
+}
+
 .dario-example:hover { color: #1d9bf0; }
+
+.dario-run-error {
+  position: fixed;
+  z-index: 20;
+  right: 24px;
+  bottom: 24px;
+  max-width: 420px;
+  margin: 0;
+  padding: 12px 15px;
+  border: 1px solid #7b3434;
+  border-radius: 6px;
+  background: #210d0df2;
+  color: #ffd7d7;
+  font-size: 12px;
+  line-height: 1.45;
+}
 
 /* Keep one full-bleed graph slot. Chrome overlays instead of collapsing
    grid tracks, so the WebGL viewer never remounts, resizes to 0, or fades. */

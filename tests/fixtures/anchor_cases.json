@@ -1,0 +1,132 @@
+[
+  {
+    "id": "tomdale-navier-stokes",
+    "entryUrl": "https://x.com/tomdale/status/2098435855857668156",
+    "entryId": "2098435855857668156",
+    "expectedAnchorUrl": "https://x.com/OpenAI/status/2097374640582668336",
+    "expectedAnchorId": "2097374640582668336",
+    "kind": "semantic-reference",
+    "notes": "The 88-hour, roughly 10,000-agent commentary refers to OpenAI's Navier-Stokes announcement without quote or reply metadata.",
+    "live": true
+  },
+  {
+    "id": "drewhahn-hugging-face-sandbox",
+    "entryUrl": "https://x.com/drewhahn/status/2085392809385988130",
+    "entryId": "2085392809385988130",
+    "expectedAnchorUrl": "https://x.com/OpenAI/status/2079658951264920020",
+    "expectedAnchorId": "2079658951264920020",
+    "kind": "semantic-reference",
+    "notes": "The sandbox-escape video commentary alludes to OpenAI's Hugging Face incident but is not a formal quote post.",
+    "live": true
+  },
+  {
+    "id": "elon-quotes-dario-pace-frontier",
+    "entryUrl": "https://x.com/elonmusk/status/2098789109980332057",
+    "entryId": "2098789109980332057",
+    "expectedAnchorUrl": "https://x.com/DarioAmodei/status/2098773920774074715",
+    "expectedAnchorId": "2098773920774074715",
+    "kind": "quote",
+    "notes": "A terse high-profile reaction formally quotes Dario Amodei's Pace the Frontier announcement.",
+    "live": true,
+    "graph": {
+      "posts": {
+        "2098789109980332057": {
+          "id": "2098789109980332057",
+          "quotedPostId": "2098773920774074715",
+          "parentId": null,
+          "text": "Dario is right"
+        },
+        "2098773920774074715": {
+          "id": "2098773920774074715",
+          "quotedPostId": null,
+          "parentId": null,
+          "text": "We Must Pace the Frontier"
+        }
+      }
+    }
+  },
+  {
+    "id": "grok-deep-reply-to-dario",
+    "entryUrl": "https://x.com/grok/status/2098924510003016077",
+    "entryId": "2098924510003016077",
+    "expectedAnchorUrl": "https://x.com/DarioAmodei/status/2098773920774074715",
+    "expectedAnchorId": "2098773920774074715",
+    "kind": "reply",
+    "notes": "A reply to a reply to a popular direct reply must walk three parent edges to Dario's root announcement.",
+    "live": true,
+    "graph": {
+      "posts": {
+        "2098924510003016077": {
+          "id": "2098924510003016077",
+          "quotedPostId": null,
+          "parentId": "2098924349000695891",
+          "text": "Partially. Dario's plan targets frontier labs with embedded third-party evaluators."
+        },
+        "2098924349000695891": {
+          "id": "2098924349000695891",
+          "quotedPostId": null,
+          "parentId": "2098844192684298692",
+          "text": "are they correct?"
+        },
+        "2098844192684298692": {
+          "id": "2098844192684298692",
+          "quotedPostId": null,
+          "parentId": "2098773920774074715",
+          "text": "This sort of regulatory capture will prevent homebrew companies from ever being allowed to exist."
+        },
+        "2098773920774074715": {
+          "id": "2098773920774074715",
+          "quotedPostId": null,
+          "parentId": null,
+          "text": "We Must Pace the Frontier"
+        }
+      }
+    }
+  },
+  {
+    "id": "wet-lab-skeptic-quotes-source",
+    "entryUrl": "https://x.com/Oddernod/status/2101091531054547076",
+    "entryId": "2101091531054547076",
+    "expectedAnchorUrl": "https://x.com/i/status/2100950968615711214",
+    "expectedAnchorId": "2100950968615711214",
+    "kind": "quote",
+    "notes": "Recorded Wet Lab commentary has an explicit quotedPostId, exercising a second direct quote shape from the repository's live-test fixture.",
+    "live": true,
+    "graph": {
+      "posts": {
+        "2101091531054547076": {
+          "id": "2101091531054547076",
+          "quotedPostId": "2100950968615711214",
+          "parentId": null,
+          "text": "Nothing says Everything Is Fine like Anthropic plus Wet Lab."
+        },
+        "2100950968615711214": {
+          "id": "2100950968615711214",
+          "quotedPostId": null,
+          "parentId": null,
+          "text": "Quoted Wet Lab source post"
+        }
+      }
+    }
+  },
+  {
+    "id": "dario-announcement-self",
+    "entryUrl": "https://x.com/DarioAmodei/status/2098773920774074715",
+    "entryId": "2098773920774074715",
+    "expectedAnchorUrl": "https://x.com/DarioAmodei/status/2098773920774074715",
+    "expectedAnchorId": "2098773920774074715",
+    "kind": "self",
+    "notes": "Negative control: the pasted post is already the primary announcement and must remain its own anchor.",
+    "live": true,
+    "graph": {
+      "posts": {
+        "2098773920774074715": {
+          "id": "2098773920774074715",
+          "quotedPostId": null,
+          "parentId": null,
+          "text": "We Must Pace the Frontier"
+        }
+      }
+    }
+  }
+]

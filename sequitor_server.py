@@ -23,6 +23,7 @@ from urllib.parse import parse_qs, urlsplit
 from claimtrace.baseten import CrossEncoder, HostedLLM
 from claimtrace.resolve import resolve
 from claimtrace.xapi import BudgetExceeded, XClient, now_safe
+from sequitor_anchor import choose_semantic_anchor, conversation_anchor
 from sequitor_baseten_chain import BasetenChainClient
 from sequitor_openjev import OpenJevReranker
 
@@ -36,6 +37,13 @@ EVENT_DIR = DATA_DIR / "sequitor-streams"
 DEFAULT_SEED = "https://x.com/DarioAmodei/status/2098773920774074715"
 MAX_POSTS = 1800  # $9.00 at the default cap.
 MAX_COUNTS = 48   # $0.48 at the default cap.
+PLAN_VERSION = 5
+ANCHOR_VERSION = 1
+ANCHOR_RECORDINGS = {
+    "2098435855857668156": ROOT / "demo" / "recordings" / "anchor-tomdale.json",
+    "2085392809385988130": ROOT / "demo" / "recordings" / "anchor-drewhahn.json",
+    "2098789109980332057": ROOT / "demo" / "recordings" / "anchor-elon-dario.json",
+}
 
 
 class StoppedRun(Exception):
@@ -99,7 +107,15 @@ class StreamHub:
                 job.emit("run.started", {"source": "recorded" if mode == "recorded" else "live",
                                          "seed": seed})
                 if mode == "recorded":
-                    recorded = recorded_demo()
+                    recorded = recording_for_seed(seed)
+                    recorded_seed = recorded.get("seedPost")
+                    if recorded_seed:
+                        payload = {"post": recorded_seed, "text": recorded_seed.get("text", "")[:2000],
+                                   "anchorMethod": recorded.get("anchorMethod") or "self",
+                                   "anchorHops": recorded.get("anchorHops") or 0}
+                        if recorded.get("entryPost") and recorded["entryPost"].get("id") != recorded_seed.get("id"):
+                            payload["entryPost"] = recorded["entryPost"]
+                        job.emit("seed.resolved", payload)
                     job.emit("run.ready", pending_activity(recorded, "recorded"))
                     posts = sorted(recorded.get("posts", []),
                                    key=lambda post: -(post.get("likes") or 0))
@@ -428,7 +444,22 @@ def post_from_x(row: dict, scope: str) -> dict:
         "url": f"https://x.com/i/status/{row['id']}",
         "parentId": next((str(ref["id"]) for ref in refs if ref.get("type") == "replied_to"), None),
         "quotedPostId": next((str(ref["id"]) for ref in refs if ref.get("type") == "quoted"), None),
+        "conversationId": str(row.get("conversation_id") or ""),
         "scope": scope, "captureTime": today_utc(), "textIsExcerpt": False,
+    }
+
+
+def post_from_resolved(row, scope: str = "seed") -> dict:
+    return {
+        "id": row.tweet_id, "text": row.text,
+        "publishedAt": row.created_at.isoformat().replace("+00:00", "Z") if row.created_at else "",
+        "author": "@" + row.handle, "handle": row.handle,
+        "authorId": row.author_id, "likes": row.likes,
+        "avatar": row.avatar or None,
+        "url": f"https://x.com/{row.handle or 'i'}/status/{row.tweet_id}",
+        "scope": scope, "captureTime": today_utc(), "textIsExcerpt": row.text_is_excerpt,
+        "quotedPostId": row.quoted_id or None, "parentId": row.parent_id or None,
+        "conversationId": row.conversation_id or "",
     }
 
 
@@ -459,6 +490,21 @@ def sample_demo() -> dict:
         "note": "This is a selected source sample. Its bar heights count saved posts, not X-wide activity.",
         "xSpend": 0,
     }
+
+
+def openai_model() -> str:
+    return os.environ.get("SEQUITOR_OPENAI_MODEL", "gpt-4.1")
+
+
+def recording_for_seed(seed: str) -> dict:
+    """Replay a saved conversation when the pasted status has a fixture."""
+    match = re.search(r"(?:status|statuses)/(\d+)", seed) or re.fullmatch(r"\s*(\d{15,22})\s*", seed)
+    path = ANCHOR_RECORDINGS.get(match.group(1) if match else "")
+    if path and path.is_file():
+        recorded = read_json(path, {})
+        if recorded.get("seedPost"):
+            return source_metadata(recorded)
+    return recorded_demo()
 
 
 def recorded_demo() -> dict:
@@ -502,6 +548,92 @@ class Sequitor:
                                     "countsCalls": self.x.counts_calls,
                                     "estimatedXSpend": round(self.x.spend, 3)}
         write_json(CACHE_FILE, self.cache)
+
+    def fetch_anchor_post(self, tweet_id: str) -> dict | None:
+        """Resolve keylessly first, then spend one bounded X lookup if needed."""
+        try:
+            resolved = resolve(tweet_id)
+        except (OSError, ValueError, urllib.error.HTTPError):
+            resolved = None
+        if resolved and resolved.recoverable_text:
+            return post_from_resolved(resolved, "referenced conversation")
+        if not self.x:
+            return None
+        try:
+            row = self.x.lookup(tweet_id)
+        finally:
+            self.save()
+        return post_from_x(row, "referenced conversation") if row else None
+
+    def semantic_anchor_candidates(self, entry_post: dict, plan: dict) -> list[dict]:
+        """Run one tight, pre-entry search when commentary has no explicit id."""
+        queries = list(plan.get("discoveryQueries") or [])
+        if not queries:
+            entities = [str(item).strip() for item in plan.get("entities") or [] if str(item).strip()]
+            if len(entities) >= 2:
+                queries = [" ".join(entities[:2])]
+        if not self.x or not queries or not entry_post.get("publishedAt"):
+            return []
+        published = datetime.fromisoformat(entry_post["publishedAt"].replace("Z", "+00:00"))
+        end = min(published, now_safe())
+        start = end - timedelta(days=28)
+        available = MAX_POSTS - self.x.posts_read if MAX_POSTS is not None else 20
+        if available < 10:
+            return []
+        try:
+            rows, _ = self.x.search(queries[0] + " -is:retweet", start, end,
+                                    max_results=min(20, available))
+        finally:
+            self.save()
+        return [post_from_x(row, "anchor discovery") for row in rows
+                if str(row.get("id")) != str(entry_post.get("id"))]
+
+    def select_semantic_anchor(self, entry_post: dict, candidates: list[dict]) -> dict:
+        """Let OpenAI select only from supplied ids, then verify the selection."""
+        key = os.environ.get("OPENAI_API_KEY")
+        if not key or not candidates:
+            return entry_post
+        schema = {
+            "type": "object", "additionalProperties": False,
+            "properties": {
+                "referenced_post_id": {"type": "string"},
+                "anchor_rationale": {"type": "string"},
+            },
+            "required": ["referenced_post_id", "anchor_rationale"],
+        }
+        evidence = [{"id": post["id"], "text": post.get("text", "")[:500],
+                     "author": post.get("handle") or post.get("author"),
+                     "publishedAt": post.get("publishedAt")}
+                    for post in candidates[:20]]
+        body = {
+            "model": openai_model(),
+            "instructions": (
+                "Determine whether the commentary clearly describes one of the candidate public posts as its "
+                "referenced announcement or source. Return exactly that candidate's id, or an empty string when "
+                "the evidence is ambiguous. Never return an id outside the candidates, infer truth, or treat mere "
+                "topic similarity as a reference."
+            ),
+            "input": json.dumps({"commentary": entry_post.get("text", "")[:1200],
+                                 "candidates": evidence}, ensure_ascii=False),
+            "text": {"format": {"type": "json_schema", "name": "sequitor_anchor_selection",
+                                "strict": True, "schema": schema}},
+            "max_output_tokens": 140,
+        }
+        req = urllib.request.Request(
+            "https://api.openai.com/v1/responses", data=json.dumps(body).encode(),
+            headers={"Authorization": "Bearer " + key, "Content-Type": "application/json"},
+        )
+        with urllib.request.urlopen(req, timeout=25) as response:
+            data = json.load(response)
+        content = next((part.get("text") for item in data.get("output", [])
+                        for part in item.get("content", []) if part.get("type") == "output_text"), None)
+        if not content:
+            return entry_post
+        suggestion = json.loads(content)
+        candidate_ids = {str(post["id"]) for post in candidates}
+        if str(suggestion.get("referenced_post_id") or "") not in candidate_ids:
+            return entry_post
+        return choose_semantic_anchor(entry_post, suggestion, self.fetch_anchor_post)
 
     def count(self, query: str, start: datetime, end: datetime,
               granularity: str = "day") -> list[dict]:
@@ -550,12 +682,16 @@ class Sequitor:
                 "volume_phrase": {"type": "string"},
                 "discovery_queries": {"type": "array", "items": {"type": "string"}},
                 "why_discovery": {"type": "string"},
+                "referenced_post_id": {"type": "string"},
+                "is_commentary": {"type": "boolean"},
+                "anchor_rationale": {"type": "string"},
             },
             "required": ["context_label", "entities", "angles", "uncertainties",
-                         "volume_phrase", "discovery_queries", "why_discovery"],
+                         "volume_phrase", "discovery_queries", "why_discovery",
+                         "referenced_post_id", "is_commentary", "anchor_rationale"],
         }
         body = {
-            "model": "gpt-4.1-mini",
+            "model": openai_model(),
             "instructions": (
                 "Build an evidence-bounded context card for exploring discussion around an X post. "
                 "context_label must be a neutral 3–10 word description, not a truth claim. "
@@ -563,13 +699,19 @@ class Sequitor:
                 "discussion directions, not facts. uncertainties must say what the post alone cannot establish. "
                 "volume_phrase must be 2–6 consecutive words copied from the post for a measured histogram. "
                 "discovery_queries contains at most two 2–3 word, unquoted search term groups likely to find "
-                "posts about the same event that do not repeat the volume phrase. Prefer a name plus a distinctive "
-                "concept. Do not add X operators, invent quotations, or state that a rumor is true."
+                "the original announcement or source post, not later jokes. Prefer an organization plus a "
+                "distinctive event name. If this post is clearly a joke, paraphrase, quote-without-card, or "
+                "reaction to a public announcement, set is_commentary true even when the original is unnamed. "
+                "In that case discovery_queries may use the well-known public name of the event. Put a status "
+                "id in referenced_post_id only when that id appears in the supplied text or URLs; otherwise "
+                "use an empty string. Never invent an id. anchor_rationale briefly explains the decision "
+                "without claiming the post is true. Do not add X operators, invent quotations, or state that "
+                "a rumor is true."
             ),
             "input": text[:3000],
             "text": {"format": {"type": "json_schema", "name": "sequitor_search_plan",
                                 "strict": True, "schema": schema}},
-            "max_output_tokens": 250,
+            "max_output_tokens": 350,
         }
         req = urllib.request.Request(
             "https://api.openai.com/v1/responses", data=json.dumps(body).encode(),
@@ -586,13 +728,17 @@ class Sequitor:
         if primary.strip('"').casefold() not in text.casefold():
             raise RuntimeError("OpenAI's measured phrase was not in the seed post")
         discovery = distinct_queries(plan.get("discovery_queries") or [])
-        return {"planVersion": 4, "contextLabel": str(plan["context_label"])[:110],
+        return {"planVersion": PLAN_VERSION, "contextLabel": str(plan["context_label"])[:110],
                 "entities": [str(item)[:50] for item in plan["entities"][:6]],
                 "angles": [str(item)[:70] for item in plan["angles"][:4]],
                 "uncertainties": [str(item)[:110] for item in plan["uncertainties"][:3]],
                 "volumePhrase": primary, "discoveryPhrase": discovery[0] if discovery else None,
                 "discoveryQueries": discovery, "expansionQueries": [],
-                "whyDiscovery": str(plan["why_discovery"])[:200], "model": data.get("model")}
+                "whyDiscovery": str(plan["why_discovery"])[:200],
+                "referencedPostId": str(plan["referenced_post_id"])[:24],
+                "isCommentary": bool(plan["is_commentary"]),
+                "anchorRationale": str(plan["anchor_rationale"])[:240],
+                "model": data.get("model")}
 
     def expand_context(self, plan: dict, seed_text: str, posts: list[dict]) -> dict:
         """One grounded expansion round. It never sees an unbounded X corpus."""
@@ -608,7 +754,7 @@ class Sequitor:
         evidence = [{"id": post["id"], "scope": post.get("scope"), "text": post.get("text", "")[:240]}
                     for post in sorted(posts, key=lambda post: -(post.get("rankingScore") or 0))[:12]]
         body = {
-            "model": "gpt-4.1-mini",
+            "model": openai_model(),
             "instructions": (
                 "Suggest at most two new, unquoted 2–3 term X discovery queries. Base them only on the seed, "
                 "the supplied context card, and retrieved posts. Seek a missing facet or alternate wording rather "
@@ -821,7 +967,7 @@ class Sequitor:
         if not re.fullmatch(r"\d{4}-\d{2}-\d{2}", day):
             raise ValueError("Invalid UTC day")
         key = run_id + ":" + day
-        if key in self.cache["periods"] and self.cache["periods"][key].get("schemaVersion") == 4 and self.cache["periods"][key].get("discoveryQuery") == run["searchPlan"].get("discoveryPhrase"):
+        if key in self.cache["periods"] and self.cache["periods"][key].get("schemaVersion") == 5 and self.cache["periods"][key].get("discoveryQuery") == run["searchPlan"].get("discoveryPhrase"):
             cached_period = self.cache["periods"][key]
             if emit:
                 emit("stage", {"name": "Loading cached posts", "source": "cache"})
@@ -913,6 +1059,9 @@ class Sequitor:
         # Include the seed even if it does not pass the search's engagement floor.
         if seed_id.isdigit() and day == run["seedPost"]["publishedAt"][:10]:
             unique.setdefault(run["seedPost"]["id"], run["seedPost"])
+        entry_post = run.get("entryPost")
+        if entry_post and str(entry_post.get("id")) != seed_id:
+            unique.setdefault(str(entry_post["id"]), entry_post)
         posts = list(unique.values())
         retrieval = self.rank_posts(run["seedPost"], posts)
         # A single second round is grounded in retrieved evidence, then capped at
@@ -949,7 +1098,7 @@ class Sequitor:
             updates = [post for post in posts if post.get("basetenPick") or post.get("sameClaimScore") is not None or post.get("rankingScore") is not None]
             emit_post_batches(emit, updates, size=12, pause=0)
             emit("model.ready", {"model": {**model, "retrieval": retrieval}})
-        result = {"schemaVersion": 4, "discoveryQuery": run["searchPlan"].get("discoveryPhrase"),
+        result = {"schemaVersion": 5, "discoveryQuery": run["searchPlan"].get("discoveryPhrase"),
                   "day": day, "posts": posts,
                   "rankingCoverage": "top retrieved posts; search may be truncated" if partial or extra_partial
                   else "top retrieved posts; phrase scope plus one related search",
@@ -994,6 +1143,92 @@ class Sequitor:
         self.save()
         return result
 
+    def resolve_conversation_seed(self, seed: str, emit=None) -> dict:
+        """Identify the conversation origin before any volume search."""
+        original_text = seed
+        entry_post = None
+        seed_post = None
+        anchor_method = "self"
+        anchor_hops = 0
+        match = re.search(r"/(?:status|statuses)/(\d+)", seed)
+        if match:
+            if emit:
+                emit("stage", {"name": "Resolving the starting post"})
+            entry_post = self.fetch_anchor_post(match.group(1))
+            if not entry_post:
+                raise RuntimeError("The seed post's text is unavailable; paste its text instead")
+            original_text = entry_post["text"]
+            walked = conversation_anchor(entry_post, self.fetch_anchor_post)
+            seed_post = walked["anchor"]
+            anchor_method = walked["method"]
+            anchor_hops = walked["hops"]
+            if seed_post["id"] != entry_post["id"]:
+                entry_post["scope"] = "entry commentary"
+                seed_post["scope"] = "seed"
+
+        plan = None
+        plan_error = None
+        commentary_plan = None
+        plan_attempted = False
+        if entry_post and seed_post["id"] == entry_post["id"]:
+            try:
+                plan_attempted = True
+                commentary_plan = self.openai_plan(entry_post["text"])
+                plan = commentary_plan
+            except Exception as exc:
+                plan_error = exc
+            if commentary_plan:
+                semantic = entry_post
+                if commentary_plan.get("referencedPostId"):
+                    semantic = choose_semantic_anchor(
+                        entry_post,
+                        {"referenced_post_id": commentary_plan["referencedPostId"]},
+                        self.fetch_anchor_post,
+                    )
+                if semantic["id"] == entry_post["id"] and commentary_plan.get("isCommentary"):
+                    try:
+                        candidates = self.semantic_anchor_candidates(entry_post, commentary_plan)
+                        semantic = self.select_semantic_anchor(entry_post, candidates)
+                    except Exception as exc:
+                        commentary_plan["anchorSearchError"] = type(exc).__name__
+                if semantic["id"] != entry_post["id"]:
+                    entry_post["scope"] = "entry commentary"
+                    semantic["scope"] = "seed"
+                    seed_post = semantic
+                    anchor_method = "semantic"
+                    anchor_hops = 1
+                    try:
+                        plan_attempted = True
+                        plan = self.openai_plan(seed_post["text"])
+                        plan["referencedPostId"] = semantic["id"]
+                        plan["isCommentary"] = commentary_plan["isCommentary"]
+                        plan["anchorRationale"] = commentary_plan["anchorRationale"]
+                    except Exception as exc:
+                        plan = None
+                        plan_error = exc
+        if plan is None and not plan_attempted:
+            try:
+                plan_attempted = True
+                plan = self.openai_plan(seed_post["text"] if seed_post else original_text)
+            except Exception as exc:
+                plan_error = exc
+        planning_text = seed_post["text"] if seed_post else original_text
+        if plan is None:
+            words = re.findall(r"[\w'-]+", planning_text)
+            plan = {"planVersion": PLAN_VERSION, "contextLabel": "Unstructured seed post",
+                    "entities": [], "angles": [], "uncertainties": ["Context planning was unavailable."],
+                    "volumePhrase": phrase(" ".join(words[:4])), "discoveryPhrase": None,
+                    "discoveryQueries": [], "expansionQueries": [], "whyDiscovery": "",
+                    "referencedPostId": (commentary_plan or {}).get("referencedPostId", ""),
+                    "isCommentary": bool((commentary_plan or {}).get("isCommentary")),
+                    "anchorRationale": (commentary_plan or {}).get("anchorRationale", ""),
+                    "model": None, "error": type(plan_error).__name__ if plan_error else "Unavailable"}
+        return {
+            "original_text": original_text, "entry_post": entry_post, "seed_post": seed_post,
+            "anchor_method": anchor_method, "anchor_hops": anchor_hops, "plan": plan,
+            "planning_text": planning_text,
+        }
+
     def explore(self, seed: str, emit=None) -> dict:
         if emit:
             send_event = emit
@@ -1002,9 +1237,15 @@ class Sequitor:
         if not seed:
             seed = DEFAULT_SEED
         cache_key = re.sub(r"[^a-z0-9]+", "-", seed.lower())[:100]
+        stale = self.cache["runs"].get(cache_key)
+        if stale and stale.get("anchorVersion") != ANCHOR_VERSION:
+            self.cache["runs"].pop(cache_key, None)
+            for period_key in [key for key in self.cache["periods"] if key.startswith(cache_key + ":")]:
+                self.cache["periods"].pop(period_key, None)
+            self.save()
         if cache_key in self.cache["runs"]:
             cached = self.cache["runs"][cache_key]
-            if cached.get("searchPlan", {}).get("planVersion") != 4:
+            if cached.get("searchPlan", {}).get("planVersion") != PLAN_VERSION:
                 try:
                     revised = self.openai_plan(cached["seedPost"]["text"])
                     cached["searchPlan"] = revised
@@ -1025,6 +1266,11 @@ class Sequitor:
                 cached["model"] = {**cached.get("model", {}), "retrieval": retrieval}
                 self.save()
             if emit:
+                seed_payload = {"post": cached["seedPost"],
+                                "text": cached["seedPost"].get("text", "")[:2000]}
+                if cached.get("entryPost") and cached["entryPost"].get("id") != cached["seedPost"].get("id"):
+                    seed_payload["entryPost"] = cached["entryPost"]
+                emit("seed.resolved", seed_payload)
                 emit_activity(emit, cached, "cache")
                 ordered = sorted(cached["posts"], key=lambda post: -(post.get("likes") or 0))
                 emit_progressive_posts(emit, ordered)
@@ -1045,38 +1291,21 @@ class Sequitor:
             return source_metadata(cached)
         if not self.x:
             raise RuntimeError("X bearer token unavailable")
-        original_text = seed
-        seed_post = None
-        match = re.search(r"/(?:status|statuses)/(\d+)", seed)
-        if match:
-            if emit:
-                emit("stage", {"name": "Resolving the starting post"})
-            original = resolve(match.group(1))
-            if not original.recoverable_text:
-                raise RuntimeError("The seed post's text is unavailable; paste its text instead")
-            original_text = original.text
-            seed_post = {"id": original.tweet_id, "text": original.text,
-                         "publishedAt": original.created_at.isoformat().replace("+00:00", "Z"),
-                         "author": "@" + original.handle, "handle": original.handle,
-                         "authorId": original.author_id, "likes": original.likes,
-                         "avatar": original.avatar or None,
-                         "url": f"https://x.com/{original.handle}/status/{original.tweet_id}",
-                         "scope": "seed", "captureTime": today_utc(), "textIsExcerpt": original.text_is_excerpt,
-                         "quotedPostId": None, "parentId": None}
+        resolved = self.resolve_conversation_seed(seed, emit=emit)
+        original_text = resolved["original_text"]
+        entry_post = resolved["entry_post"]
+        seed_post = resolved["seed_post"]
+        anchor_method = resolved["anchor_method"]
+        anchor_hops = resolved["anchor_hops"]
+        plan = resolved["plan"]
+        planning_text = resolved["planning_text"]
         if emit:
-            emit("seed.resolved", {"post": seed_post, "text": original_text[:2000]})
+            seed_payload = {"post": seed_post, "text": planning_text[:2000],
+                            "anchorMethod": anchor_method, "anchorHops": anchor_hops}
+            if entry_post and seed_post and entry_post["id"] != seed_post["id"]:
+                seed_payload["entryPost"] = entry_post
+            emit("seed.resolved", seed_payload)
             emit("stage", {"name": "Planning bounded discovery with OpenAI"})
-        try:
-            plan = self.openai_plan(original_text)
-        except Exception as exc:
-            # An OpenAI failure is visible in provenance, never silently counted as API use.
-            words = re.findall(r"[\w'-]+", original_text)
-            plan = {"planVersion": 4, "contextLabel": "Unstructured seed post",
-                    "entities": [], "angles": [], "uncertainties": ["Context planning was unavailable."],
-                    "volumePhrase": phrase(" ".join(words[:4])), "discoveryPhrase": None,
-                    "discoveryQueries": [], "expansionQueries": [], "whyDiscovery": "",
-                    "model": None, "error": type(exc).__name__}
-        if emit:
             emit("plan.ready", {"plan": plan})
             emit("stage", {"name": "Measuring phrase activity on X"})
         end = now_safe()
@@ -1110,8 +1339,10 @@ class Sequitor:
         seed_day = seed_post["publishedAt"][:10] if seed_post else ""
         seed_bucket = next((bucket for bucket in buckets if bucket["day"] == seed_day), None)
         selected = seed_day if seed_bucket and seed_bucket["count"] else peak["day"]
-        run = {"id": cache_key, "seed": seed, "title": original_text.split("\n")[0][:110],
+        run = {"id": cache_key, "seed": seed, "title": planning_text.split("\n")[0][:110],
                "kind": "live", "capturedAt": today_utc(),
+               "anchorVersion": ANCHOR_VERSION, "anchorMethod": anchor_method,
+               "anchorHops": anchor_hops,
                "scope": "X counts for one context query" if plan.get("volumeFallback") else "X counts for one exact phrase",
                "query": chart_query, "buckets": buckets, "posts": [],
                "selectedDay": selected, "rankingCoverage": "not collected yet",
@@ -1122,6 +1353,8 @@ class Sequitor:
                         "The feed includes separately marked discovery branches." if plan.get("volumeFallback") else
                         "Bars measure the exact phrase only. The feed can include separately marked discovery branches."),
                "xSpend": round(self.x.spend, 3)}
+        if entry_post and seed_post and entry_post["id"] != seed_post["id"]:
+            run["entryPost"] = entry_post
         self.cache["runs"][cache_key] = run
         self.save()
         if emit:

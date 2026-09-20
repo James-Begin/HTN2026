@@ -221,6 +221,29 @@ class XClient:
         self.search_calls += 1
         return rows, d.get("meta", {}).get("next_token")
 
+    def lookup(self, tweet_id: str):
+        """Read one post and its references, charging every returned post."""
+        # The target is always one billed read; returned reference expansions are
+        # added to the same ledger below.
+        self._guard(1)
+        params = {
+            "tweet.fields": "created_at,public_metrics,author_id,lang,referenced_tweets,conversation_id",
+            "expansions": "author_id,referenced_tweets.id,referenced_tweets.id.author_id",
+            "user.fields": "name,username,profile_image_url",
+        }
+        d = self._get(f"tweets/{tweet_id}", params)
+        row = d.get("data")
+        included = d.get("includes", {})
+        users = {str(user.get("id")): user for user in included.get("users", [])}
+        if row:
+            user = users.get(str(row.get("author_id")))
+            if user:
+                row["sequitor_author"] = user
+        billed_ids = ({str(row["id"])} if row and row.get("id") else set())
+        billed_ids.update(str(item["id"]) for item in included.get("tweets", []) if item.get("id"))
+        self.posts_read += len(billed_ids)
+        return row
+
     def exists_before(self, query: str, when: datetime) -> bool:
         """One request. FREE when it misses, because 0 rows returned = 0 billed."""
         rows, _ = self.search(query, C.ARCHIVE_FLOOR, when)
