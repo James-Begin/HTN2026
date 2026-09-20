@@ -75,7 +75,8 @@
 }
 
 .dario-demo.is-exploring .conversation-sidebar-card {
-  animation: conversation-sidebar-card-in 1.1s cubic-bezier(.16, 1, .3, 1) calc(var(--conversation-card-order, 0) * 120ms) both;
+  animation: conversation-sidebar-card-in 1.45s cubic-bezier(.16, 1, .3, 1)
+    calc(2.1s + var(--conversation-card-order, 0) * 320ms) both;
 }
 
 @media (prefers-reduced-motion: reduce) {
