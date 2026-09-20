@@ -33,10 +33,10 @@ const CARDS: Card[] = [
 
 const CRUISE_MS = 6500
 const FLY_MS = 1800
-const CLONES = 16
-const CRUISE_DEPTH = 49
+const CLONES = 8
+const CRUISE_DEPTH = 36
 const FLY_DEPTH = 90
-const TUNNEL = 82
+const TUNNEL = 58
 const GOLDEN = 2.399963229728653
 
 type CardObject = {
@@ -80,14 +80,14 @@ export default function SearchIntro({ phase, className = '' }: SearchIntroProps)
     const host = hostRef.current; if (!host) return
     const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false }); renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.75)); renderer.setClearColor('#000000'); renderer.outputColorSpace = THREE.SRGBColorSpace; renderer.domElement.className = 'search-intro-canvas'; host.appendChild(renderer.domElement)
-    const scene = new THREE.Scene(); scene.fog = new THREE.FogExp2('#000000', .022); const camera = new THREE.PerspectiveCamera(52, 1, .1, 300); const group = new THREE.Group(); scene.add(group)
+    const scene = new THREE.Scene(); scene.fog = new THREE.FogExp2('#000000', .012); const camera = new THREE.PerspectiveCamera(52, 1, .1, 300); const group = new THREE.Group(); scene.add(group)
     const geometry = new THREE.PlaneGeometry(5.7, 3.72), textures = CARDS.map(textureFor), objects: CardObject[] = []
     const total = CARDS.length * CLONES
     for (let index = 0; index < total; index++) {
       const source = index % CARDS.length, clone = Math.floor(index / CARDS.length)
       const angle = (index * GOLDEN + clone * .73) % (Math.PI * 2)
       const radius = 2.7 + (index % 6) * .72 + (clone % 4) * .28 + (source % 3) * .1
-      const depth = -9.8 - index * (TUNNEL / total) - ((source * 13 + clone * 7) % 10) * .19
+      const depth = -6.2 - index * (TUNNEL / total) - ((source * 13 + clone * 7) % 10) * .12
       const mesh = new THREE.Mesh(geometry, new THREE.MeshBasicMaterial({ map: textures[source], transparent: true, opacity: .98, side: THREE.DoubleSide, depthWrite: false }))
       const base = new THREE.Vector3(
         Math.cos(angle) * radius * 1.2 + Math.sin(index * 2.05) * .24,
