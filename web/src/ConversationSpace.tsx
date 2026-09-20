@@ -84,10 +84,10 @@ function interpolate(value: number, from: number[], to: number[]) {
 const timeX = (frame: Frame, time: number, mode: TimeMode) => mode === 'elapsed' ? (time - frame.origin) * frame.scale : interpolate(time, frame.times, frame.flow)
 const timeAtX = (frame: Frame, x: number, mode: TimeMode) => mode === 'elapsed' ? frame.origin + x / frame.scale : interpolate(x, frame.flow, frame.times)
 const radiusAt = (x: number, display: Display) => RADIUS * display.spread * (display.cone ? .25 + 1.65 * Math.min(1, Math.max(0, x / AXIS_LENGTH)) : 1)
-type SceneAPI = { configure: (display: Display) => void; update: (points: Point[], selected: string, links: string) => void; focus: (id: string) => void; fit: () => void; reset: () => void; preset: (view: 'side' | 'end') => void; dispose: () => void }
+type SceneAPI = { configure: (display: Display) => void; update: (points: Point[], selected: string, links: string) => void; focus: (id: string) => void; fit: () => void; reset: () => void; preset: (view: 'side' | 'end') => void; dispose: () => void; showGuides: () => void }
 
 /** Frozen placement transforms; camera gestures never run a layout simulation. */
-function createScene(host: HTMLDivElement, frame: Frame, seedId: string, initialDisplay: Display, onSelect: (id: string) => void, onHover: (hover: HoveredPoint | null) => void, cinematic: boolean): SceneAPI {
+function createScene(host: HTMLDivElement, frame: Frame, seedId: string, initialDisplay: Display, onSelect: (id: string) => void, onHover: (hover: HoveredPoint | null) => void, cinematic: boolean, births: Map<string, number>): SceneAPI {
   let display = initialDisplay
   const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false })
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.8))
@@ -118,7 +118,7 @@ function createScene(host: HTMLDivElement, frame: Frame, seedId: string, initial
   let initiallyFitted = false
   let lastAutoFit = 0
   let cameraTouched = false
-  let entered = new Map<string, number>()
+  let hideGuides = cinematic
   let cameraTween: { start: number; from: THREE.Vector3; to: THREE.Vector3; fromTarget: THREE.Vector3; toTarget: THREE.Vector3 } | null = null
   const dummy = new THREE.Object3D()
   const baseGeometry = new THREE.IcosahedronGeometry(1, 1)
@@ -190,7 +190,7 @@ function createScene(host: HTMLDivElement, frame: Frame, seedId: string, initial
     label(display.timeMode === 'flow' ? 'PUBLICATION ORDER · GAPS COMPRESSED →' : 'ELAPSED PUBLICATION TIME →', AXIS_LENGTH * .55, -(radiusAt(AXIS_LENGTH * .55, display) * .8 + 20), 0)
     sizeLabels()
   }
-  if (!cinematic) drawGuides()
+  if (!hideGuides) drawGuides()
 
   function moveCamera(to: THREE.Vector3, target: THREE.Vector3) {
     if (reduced) { camera.position.copy(to); controls.target.copy(target); controls.update() }
@@ -218,7 +218,7 @@ function createScene(host: HTMLDivElement, frame: Frame, seedId: string, initial
     let animating = false
     const screenScale = 2 * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) / Math.max(1, host.clientHeight)
     points.forEach((point, slot) => {
-      const progress = reduced ? 1 : Math.min(1, (now - (entered.get(point.post.id) ?? now)) / 320)
+      const progress = reduced ? 1 : Math.min(1, (now - (births.get(point.post.id) ?? now)) / 320)
       if (progress < 1) animating = true
       const active = point.post.id === selected || point.post.id === hovered
       const size = point.post.id === seedId ? .55 : active ? .42 : .22 + Math.min(.15, Math.log1p(Math.max(0, point.post.likes ?? 0)) * .014)
@@ -262,7 +262,6 @@ function createScene(host: HTMLDivElement, frame: Frame, seedId: string, initial
     if (!width || !height) return
     renderer.setSize(width, height); camera.aspect = width / height; camera.updateProjectionMatrix()
     sizeLabels()
-    if (!cameraTouched && points.length) fit()
     invalidate()
   })
   resize.observe(host)
@@ -322,6 +321,12 @@ function createScene(host: HTMLDivElement, frame: Frame, seedId: string, initial
     configure(nextDisplay) {
       if (display.timeMode === nextDisplay.timeMode && display.cone === nextDisplay.cone && display.spread === nextDisplay.spread) return
       display = nextDisplay
+      if (!hideGuides) drawGuides()
+      invalidate()
+    },
+    showGuides() {
+      if (!hideGuides) return
+      hideGuides = false
       drawGuides()
       invalidate()
     },
@@ -330,7 +335,7 @@ function createScene(host: HTMLDivElement, frame: Frame, seedId: string, initial
       if (key === signature) return
       signature = key; points = next; selected = selection
       const now = performance.now()
-      entered = new Map(next.map(point => [point.post.id, entered.get(point.post.id) ?? now]))
+      for (const point of next) if (!births.has(point.post.id)) births.set(point.post.id, now)
       if (!nodes || next.length > capacity) {
         if (nodes) { scene.remove(nodes); nodes.dispose() }
         capacity = Math.max(64, 2 ** Math.ceil(Math.log2(Math.max(1, next.length))))
@@ -432,6 +437,11 @@ export default function ConversationSpace({ posts, seedId, referencePosts, onOpe
   const [failure, setFailure] = useState('')
   const host = useRef<HTMLDivElement>(null)
   const api = useRef<SceneAPI | null>(null)
+  const cinematicRef = useRef(cinematic)
+  cinematicRef.current = cinematic
+  const nodeBirths = useRef(new Map<string, number>())
+  const layoutFitKey = `${earlier}:${timeMode}:${cone}`
+  const layoutFitKeyRef = useRef(layoutFitKey)
   const frameRef = useRef<{ id: string; frame: Frame } | null>(null)
   const maximum = Math.max(reference ? stamp(reference) : 0, ...referenceCorpus.map(stamp))
   if (reference && frameRef.current?.id !== reference.id) {
@@ -478,16 +488,24 @@ export default function ConversationSpace({ posts, seedId, referencePosts, onOpe
   useEffect(() => {
     if (!host.current || !frame || !reference) return
     try {
-      const instance = createScene(host.current, frame, reference.id, display, id => onSelectRef.current(id), setHovered, cinematic)
+      const instance = createScene(host.current, frame, reference.id, display, id => onSelectRef.current(id), setHovered, cinematicRef.current, nodeBirths.current)
       api.current = instance; setFailure('')
+      if (!cinematicRef.current) instance.showGuides()
       return () => { instance.dispose(); api.current = null }
     } catch {
       setFailure('3D rendering is unavailable in this browser. The post list and original source cards remain available.')
     }
-  }, [frame, reference?.id, cinematic])
+  }, [frame, reference?.id])
   useEffect(() => { api.current?.configure(display) }, [display, frame])
   useEffect(() => { api.current?.update(points, activeId, links) }, [points, activeId, links, frame])
-  useEffect(() => { api.current?.fit() }, [earlier, timeMode, cone])
+  useEffect(() => {
+    if (!cinematic) api.current?.showGuides()
+  }, [cinematic])
+  useEffect(() => {
+    if (layoutFitKeyRef.current === layoutFitKey) return
+    layoutFitKeyRef.current = layoutFitKey
+    api.current?.fit()
+  }, [layoutFitKey])
   useEffect(() => { if (selected) onSelectPost?.(selected) }, [selected?.id, onSelectPost])
   useEffect(() => {
     if (!playing || !frame) return
@@ -514,7 +532,6 @@ export default function ConversationSpace({ posts, seedId, referencePosts, onOpe
   if (compact) return <section className={`space-shell space-shell-compact${cinematic ? ' space-shell-cinematic' : ''}`} aria-label="Conversation Space">
     <div className="space-toolbar space-toolbar-compact">
       <div className="space-segment" role="group" aria-label="Visible connections">{[['selected', 'Lineage'], ['none', 'No links']].map(([value, label]) => <button key={value} aria-pressed={links === value} onClick={() => setLinks(value)}>{label}</button>)}</div>
-      <label className="space-earlier"><input type="checkbox" checked={cone} onChange={event => setCone(event.target.checked)} /> Expand with time</label>
       <div className="space-camera"><button onClick={() => api.current?.fit()} aria-label="Fit conversation"><Maximize2 size={15} /></button><button onClick={() => api.current?.reset()} aria-label="Reset camera"><RotateCcw size={15} /></button></div>
     </div>
     <div className="space-workspace space-workspace-compact">

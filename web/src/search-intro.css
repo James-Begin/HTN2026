@@ -1,1 +1,9 @@
-.search-intro{position:relative;width:100%;min-height:100vh;overflow:hidden;background:#000}.search-intro-stage{position:absolute;inset:0}.search-intro-canvas{display:block;width:100%;height:100%}
+.search-intro{position:relative;width:100%;min-height:100vh;overflow:hidden;background:#000}
+.search-intro-stage{position:absolute;inset:0;background:#000}
+.search-intro-canvas{display:block;width:100%;height:100%;opacity:0;animation:search-intro-field-in 1.15s ease-out forwards}
+@keyframes search-intro-field-in{from{opacity:0}to{opacity:1}}
+@keyframes search-intro-field-out{from{opacity:1}to{opacity:0}}
+@media (prefers-reduced-motion:reduce){
+  .search-intro-canvas{animation-duration:1.35s;animation-timing-function:ease}
+  .search-intro.is-resolving .search-intro-canvas{animation:search-intro-field-out 1.8s ease-in forwards}
+}

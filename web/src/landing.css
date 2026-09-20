@@ -1,0 +1,103 @@
+/* Landing-only motion: Mac-style genie exit, then a black beat, then SearchIntro. */
+
+.dario-landing {
+  overflow: hidden;
+  background: #000;
+}
+
+.dario-composer-avatar {
+  background: #000;
+  border-color: #2f3336;
+}
+
+.dario-composer-avatar img {
+  object-fit: contain;
+  padding: 7px;
+}
+
+.dario-landing.is-departing {
+  pointer-events: none;
+}
+
+.dario-landing.is-departing .dario-landing-wordmark,
+.dario-landing.is-departing .dario-example {
+  animation: landing-chrome-out .22s ease forwards;
+}
+
+.dario-landing.is-departing .dario-composer {
+  transform-origin: 108% 46%;
+  animation: landing-genie 1.1s cubic-bezier(.42, 0, .78, .18) forwards;
+  will-change: transform, clip-path, filter, opacity;
+}
+
+.dario-demo .dario-header {
+  justify-content: flex-start;
+}
+
+.dario-transition.is-intro-enter {
+  animation: landing-intro-in .55s cubic-bezier(.22, 1, .36, 1) both;
+}
+
+@keyframes landing-chrome-out {
+  to {
+    opacity: 0;
+    filter: blur(6px);
+  }
+}
+
+@keyframes landing-genie {
+  0% {
+    transform: perspective(1200px) translate3d(0, 0, 0) scale3d(1, 1, 1) rotateY(0deg) skewY(0deg);
+    clip-path: polygon(0% 0%, 100% 0%, 100% 50%, 100% 100%, 0% 100%, 0% 50%);
+    filter: brightness(1);
+    opacity: 1;
+  }
+  16% {
+    transform: perspective(1200px) translate3d(4%, 1%, 0) scale3d(.94, .78, 1) rotateY(-4deg) skewY(-2deg);
+    clip-path: polygon(0% 3%, 90% 8%, 100% 50%, 90% 92%, 0% 97%, 0% 50%);
+    filter: brightness(1.08);
+  }
+  38% {
+    transform: perspective(1200px) translate3d(18%, 3%, 0) scale3d(.62, .42, 1) rotateY(-10deg) skewY(-7deg);
+    clip-path: polygon(2% 14%, 78% 24%, 100% 50%, 78% 76%, 2% 86%, 0% 50%);
+    filter: brightness(1.18);
+  }
+  62% {
+    transform: perspective(1200px) translate3d(38%, 5%, 0) scale3d(.28, .14, 1) rotateY(-16deg) skewY(-12deg);
+    clip-path: polygon(12% 32%, 82% 42%, 100% 50%, 82% 58%, 12% 68%, 8% 50%);
+    filter: brightness(1.32);
+    opacity: 1;
+  }
+  82% {
+    transform: perspective(1200px) translate3d(58%, 7%, 0) scale3d(.1, .045, 1) rotateY(-20deg) skewY(-16deg);
+    clip-path: polygon(36% 44%, 94% 48%, 100% 50%, 94% 52%, 36% 56%, 30% 50%);
+    filter: brightness(1.5);
+    opacity: .85;
+  }
+  100% {
+    transform: perspective(1200px) translate3d(78%, 8%, 0) scale3d(.02, .012, 1) rotateY(-22deg) skewY(-18deg);
+    clip-path: polygon(72% 48.6%, 100% 49.4%, 100% 50%, 100% 50.6%, 72% 51.4%, 70% 50%);
+    filter: brightness(1.7);
+    opacity: 0;
+  }
+}
+
+@keyframes landing-intro-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dario-landing.is-departing .dario-landing-wordmark,
+  .dario-landing.is-departing .dario-example,
+  .dario-landing.is-departing .dario-composer {
+    animation: none;
+    opacity: 0;
+    visibility: hidden;
+    filter: none;
+  }
+
+  .dario-transition.is-intro-enter {
+    animation: none;
+  }
+}
