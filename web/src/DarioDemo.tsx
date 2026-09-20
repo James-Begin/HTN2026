@@ -56,13 +56,28 @@ function ActivityStrip({ posts }: { posts: DarioPost[] }) {
 
 export default function DarioDemo() {
   const [stage, setStage] = useState<DemoStage>('landing'), [input, setInput] = useState(''), [selectedId, setSelectedId] = useState(seed.id)
+  const [sidebarActive, setSidebarActive] = useState(false)
   const timers = useRef<number[]>([])
   const reveal = useConversationReveal(stage === 'forming' || stage === 'exploring' ? allPosts : [])
   const presented = (stage === 'anchor' ? [seed] : reveal.presentedPosts) as DarioPost[]
-  const selected = presented.find(post => post.id === selectedId) || seed
+  const sidebarReveal = useConversationReveal(sidebarActive ? presented : [])
+  const sidebarPosts = sidebarReveal.presentedPosts as DarioPost[]
+  const sidebarSelected = sidebarPosts.find(post => post.id === selectedId) || sidebarPosts.find(post => post.id === seed.id)
   const clearTimers = useCallback(() => { timers.current.forEach(timer => window.clearTimeout(timer)); timers.current = [] }, [])
   const selectPost = useCallback((post: GraphPost) => setSelectedId(post.id), [])
   useEffect(() => clearTimers, [clearTimers])
+  useEffect(() => {
+    if (stage !== 'exploring') {
+      setSidebarActive(false)
+      return
+    }
+    const delay = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 4600
+    const timer = window.setTimeout(() => setSidebarActive(true), delay)
+    return () => window.clearTimeout(timer)
+  }, [stage])
+  useEffect(() => {
+    if (sidebarActive) sidebarReveal.reset()
+  }, [sidebarActive, sidebarReveal.reset])
   const launch = useCallback((query: string) => {
     const value = query.trim()
     if (!value) return
@@ -112,5 +127,5 @@ export default function DarioDemo() {
   </main>
   if (stage === 'searching' || stage === 'resolving') return <main className="dario-transition"><SearchIntro phase={stage === 'searching' ? 'searching' : 'resolving'} /></main>
   const cinematic = stage === 'anchor' || stage === 'forming'
-  return <main className={`dario-demo${cinematic ? ' is-cinematic' : ' is-exploring'}`}><header className="dario-header"><div className="dario-wordmark">sequitor<span>.</span></div><form onSubmit={begin} className="dario-header-search"><Search size={15} aria-hidden="true" /><input aria-label="Dario example post URL" value={input} onChange={event => setInput(event.target.value)} /><button type="submit">New search</button></form></header><section className="dario-workspace" aria-label="Dario conversation"><div className="dario-viewer-column"><ConversationSpace posts={presented as GraphPost[]} seedId={seed.id} referencePosts={allPosts as GraphPost[]} compact cinematic={cinematic} onOpenPost={() => undefined} onSelectPost={selectPost} /><ActivityStrip posts={presented} />{stage === 'exploring' && !reveal.isComplete && <button type="button" className="dario-skip" onClick={reveal.skip}>Show all <SkipForward size={14} /></button>}</div><ConversationSidebar posts={presented} selectedPost={selected} referenceId={seed.id} onSelect={setSelectedId} context={context} status={status} /></section></main>
+  return <main className={`dario-demo${cinematic ? ' is-cinematic' : ' is-exploring'}`}><header className="dario-header"><div className="dario-wordmark">sequitor<span>.</span></div><form onSubmit={begin} className="dario-header-search"><Search size={15} aria-hidden="true" /><input aria-label="Dario example post URL" value={input} onChange={event => setInput(event.target.value)} /><button type="submit">New search</button></form></header><section className="dario-workspace" aria-label="Dario conversation"><div className="dario-viewer-column"><ConversationSpace posts={presented as GraphPost[]} seedId={seed.id} referencePosts={allPosts as GraphPost[]} compact cinematic={cinematic} onOpenPost={() => undefined} onSelectPost={selectPost} /><ActivityStrip posts={presented} />{stage === 'exploring' && !reveal.isComplete && <button type="button" className="dario-skip" onClick={reveal.skip}>Show all <SkipForward size={14} /></button>}</div><ConversationSidebar posts={sidebarPosts} selectedPost={sidebarSelected} referenceId={seed.id} onSelect={setSelectedId} context={context} status={status} /></section></main>
 }

@@ -1,5 +1,4 @@
 import { ArrowUpRight, CornerUpLeft, Quote } from 'lucide-react'
-import type { CSSProperties } from 'react'
 import './conversation-sidebar.css'
 
 /**
@@ -88,7 +87,7 @@ function relationLabel(relation: Relation | undefined, direction: LineageItem['d
   return direction === 'ancestor' ? 'Parent post' : 'Replies to this post'
 }
 
-function TweetCard({ post, selected, reference, relation, relationDirection, onSelect, dense = false, revealOrder = 0 }: {
+function TweetCard({ post, selected, reference, relation, relationDirection, onSelect, dense = false }: {
   post: ConversationSidebarPost
   selected?: boolean
   reference?: boolean
@@ -96,12 +95,10 @@ function TweetCard({ post, selected, reference, relation, relationDirection, onS
   relationDirection?: LineageItem['direction']
   onSelect: (postId: string) => void
   dense?: boolean
-  revealOrder?: number
 }) {
   const author = displayAuthor(post)
   const date = Number.isNaN(Date.parse(post.publishedAt)) ? undefined : formatter.format(new Date(post.publishedAt))
-  const style = { '--conversation-card-order': Math.min(revealOrder, 10) } as CSSProperties
-  return <article className={`conversation-sidebar-card${selected ? ' is-selected' : ''}${dense ? ' is-dense' : ''}`} style={style}>
+  return <article className={`conversation-sidebar-card${selected ? ' is-selected' : ''}${dense ? ' is-dense' : ''}`}>
     <button className="conversation-sidebar-card-main" type="button" onClick={() => onSelect(post.id)} aria-pressed={selected}>
       <span className="conversation-sidebar-avatar" aria-hidden="true">
         <span>{avatarLabel(post)}</span>
@@ -139,7 +136,6 @@ export default function ConversationSidebar({
   status = 'waiting',
 }: ConversationSidebarProps) {
   const byId = new Map(posts.map(post => [post.id, post]))
-  const revealOrder = new Map(posts.map((post, index) => [post.id, index]))
   const reference = byId.get(referenceId)
   const source = selectedPost || reference || posts[0]
   const lineage = source ? lineageFor(source, byId) : []
@@ -159,20 +155,20 @@ export default function ConversationSidebar({
 
     {source ? <section className="conversation-sidebar-selected" aria-label="Selected post">
       <div className="conversation-sidebar-heading"><h2>{source.id === referenceId ? 'Starting post' : 'Selected post'}</h2></div>
-      <TweetCard post={source} selected reference={source.id === referenceId} onSelect={onSelect} revealOrder={revealOrder.get(source.id)} />
+      <TweetCard post={source} selected reference={source.id === referenceId} onSelect={onSelect} />
     </section> : <p className="conversation-sidebar-empty">Posts will appear here as the conversation is found.</p>}
 
     {lineage.length > 1 && <section className="conversation-sidebar-lineage" aria-label="Observed lineage">
       <div className="conversation-sidebar-heading"><h2>Lineage</h2><span>Observed links</span></div>
       <ol>{lineage.map(item => <li key={item.post.id} className={item.direction === 'source' ? 'is-source' : ''}>
         <span className="conversation-sidebar-line" />
-        <TweetCard post={item.post} selected={item.post.id === source?.id} reference={item.post.id === referenceId} relation={item.relation} relationDirection={item.direction} onSelect={onSelect} dense revealOrder={revealOrder.get(item.post.id)} />
+        <TweetCard post={item.post} selected={item.post.id === source?.id} reference={item.post.id === referenceId} relation={item.relation} relationDirection={item.direction} onSelect={onSelect} dense />
       </li>)}</ol>
     </section>}
 
     {related.length > 0 && <section className="conversation-sidebar-related" aria-label="Other captured posts">
       <div className="conversation-sidebar-heading"><h2>Captured posts</h2><span>{related.length}</span></div>
-      <div>{related.map(post => <TweetCard key={post.id} post={post} selected={post.id === source?.id} reference={post.id === referenceId} onSelect={onSelect} dense revealOrder={revealOrder.get(post.id)} />)}</div>
+      <div>{related.map(post => <TweetCard key={post.id} post={post} selected={post.id === source?.id} reference={post.id === referenceId} onSelect={onSelect} dense />)}</div>
     </section>}
   </aside>
 }
