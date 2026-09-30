@@ -28,26 +28,28 @@ const cards: Card[] = [
   { author: 'Joe Biden', handle: '@JoeBiden', text: 'It’s a new day in America.', year: '2021', accent: '#94d1ed' },
 ]
 
-// Three passes through the archival deck fill the depth of the tunnel. Each
-// repeat has a new position and rotation, so it reads as a field rather than
-// a loop of identical cards. The card in front still has time to be read.
-const field = Array.from({ length: 66 }, (_, i) => ({ card: cards[i % cards.length], i }))
+// Pack six depth passes close together so the viewer begins inside a cloud of
+// cards. Repeated posts have different positions and rotations in each pass.
+const field = Array.from({ length: 132 }, (_, i) => ({ card: cards[i % cards.length], i }))
 const position = (i: number) => {
   const angle = i * 2.399963229728653 // golden angle spreads neighbouring cards
+  const inset = i % 7 === 2 || i % 7 === 5 ? 0.48 : 1
+  const verticalEdge = i % 13 === 3 ? -790 : i % 13 === 9 ? 790 : null
   return {
-    x: Math.cos(angle) * (360 + ((i * 137) % 500)),
-    y: Math.sin(angle) * (210 + ((i * 101) % 300)),
+    x: Math.cos(angle) * (550 + ((i * 197) % 520)) * inset,
+    y: verticalEdge ?? Math.sin(angle) * (320 + ((i * 157) % 360)) * inset,
   }
 }
-// Start over three times faster than the original cut, then accelerate hard.
-const travel = (frame: number) => frame <= 85
-  ? frame * 2.1
-  : 178.5 + (frame - 85) * 2.1 + 0.255 * (frame - 85) ** 2
+// Motion begins at a running pace and continues to accelerate until the last
+// card has passed, leaving the full final second empty before the graph.
+const travel = (frame: number) => frame <= 80
+  ? frame * 6.5
+  : 520 + (frame - 80) * 6.5 + 0.25 * (frame - 80) ** 2
 
 const CardFace = ({ card }: { card: Card }) => (
   <div style={{
-    width: 448, padding: '24px 25px 22px', boxSizing: 'border-box',
-    borderRadius: 17, background: '#0c1116', border: '1px solid #33414d',
+    width: 480, padding: '24px 25px 22px', boxSizing: 'border-box',
+    borderRadius: 17, background: '#101920', border: '1px solid #485d6b',
     boxShadow: '0 18px 55px #000e, inset 0 1px #ffffff0b',
   }}>
     <div style={{ display: 'flex', alignItems: 'center', gap: 13 }}>
@@ -74,7 +76,7 @@ const CardFace = ({ card }: { card: Card }) => (
 export const FlybyScene = () => {
   const frame = useCurrentFrame()
   const rush = easeOut((frame - 100) / 135)
-  const exit = 1 - fade(frame, 240, 269)
+  const exit = 1 - fade(frame, 230, 239)
   const distance = travel(frame)
   return (
     <AbsoluteFill style={{
@@ -94,10 +96,10 @@ export const FlybyScene = () => {
       </svg>
       <div style={{ position: 'absolute', inset: 0, perspective: 1100, perspectiveOrigin: '50% 50%' }}>
         {field.map(({ card, i }) => {
-          const z = -140 - i * 92 + distance
+          const z = 85 - i * 52 + distance
           const scale = Math.min(2.3, 1000 / Math.max(400, 1000 - z))
-          const visible = clamp01((z + 1750) / 300) * clamp01((320 - z) / 190)
-          const opacity = visible * fade(frame, 6, 29) * exit
+          const visible = clamp01((z + 2450) / 450) * clamp01((390 - z) / 50)
+          const opacity = visible * fade(frame, 2, 16) * exit
           const sway = Math.sin((frame + i * 21) * 0.021) * 10
           const { x, y } = position(i)
           return <div key={i} style={{
@@ -113,7 +115,7 @@ export const FlybyScene = () => {
         borderRadius: '50%', background: palette.cyan, boxShadow: '0 0 55px #90e8ff',
         opacity: 1 - fade(frame, 0, 20), transform: `scale(${interpolate(frame, [0, 20], [1, 0.2], { extrapolateRight: 'clamp' })})`,
       }} />
-      <AbsoluteFill style={{ background: '#000', opacity: fade(frame, 252, 269) }} />
+      <AbsoluteFill style={{ background: '#000', opacity: fade(frame, 230, 239) }} />
     </AbsoluteFill>
   )
 }
