@@ -28,16 +28,22 @@ const cards: Card[] = [
   { author: 'Joe Biden', handle: '@JoeBiden', text: 'It’s a new day in America.', year: '2021', accent: '#94d1ed' },
 ]
 
-// Pack six depth passes close together so the viewer begins inside a cloud of
-// cards. Repeated posts have different positions and rotations in each pass.
-const field = Array.from({ length: 132 }, (_, i) => ({ card: cards[i % cards.length], i }))
+// The cards stay fixed in world space; only the camera advances along Z.
+// Twelve passes give us twice the previous number of cards in the same tunnel.
+const field = Array.from({ length: 264 }, (_, i) => ({ card: cards[i % cards.length], i }))
 const position = (i: number) => {
   const angle = i * 2.399963229728653 // golden angle spreads neighbouring cards
   const inset = i % 7 === 2 || i % 7 === 5 ? 0.48 : 1
   const verticalEdge = i % 13 === 3 ? -790 : i % 13 === 9 ? 790 : null
+  const x = Math.cos(angle) * (550 + ((i * 197) % 520)) * inset
+  const y = verticalEdge ?? Math.sin(angle) * (320 + ((i * 157) % 360)) * inset
+  // Leave a narrow clear corridor for the camera. Every card can then pass
+  // beside it through perspective alone, without a sideways animation.
+  const clearance = Math.max(Math.abs(x) / 430, Math.abs(y) / 360)
+  const corridorScale = clearance < 1 ? 1 / clearance : 1
   return {
-    x: Math.cos(angle) * (550 + ((i * 197) % 520)) * inset,
-    y: verticalEdge ?? Math.sin(angle) * (320 + ((i * 157) % 360)) * inset,
+    x: x * corridorScale,
+    y: y * corridorScale,
   }
 }
 // Motion begins at a running pace and continues to accelerate until the last
@@ -83,23 +89,21 @@ export const FlybyScene = () => {
     }}>
       <div style={{ position: 'absolute', inset: 0, perspective: 1100, perspectiveOrigin: '50% 50%' }}>
         {field.map(({ card, i }) => {
-          const z = 85 - i * 52 + distance
-          // By this depth the card is completely outside the viewport. Cull it
-          // only after it has flown past an edge, never while still on screen.
-          if (z >= 390) return null
-          const scale = Math.min(2.3, 1000 / Math.max(400, 1000 - z))
-          const opacity = clamp01((z + 2450) / 450) * fade(frame, 2, 16)
-          const sway = Math.sin((frame + i * 21) * 0.021) * 10
+          const z = 85 - i * 23 + distance
+          if (z <= -2450 || z >= 1000) return null
+          const scale = 1000 / (1000 - z)
           const { x, y } = position(i)
-          const rayLength = Math.hypot(x / 960, y / 540) || 1
-          const pass = Math.max(0, (z - 80) / 310)
-          const outward = 2500 * pass * pass
+          // The conservative bounds include text, card rotation and shadow.
+          // A card is removed only once its entire rectangle is past an edge.
+          if (Math.abs(x * scale) > 960 + 300 * scale + 70 ||
+              Math.abs(y * scale) > 540 + 260 * scale + 70) return null
+          const opacity = clamp01((z + 2450) / 450) * fade(frame, 2, 16)
           return <div key={i} style={{
             position: 'absolute',
-            left: 960 + x * scale + (x / 960 / rayLength) * outward,
-            top: 540 + (y + sway) * scale + (y / 540 / rayLength) * outward,
+            left: 960 + x * scale,
+            top: 540 + y * scale,
             opacity, zIndex: Math.round(z + 2000),
-            transform: `translate(-50%, -50%) rotateX(${(i % 3 - 1) * 5 + Math.sin(frame * .012 + i) * 2}deg) rotateY(${(i % 4 - 1.5) * 7 + Math.sin(frame * .008 + i) * 3}deg) scale(${scale})`,
+            transform: `translate(-50%, -50%) rotateX(${(i % 3 - 1) * 5}deg) rotateY(${(i % 4 - 1.5) * 7}deg) scale(${scale})`,
             filter: `blur(${Math.max(0, -z - 1100) / 500}px)`,
           }}><CardFace card={card} /></div>
         })}

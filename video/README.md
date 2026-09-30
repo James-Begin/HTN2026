@@ -8,7 +8,7 @@ The portfolio video is rendered frame by frame from React components and saved D
 | --- | --- | --- |
 | 0:00–0:03.5 | Logo | A cyan trace resolves into the Sequitor wordmark. Hold long enough to read the name. |
 | 0:03.5–0:11.5 | Landing | The search field types Dario's actual post opening. A click sends the interface through a cyan genie-shaped collapse. |
-| 0:11.5–0:20.5 | Search | Twenty-two recognizable public posts appear as 132 X-style cards across six depth passes. The camera begins inside the surrounding field; the cards accelerate around and past the viewer, exit beyond the frame edges, then leave black. |
+| 0:11.5–0:20.5 | Search | Twenty-two recognizable public posts appear as 264 X-style cards across twelve depth passes. The cards form a stationary 3D cloud while the camera travels straight through it; perspective carries each card past the frame edges, then leaves black. |
 | 0:20.5–0:42 | Conversation | The reference node appears first. Actual captured posts and observed reply/quote links accumulate slowly, then faster, as the camera pulls back and the activity chart and post list reveal the full UI. |
 
 The visual rhythm uses the reference ideas of focused product shots, deliberate camera movement, and a UI payoff, rather than recording a cursor for 40 seconds. Source examples: [X product-demo edit](https://x.com/DerekFeehrer/status/2028887848901067042), [Remotion prompt showcase](https://www.remotion.dev/prompts), and [Remotion Recorder's scene guidance](https://www.remotion.dev/docs/recorder).
