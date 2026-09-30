@@ -57,7 +57,7 @@ class TestCapFeed(unittest.TestCase):
     def test_feed_target_is_five_hundred(self):
         self.assertEqual(server.FEED_TARGET, 500)
         self.assertEqual(server.PERIOD_SCHEMA, 6)
-        self.assertEqual(server.ANCHOR_VERSION, 2)
+        self.assertEqual(server.ANCHOR_VERSION, 5)
 
 
 class TestSearchPagination(unittest.TestCase):

@@ -1108,7 +1108,7 @@ class Sequitor:
         return [cached.get(digest) for digest in hashes], f"OpenAI {model}"
 
     def rank_posts(self, seed: dict, posts: list[dict]) -> dict:
-        """Stable hybrid scoring now; a future trained reranker simply supplies one signal."""
+        """Rank retrieved posts with claim, semantic, lexical, and observed-link signals."""
         if not posts:
             return {"status": "no posts", "semantic": None, "reranker": "not available"}
         try:
@@ -1132,6 +1132,8 @@ class Sequitor:
             if reranker is None:
                 reranker = post.get("rerankerScore")
                 reranker_name = "Baseten BGE reranker"
+            # OpenJev's same-claim probability takes precedence when both
+            # models ran. Without either model, rebalance toward embeddings.
             score = (.45 * float(reranker) + .25 * semantic + .18 * lexical + .08 * relation + .04 * scope) if reranker is not None \
                 else (.52 * semantic + .25 * lexical + .18 * relation + .05 * scope)
             post["semanticScore"] = round(semantic, 4)

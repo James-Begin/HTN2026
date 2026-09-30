@@ -1,112 +1,81 @@
 # Sequitor
 
-Paste an X post. Watch the conversation around it take shape.
+**Follow a post back to the conversation it came from—and watch that conversation unfold.**
 
-Live demo: [sequitor-live-production.up.railway.app](https://sequitor-live-production.up.railway.app)
+[Live app](https://sequitor-live-production.up.railway.app) · [Recorded demo (no API keys)](https://james-begin.github.io/HTN2026/) · [Watch the walkthrough](docs/assets/sequitor-demo.mp4)
 
-Recorded demo (no API keys): [james-begin.github.io/HTN2026](https://james-begin.github.io/HTN2026/)
+Sequitor is a Hack the North 2026 project for exploring how a piece of information moves through X. Paste a post URL or enter a topic: it looks for a useful reference post, searches outward for related posts, and builds an interactive conversation space as the results arrive. Announcements, reactions, jokes, and paraphrases can all appear in the same investigation. The goal is to make the surrounding conversation legible, **not** to declare which post is true or prove that one author influenced another.
 
-Hack the North 2026. Built with OpenAI, X, and Baseten.
+[![Sequitor conversation space — play the demo](docs/assets/sequitor-poster.jpg)](docs/assets/sequitor-demo.mp4)
 
-## What you get
+The [50-second video](docs/assets/sequitor-demo.mp4) is cut from a real desktop recording; [the edit script](scripts/edit_demo_video.py) reproduces the titles, pacing, and poster.
 
-1. Paste a post URL or a short query.
-2. Sequitor finds a source post when you pasted commentary instead of the original.
-3. It measures phrase activity on X and pulls related posts.
-4. Posts land in a 3D conversation view, sized by reach, plus a readable sidebar.
+## Why this exists
 
-Similarity and retrieval are not claims about truth, copying, or who influenced whom.
+By the time an interesting post reaches you, it may be a quote, a joke, or a reaction to something you have never seen. A keyword search returns a list, but it rarely shows how those posts relate. Sequitor starts with the post you have and gives you a way to inspect its possible source, the activity around a phrase, and the different ways people responded.
 
-## Backend
+The central view plots retrieved posts around the reference post. The horizontal axis follows publication time; distance and direction in the other two dimensions come from seed-relative embedding similarity and a stable projection of semantic differences. Lines represent **observed** replies or quotes, when X provides them. The position of a node is an exploratory aid, not evidence of a causal relationship or a meaningful cluster by itself.
 
-A live search is one SSE job (`POST /api/runs` → `GET /api/runs/{id}/events`):
+## How an investigation works
 
-1. Resolve the pasted URL to a post (syndication, then X if needed).
-2. If that post is commentary, walk quote/reply parents or search for a source post (`sequitor_anchor.py`).
-3. OpenAI writes a bounded search plan (volume phrase + a few discovery queries).
-4. X counts fill the histogram; X search fills the feed (phrase, conversation, expansion).
-5. Posts are ranked and placed; OpenJev scores claim equivalence; an optional Baseten Chain adds roles/edges.
+```mermaid
+flowchart LR
+    A[Post URL or topic] --> B[Resolve a reference post]
+    B --> C[Plan search paths]
+    C --> D[X counts and post search]
+    D --> E[Embed and rank]
+    E --> F[Conversation space + timeline]
+    E --> G[Optional Baseten models]
+    G --> F
+```
 
-Recorded mode replays `demo/recordings/` and skips X. Details, rank weights, and model tables: [docs/BACKEND.md](docs/BACKEND.md).
+1. **Find a reference.** For a URL, Sequitor resolves the post and inspects quote/reply parents. If the input looks like commentary, it searches for an earlier post that supplies the concrete premise. OpenAI can choose from *supplied candidate IDs*; the choice is verified before it becomes the anchor.
+2. **Search beyond the seed text.** OpenAI produces a bounded plan with a phrase for activity counts and discovery queries for related posts. The backend combines X counts, phrase search, conversation search, and context expansion.
+3. **Rank without flattening the story.** Embedding similarity, token overlap, direct reply/quote links, and retrieval scope are combined with a same-claim score when a reranker is available. A reaction can remain visible even when it is not the same claim.
+4. **Build the view live.** The Python API emits Server-Sent Events (SSE). The React frontend progressively fills the activity chart, post feed, and Three.js conversation space. Reconnects resume the event log without repeating paid searches.
 
-Hybrid score when a reranker is present:
+The saved Dario example replays locally without API calls. Live investigations require your own X and OpenAI credentials; Baseten routes are optional. See [backend architecture and evaluation](docs/BACKEND.md) for the exact signals and fallbacks.
 
-`0.45·same-claim + 0.25·embedding + 0.18·overlap + 0.08·reply/quote + 0.04·scope`
+## The model work
 
-OpenJev’s `sameClaimScore` wins over BGE’s `rerankerScore`.
+An off-the-shelf relevance reranker can rate a denial or a joke highly because it shares the topic. We curated **18,948** post pairs, including **6,343 cross-lingual pairs**, and fine-tuned OpenJev-4B with a five-way head: `same_verbatim`, `same_paraphrase`, `meta`, `incidental`, and `unrelated`. The first two classes form the same-claim score. Training ran on an H100 in a separate Baseten account; the model weights are not committed here. The inference adapter and optional Baseten Chain integration are in this repository.
 
-## OpenJev vs BGE
+| Model | 170-pair AUC | F1 at 0.5 | H100 throughput, batch 32 |
+| --- | ---: | ---: | ---: |
+| Fine-tuned BGE-large | **0.959** | 0.852 | ~4,700 pairs/s |
+| Fine-tuned OpenJev-4B LoRA | 0.951 | **0.897** | ~264 pairs/s |
 
-Stock BGE is a relevance reranker. It scores a *denial* or a *reaction* high because the wording is on-topic. We fine-tune a 5-class head (`same_verbatim`, `same_paraphrase`, `meta`, `incidental`, `unrelated`) on mined news pairs (`mine/`, 18,948 rows, 6,343 cross-lingual). Same-claim = verbatim + paraphrase.
+These are results on a small, curated evaluation set, not a general accuracy claim. BGE-large is much faster and slightly ahead on AUC; we used OpenJev for its five-way distinction and strong F1 at the chosen threshold. The full data, hard cases, measurement sources, and limitations are in [docs/BACKEND.md](docs/BACKEND.md). When a configured model route is unavailable, the live pipeline falls back to the remaining signals.
 
-| Model | 25-pair AUC | 25 F1@0.5 | 170-pair AUC | 170 F1@0.5 |
-| --- | ---: | ---: | ---: | ---: |
-| BGE off-the-shelf | 0.77 | —† | — | — |
-| OpenJev, no fine-tune | 0.88 | 0.63 | 0.86 | 0.25 |
-| BGE-large, fine-tuned | **0.99** | 0.91 | **0.96** | 0.85 |
-| OpenJev-4B LoRA, fine-tuned | 0.95 | 0.91 | 0.95 | **0.90** |
+## Run locally
 
-†No cutoff separates the 25-pair set (margin −0.80). Best F1 is 0.71. Sources: `runs/suite/full_comparison_summary.json`, `openjev_finetuned.json`, `eval/README.md`.
-
-Hard cases (same-claim score; want high on the first three, low on the last two):
-
-| Pair | Stock BGE | OpenJev (no FT) | BGE-large FT | OpenJev FT |
-| --- | ---: | ---: | ---: | ---: |
-| English paraphrase, no shared phrase | 0.29 | 0.11 | 0.98 | 0.99 |
-| Arabic coverage of the same announcement | 0.01 | 0.12 | 0.97 | 0.99 |
-| Title+link vs full announcement | 0.26 | 0.09 | 0.97 | 0.98 |
-| Commentary (“Elon agreed…”) | **0.81** | 0.01 | 0.01 | 0.03 |
-| Acronym, different entity | low–mid | 0.00 | 0.01 | 0.01 |
-
-BGE-large is the faster ranker (~4.7k pairs/s vs ~260 for Jev-4B on H100). Production uses fine-tuned OpenJev for the claim score and register; BGE remains the Chain fallback. Training: `train/`. Eval: `eval/`.
-
-## Run it locally
+Requirements: **Python 3.12+** and **Node.js 22+**. The API itself uses the Python standard library; the frontend dependencies are pinned in `web/package-lock.json`.
 
 ```bash
-cp .env.example .env   # add X_BEARER, OPENAI_API_KEY, BASETEN_API_KEY
+git clone https://github.com/James-Begin/HTN2026.git
+cd HTN2026
+cp .env.example .env
 cd web && npm ci && npm run build && cd ..
 python3 sequitor_server.py
 ```
 
-Open http://127.0.0.1:8765
+Open [http://127.0.0.1:8765](http://127.0.0.1:8765) and choose **Try Dario's post** for the keyless recorded demo. For live searches, put `X_BEARER` and `OPENAI_API_KEY` in `.env`. `BASETEN_API_KEY` and the model/Chain URLs enable optional model calls; see [.env.example](.env.example) for every setting. **Never commit `.env` or paste credentials into browser code.** Live X searches may incur API charges.
 
-For frontend work, run the Python server and `cd web && npm run dev` in two terminals. Vite proxies `/api`.
+For frontend development, leave the Python server running and start `cd web && npm run dev` in another terminal; Vite proxies `/api`. For one-service deployment, see [Railway setup](docs/RAILWAY_DEPLOY.md). The [GitHub Pages version](https://james-begin.github.io/HTN2026/) is a recorded, offline demo.
 
-**Try Dario’s post** replays a saved capture (no X spend). Any other URL hits the live API.
+## Explore the repository
 
-Optional live model routes: `SEQUITOR_JEV_RERANK_URL`, `SEQUITOR_BASETEN_CHAIN_URL` (see `.env.example`).
-
-Deploy notes: [docs/RAILWAY_DEPLOY.md](docs/RAILWAY_DEPLOY.md)
-
-## Stack
-
-| Piece | Role |
+| Path | What is there |
 | --- | --- |
-| `web/` | React / Three.js UI |
-| `sequitor_server.py` | SSE investigation API |
-| OpenAI | Search plan from the seed text |
-| X API | Counts and post retrieval |
-| OpenJev (Baseten) | Fine-tuned 5-class same-claim score |
-| BGE / Baseten Chain | Fallback rerank, roles, observed edges |
+| `web/src/` | Landing experience, streaming UI, timeline, and Three.js conversation space |
+| `sequitor_server.py` | Investigation API, SSE log, search, ranking, and spatial projection |
+| `sequitor_anchor.py` | Reference-post selection and verification |
+| `sequitor_openjev.py`, `baseten_*` | OpenJev and Baseten adapters |
+| `claimtrace/` | X client, URL resolution, and embedding helpers |
+| `demo/recordings/` | Saved investigations for the no-key demo |
+| `mine/`, `train/`, `eval/`, `runs/suite/` | Data curation, training code, evaluation, and measured outputs |
+| `docs/BACKEND.md` | Detailed pipeline, scoring weights, model comparison, and caveats |
 
-## Repo layout
+To run the focused checks: `python3 -m unittest discover -s tests -t .` and `cd web && npm run build`.
 
-```
-web/                 browser app
-sequitor_server.py   live + recorded runs
-sequitor_anchor.py   source-post resolution
-sequitor_openjev.py  OpenJev Baseten client
-claimtrace/          X client, resolver, embeddings
-demo/recordings/     saved Dario / anchor fixtures
-docs/BACKEND.md      pipeline, rank weights, Jev vs BGE
-train/ eval/ mine/   data, fine-tune, gates
-runs/suite/          measured comparison JSON
-cli.py               older claimtrace CLI
-```
-
-## Tests
-
-```bash
-python3 -m unittest discover -s tests -t .
-cd web && npx tsc -b
-```
+This repository does not include model weights, service credentials, or the original training machine's environment. It also does not ship an automated claim-verification system: similarity and chronology help you investigate a conversation, but they cannot establish truth or provenance on their own.

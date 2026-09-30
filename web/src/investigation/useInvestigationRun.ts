@@ -89,6 +89,8 @@ export function useInvestigationRun() {
             throw new Error('Invalid investigation event')
           }
           const message = decoded as unknown as StreamEvent
+          // SSE replays missed events after reconnect. Ignore duplicate
+          // sequence numbers so chart buckets and posts do not jump backward.
           if (message.sequence <= sequenceRef.current) return
           validateEvent(message)
           sequenceRef.current = message.sequence
