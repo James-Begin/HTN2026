@@ -8,10 +8,12 @@ The portfolio video is rendered frame by frame from React components and saved D
 | --- | --- | --- |
 | 0:00–0:03.5 | Logo | A cyan trace resolves into the Sequitor wordmark. Hold long enough to read the name. |
 | 0:03.5–0:11.5 | Landing | The search field types Dario's actual post opening. A click sends the interface through a cyan genie-shaped collapse. |
-| 0:11.5–0:20.5 | Search | Recognizable post cards float in a deep field. They start slow enough to read, then accelerate past the viewer into black. |
+| 0:11.5–0:20.5 | Search | Twenty-two recognizable public posts appear as 66 X-style cards across three depth passes. The field starts in motion, accelerates past the viewer, then clears to black. |
 | 0:20.5–0:42 | Conversation | The reference node appears first. Actual captured posts and observed reply/quote links accumulate slowly, then faster, as the camera pulls back and the activity chart and post list reveal the full UI. |
 
 The visual rhythm uses the reference ideas of focused product shots, deliberate camera movement, and a UI payoff, rather than recording a cursor for 40 seconds. Source examples: [X product-demo edit](https://x.com/DerekFeehrer/status/2028887848901067042), [Remotion prompt showcase](https://www.remotion.dev/prompts), and [Remotion Recorder's scene guidance](https://www.remotion.dev/docs/recorder).
+
+The flyby cards use the public-post text and handles already curated for Sequitor's search animation. Examples include [Jack Dorsey's first post](https://x.com/jack/status/20), [Horse ebooks' “Everything happens so much”](https://x.com/Horse_ebooks/status/218439593240956928), and the [CIA's first post](https://x.com/CIA/status/474971393852182528). The cards are a stylized re-creation, not screenshots or live embeds. Profile images are bundled in `public/avatars` so renders do not depend on X or its API; they show available current portraits and account logos rather than necessarily the avatars used at the time of the posts. See [avatar sources and credits](public/avatars/README.md).
 
 ## Rebuild
 

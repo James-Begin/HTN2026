@@ -1,4 +1,4 @@
-import { AbsoluteFill, interpolate, useCurrentFrame } from 'remotion'
+import { AbsoluteFill, Img, interpolate, staticFile, useCurrentFrame } from 'remotion'
 import { clamp01, easeOut, fade, palette } from '../motion'
 
 type Card = { author: string; handle: string; text: string; year: string; accent: string }
@@ -6,11 +6,16 @@ type Card = { author: string; handle: string; text: string; year: string; accent
 const cards: Card[] = [
   { author: 'Jack Dorsey', handle: '@jack', text: 'just setting up my twttr', year: '2006', accent: '#94cfee' },
   { author: 'Kanye West', handle: '@kanyewest', text: 'I hate when I’m on a flight and I wake up with a water bottle next to me like oh great now I gotta be responsible for this water bottle.', year: '2010', accent: '#e8c58d' },
+  { author: 'Sohaib Athar', handle: '@ReallyVirtual', text: 'Helicopter hovering above Abbottabad at 1AM (is a rare event).', year: '2011', accent: '#a8d8b9' },
+  { author: 'Keith Urbahn', handle: '@keithurbahn', text: 'So I’m told by a reputable person they have killed Osama Bin Laden. Hot damn.', year: '2011', accent: '#9dbce9' },
   { author: 'Horse ebooks', handle: '@Horse_ebooks', text: 'Everything happens so much', year: '2012', accent: '#f1b4ce' },
   { author: 'Curiosity Rover', handle: '@MarsCuriosity', text: 'I’m safely on the surface of Mars. GALE CRATER I AM IN YOU!!! #MSL', year: '2012', accent: '#dcad9e' },
+  { author: 'Pope Benedict XVI', handle: '@Pontifex', text: 'Dear friends, I am pleased to get in touch with you through Twitter. Thank you for your generous response. I bless all of you from my heart.', year: '2012', accent: '#d8d499' },
   { author: 'wint', handle: '@dril', text: 'IF THE ZOO BANS ME FOR HOLLERING AT THE ANIMALS I WILL FACE GOD AND WALK BACKWARDS INTO HELL', year: '2012', accent: '#bfbcf4' },
+  { author: 'wint', handle: '@dril', text: 'Food $200 Data $150 Rent $800 Candles $3,600 Utility $150 someone who is good at the economy please help me budget this. my family is dying', year: '2013', accent: '#c9b1f2' },
   { author: 'CIA', handle: '@CIA', text: 'We can neither confirm nor deny that this is our first tweet.', year: '2014', accent: '#78c8e2' },
   { author: 'Stephen King', handle: '@StephenKing', text: 'My first tweet. No longer a virgin. Be gentle!', year: '2013', accent: '#e1a7d7' },
+  { author: 'Leonard Nimoy', handle: '@TheRealNimoy', text: 'A life is like a garden. Perfect moments can be had, but not preserved, except in memory. LLAP', year: '2015', accent: '#b9a9f3' },
   { author: 'Edward Snowden', handle: '@Snowden', text: 'Can you hear me now?', year: '2015', accent: '#a0dfce' },
   { author: 'Hillary Clinton', handle: '@HillaryClinton', text: 'Delete your account.', year: '2016', accent: '#a2cfed' },
   { author: 'Netflix', handle: '@netflix', text: 'Love is sharing a password.', year: '2017', accent: '#eab5c1' },
@@ -20,11 +25,24 @@ const cards: Card[] = [
   { author: 'Twitter', handle: '@Twitter', text: 'hello literally everyone', year: '2021', accent: '#a6bee7' },
   { author: 'Elon Musk', handle: '@elonmusk', text: 'the bird is freed', year: '2022', accent: '#e0c39d' },
   { author: 'Greta Thunberg', handle: '@GretaThunberg', text: 'So ridiculous. Donald must work on his Anger Management problem, then go to a good old fashioned movie with a friend! Chill Donald, Chill!', year: '2020', accent: '#8dd9d2' },
+  { author: 'Joe Biden', handle: '@JoeBiden', text: 'It’s a new day in America.', year: '2021', accent: '#94d1ed' },
 ]
 
-const xPositions = [-420, 445, 100, -570, 570, -230, 460, -590, 160, 650, -330, 320, -460, 530, -100, 390]
-const yPositions = [-165, 130, 255, 170, -230, -320, -95, -140, -250, 280, 110, 20, 290, -270, -30, 210]
-const travel = (frame: number) => frame <= 105 ? frame * 0.65 : 68 + (frame - 105) * 0.65 + 0.115 * (frame - 105) ** 2
+// Three passes through the archival deck fill the depth of the tunnel. Each
+// repeat has a new position and rotation, so it reads as a field rather than
+// a loop of identical cards. The card in front still has time to be read.
+const field = Array.from({ length: 66 }, (_, i) => ({ card: cards[i % cards.length], i }))
+const position = (i: number) => {
+  const angle = i * 2.399963229728653 // golden angle spreads neighbouring cards
+  return {
+    x: Math.cos(angle) * (360 + ((i * 137) % 500)),
+    y: Math.sin(angle) * (210 + ((i * 101) % 300)),
+  }
+}
+// Start over three times faster than the original cut, then accelerate hard.
+const travel = (frame: number) => frame <= 85
+  ? frame * 2.1
+  : 178.5 + (frame - 85) * 2.1 + 0.255 * (frame - 85) ** 2
 
 const CardFace = ({ card }: { card: Card }) => (
   <div style={{
@@ -34,14 +52,17 @@ const CardFace = ({ card }: { card: Card }) => (
   }}>
     <div style={{ display: 'flex', alignItems: 'center', gap: 13 }}>
       <div style={{
-        width: 46, height: 46, borderRadius: '50%', display: 'grid', placeItems: 'center',
-        background: card.accent, color: '#081015', fontSize: 21, fontWeight: 800, flexShrink: 0,
-      }}>{card.author[0]}</div>
+        width: 46, height: 46, borderRadius: '50%', overflow: 'hidden',
+        background: card.accent, flexShrink: 0,
+        border: '1px solid #ffffff35',
+      }}><Img src={staticFile(`avatars/${card.handle.slice(1)}.jpg`)} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /></div>
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ fontWeight: 750, fontSize: 20, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{card.author}</div>
         <div style={{ color: '#8999a3', fontSize: 17 }}>{card.handle}</div>
       </div>
-      <div style={{ fontSize: 27, color: '#c7d1d8', fontWeight: 450 }}>𝕏</div>
+      <svg width="29" height="29" viewBox="0 0 24 24" aria-label="X" style={{ flexShrink: 0 }}>
+        <path fill="#edf4f7" d="M18.901 1.153h3.68L14.54 10.35 24 22.847h-7.406l-5.8-7.586-6.64 7.586H.47l8.6-9.824L0 1.153h7.594l5.243 6.932 6.064-6.932Zm-1.29 19.49h2.04L6.487 3.24H4.3l13.31 17.4Z" />
+      </svg>
     </div>
     <div style={{ fontSize: 21, lineHeight: 1.48, marginTop: 22, minHeight: 64, letterSpacing: '-0.015em' }}>{card.text}</div>
     <div style={{ display: 'flex', gap: 37, color: '#738691', fontSize: 16, marginTop: 26, borderTop: '1px solid #24343e', paddingTop: 14 }}>
@@ -72,14 +93,15 @@ export const FlybyScene = () => {
         })}
       </svg>
       <div style={{ position: 'absolute', inset: 0, perspective: 1100, perspectiveOrigin: '50% 50%' }}>
-        {cards.map((card, i) => {
-          const z = -140 - i * 170 + distance
+        {field.map(({ card, i }) => {
+          const z = -140 - i * 92 + distance
           const scale = Math.min(2.3, 1000 / Math.max(400, 1000 - z))
           const visible = clamp01((z + 1750) / 300) * clamp01((320 - z) / 190)
           const opacity = visible * fade(frame, 6, 29) * exit
           const sway = Math.sin((frame + i * 21) * 0.021) * 10
+          const { x, y } = position(i)
           return <div key={i} style={{
-            position: 'absolute', left: 960 + xPositions[i] * scale, top: 540 + (yPositions[i] + sway) * scale,
+            position: 'absolute', left: 960 + x * scale, top: 540 + (y + sway) * scale,
             opacity, zIndex: Math.round(z + 2000),
             transform: `translate(-50%, -50%) rotateX(${(i % 3 - 1) * 5 + Math.sin(frame * .012 + i) * 2}deg) rotateY(${(i % 4 - 1.5) * 7 + Math.sin(frame * .008 + i) * 3}deg) scale(${scale})`,
             filter: `blur(${Math.max(0, -z - 1100) / 500}px)`,
