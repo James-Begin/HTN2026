@@ -12,6 +12,7 @@ export type Node = {
   x: number
   y: number
   depth: number
+  semanticY: number
   order: number
 }
 

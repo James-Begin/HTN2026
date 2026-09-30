@@ -8,7 +8,7 @@ import { GraphScene } from './scenes/GraphScene'
 const INTRO = 105
 const LANDING = 240
 const FLYBY = 270
-const GRAPH = 645
+const GRAPH = 750
 
 const FilmGrain = () => {
   const frame = useCurrentFrame()

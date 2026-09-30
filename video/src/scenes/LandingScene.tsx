@@ -79,7 +79,7 @@ export const LandingScene = () => {
       <div style={{
         position: 'absolute', left: 1628, top: 184, width: 25, height: 25, borderRadius: 99,
         background: palette.cyan, boxShadow: '0 0 24px #9ce4ff, 0 0 100px #6ac7ef',
-        opacity: genie,
+        opacity: genie * (1 - fade(frame, 220, 239)),
         transform: `scale(${0.2 + genie * 1.2})`,
       }} />
     </AbsoluteFill>

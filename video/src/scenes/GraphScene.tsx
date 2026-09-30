@@ -16,6 +16,50 @@ const birth = (order: number) => {
 const nodeColor = (node: Node) =>
   node.order === 0 ? '#e9faff' : node.branch === 'humor' ? palette.violet : node.cosine > 0.65 ? palette.teal : palette.cyan
 
+type ProjectedNode = { x: number; y: number; scale: number }
+
+const mix = (a: number, b: number, t: number) => a + (b - a) * t
+const orbitAt = (frame: number) => {
+  // The original flat view remains intact while posts arrive. Afterwards the
+  // camera arcs to either side, revealing the saved semantic Y coordinate.
+  const yaw = frame < 570
+    ? mix(0, 0.50, easeInOut((frame - 505) / 65))
+    : frame < 650
+      ? mix(0.50, -0.38, easeInOut((frame - 570) / 80))
+      : mix(-0.38, 0, easeInOut((frame - 650) / 70))
+  const pitch = frame < 570
+    ? mix(0, -0.19, easeInOut((frame - 505) / 65))
+    : frame < 650
+      ? mix(-0.19, 0.14, easeInOut((frame - 570) / 80))
+      : mix(0.14, 0, easeInOut((frame - 650) / 70))
+  const blend = easeInOut((frame - 505) / 30) * (1 - easeInOut((frame - 690) / 30))
+  return { yaw, pitch, blend }
+}
+
+const projectPoint = (x: number, y: number, semanticY: number, orbit: ReturnType<typeof orbitAt>): ProjectedNode => {
+  const worldX = x - 850
+  const worldY = y - 515
+  const worldZ = semanticY * 750
+  const yawX = worldX * Math.cos(orbit.yaw) + worldZ * Math.sin(orbit.yaw)
+  const yawZ = worldZ * Math.cos(orbit.yaw) - worldX * Math.sin(orbit.yaw)
+  const pitchY = worldY * Math.cos(orbit.pitch) - yawZ * Math.sin(orbit.pitch)
+  const pitchZ = worldY * Math.sin(orbit.pitch) + yawZ * Math.cos(orbit.pitch)
+  const perspective = 1700 / (1700 - pitchZ)
+  return {
+    x: mix(x, 850 + yawX * perspective, orbit.blend),
+    y: mix(y, 515 + pitchY * perspective, orbit.blend),
+    scale: mix(1, perspective, orbit.blend),
+  }
+}
+const projectNode = (node: Node, orbit: ReturnType<typeof orbitAt>) =>
+  projectPoint(node.x, node.y, node.semanticY, orbit)
+
+const hoverBeats = [
+  { node: data.nodes[1], start: 540, end: 580 }, // the joke
+  { node: data.nodes[2], start: 600, end: 645 }, // the industry response
+  { node: data.nodes[4], start: 665, end: 705 }, // the wider reaction
+]
+
 const TimeChart = ({ frame }: { frame: number }) => {
   const inProgress = fade(frame, 386, 476)
   const max = Math.max(1, ...data.buckets.map((bucket) => bucket.count))
@@ -48,13 +92,15 @@ const TimeChart = ({ frame }: { frame: number }) => {
   )
 }
 
-const PostCard = ({ node, index, frame }: { node: Node; index: number; frame: number }) => {
+const PostCard = ({ node, index, frame, active }: { node: Node; index: number; frame: number; active: boolean }) => {
   const entrance = fade(frame, 325 + index * 34, 361 + index * 34)
   return (
     <div style={{
-      background: '#0d1820', border: '1px solid #263c49', borderRadius: 9,
+      background: active ? '#142431' : '#0d1820',
+      border: `1px solid ${active ? nodeColor(node) : '#263c49'}`, borderRadius: 9,
       padding: '16px 18px', marginBottom: 11, opacity: entrance,
       transform: `translateY(${(1 - entrance) * 20}px)`,
+      boxShadow: active ? `0 0 24px ${nodeColor(node)}24` : undefined,
     }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
         <div style={{
@@ -72,7 +118,7 @@ const PostCard = ({ node, index, frame }: { node: Node; index: number; frame: nu
   )
 }
 
-const Sidebar = ({ frame, visibleCount }: { frame: number; visibleCount: number }) => {
+const Sidebar = ({ frame, visibleCount, activeId }: { frame: number; visibleCount: number; activeId: string | null }) => {
   const inProgress = fade(frame, 270, 420)
   const posts = data.nodes.slice(1, 7)
   return (
@@ -104,7 +150,45 @@ const Sidebar = ({ frame, visibleCount }: { frame: number; visibleCount: number 
       <div style={{ display: 'flex', justifyContent: 'space-between', color: '#9ebdcd', fontSize: 14, paddingBottom: 12 }}>
         <strong style={{ letterSpacing: '.08em' }}>CAPTURED POSTS</strong><span>{visibleCount}</span>
       </div>
-      {posts.map((post, i) => <PostCard node={post} index={i} frame={frame} key={post.id} />)}
+      {posts.map((post, i) => <PostCard node={post} index={i} frame={frame} active={activeId === post.id} key={post.id} />)}
+    </div>
+  )
+}
+
+const HoverPreview = ({ node, point, opacity }: { node: Node; point: ProjectedNode; opacity: number }) => {
+  const color = nodeColor(node)
+  const left = Math.max(36, Math.min(1070, point.x + 34))
+  const top = Math.max(145, Math.min(690, point.y - 230))
+  return (
+    <div style={{
+      position: 'absolute', left, top, width: 420, zIndex: 12,
+      boxSizing: 'border-box', padding: '18px 20px 17px',
+      border: `1px solid ${color}9b`, borderRadius: 13,
+      background: '#101e28', boxShadow: `0 16px 48px #000c, 0 0 36px ${color}22`,
+      opacity, transform: `translateY(${(1 - opacity) * 14}px) scale(${0.985 + opacity * 0.015})`,
+      pointerEvents: 'none',
+    }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        <div style={{
+          width: 38, height: 38, borderRadius: '50%', display: 'grid', placeItems: 'center',
+          background: `${color}2a`, color, fontWeight: 800, fontSize: 19,
+        }}>{node.author[0]}</div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: 16, fontWeight: 750, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{node.author}</div>
+          <div style={{ fontSize: 13, color: '#8ca9b9' }}>@{node.handle.replace(/^@/, '')}</div>
+        </div>
+        <svg width="23" height="23" viewBox="0 0 24 24" aria-label="X">
+          <path fill="#dfedf3" d="M18.901 1.153h3.68L14.54 10.35 24 22.847h-7.406l-5.8-7.586-6.64 7.586H.47l8.6-9.824L0 1.153h7.594l5.243 6.932 6.064-6.932Zm-1.29 19.49h2.04L6.487 3.24H4.3l13.31 17.4Z" />
+        </svg>
+      </div>
+      <div style={{
+        fontSize: 16, color: '#e4eff5', lineHeight: 1.45, marginTop: 15,
+        display: '-webkit-box', WebkitLineClamp: 6, WebkitBoxOrient: 'vertical', overflow: 'hidden',
+      }}>{node.text}</div>
+      <div style={{
+        display: 'flex', justifyContent: 'space-between', borderTop: '1px solid #2b4350',
+        marginTop: 17, paddingTop: 12, fontSize: 13, color: '#8aa9ba',
+      }}><span>{node.branch === 'humor' ? 'HUMOR' : node.quotedPostId ? 'QUOTE' : node.parentId ? 'REPLY' : 'RELATED POST'}</span><span>♡ {node.likes.toLocaleString()}</span></div>
     </div>
   )
 }
@@ -115,6 +199,30 @@ export const GraphScene = () => {
   const scale = 2.48 + (1 - 2.48) * camera
   const tx = (960 - 310 * 2.48) * (1 - camera)
   const ty = (535 - 515 * 2.48) * (1 - camera)
+  const orbit = orbitAt(frame)
+  const projected = new Map(data.nodes.map((node) => [node.id, projectNode(node, orbit)]))
+  const screenPoint = (node: Node): ProjectedNode => {
+    const point = projected.get(node.id)!
+    return { x: tx + point.x * scale, y: ty + point.y * scale, scale: point.scale * scale }
+  }
+  const axisStart = projectPoint(310, 515, 0, orbit)
+  const axisEnd = projectPoint(1425, 515, 0, orbit)
+  const beat = hoverBeats.find((item) => frame >= item.start && frame < item.end)
+  const activeId = beat?.node.id ?? null
+  const hoverOpacity = beat
+    ? fade(frame, beat.start, beat.start + 9) * (1 - fade(frame, beat.end - 9, beat.end))
+    : 0
+  const [first, second, third] = hoverBeats.map((item) => screenPoint(item.node))
+  const cursor = frame < 540
+    ? { x: mix(830, first.x, easeInOut((frame - 510) / 30)), y: mix(800, first.y, easeInOut((frame - 510) / 30)) }
+    : frame < 580 ? first
+      : frame < 600
+        ? { x: mix(first.x, second.x, easeInOut((frame - 580) / 20)), y: mix(first.y, second.y, easeInOut((frame - 580) / 20)) }
+        : frame < 645 ? second
+          : frame < 665
+            ? { x: mix(second.x, third.x, easeInOut((frame - 645) / 20)), y: mix(second.y, third.y, easeInOut((frame - 645) / 20)) }
+            : third
+  const cursorOpacity = fade(frame, 510, 525) * (1 - fade(frame, 705, 720))
   const visibleCount = data.nodes.filter((node) => frame >= birth(node.order)).length
   const uiIn = fade(frame, 285, 445)
   return (
@@ -131,36 +239,41 @@ export const GraphScene = () => {
           </radialGradient>
           <linearGradient id="axis" x1="0" x2="1"><stop stopColor="#c3eaff" stopOpacity=".2" /><stop offset="1" stopColor="#80c9eb" stopOpacity=".05" /></linearGradient>
         </defs>
-        <g opacity={fade(frame, 245, 405) * 0.38}>
+        <g opacity={fade(frame, 245, 405) * 0.38 * (1 - orbit.blend * 0.65)}>
           {Array.from({ length: 13 }, (_, i) => <line key={`v${i}`} x1={i * 125} y1="0" x2={i * 125} y2="925" stroke="#315265" strokeWidth="1" />)}
           {Array.from({ length: 8 }, (_, i) => <line key={`h${i}`} x1="0" y1={i * 125} x2="1495" y2={i * 125} stroke="#315265" strokeWidth="1" />)}
         </g>
         <g transform={`translate(${tx} ${ty}) scale(${scale})`}>
-          <line x1="310" x2="1425" y1="515" y2="515" stroke="url(#axis)" strokeWidth="1.2" opacity={fade(frame, 140, 330)} />
+          <line x1={axisStart.x} x2={axisEnd.x} y1={axisStart.y} y2={axisEnd.y} stroke="url(#axis)" strokeWidth="1.2" opacity={fade(frame, 140, 330)} />
           {data.edges.map((edge, i) => {
             const start = byId.get(edge.from)
             const end = byId.get(edge.to)
             if (!start || !end) return null
             const delay = Math.max(birth(start.order), birth(end.order))
             if (frame < delay) return null
-            const bend = (i % 2 ? -1 : 1) * Math.min(45, Math.abs(end.x - start.x) * 0.12)
-            const path = `M${start.x},${start.y} Q${(start.x + end.x) / 2},${(start.y + end.y) / 2 + bend} ${end.x},${end.y}`
+            const a = projected.get(start.id)!
+            const b = projected.get(end.id)!
+            const bend = (i % 2 ? -1 : 1) * Math.min(45, Math.abs(b.x - a.x) * 0.12)
+            const path = `M${a.x},${a.y} Q${(a.x + b.x) / 2},${(a.y + b.y) / 2 + bend} ${b.x},${b.y}`
+            const connected = activeId === edge.from || activeId === edge.to
             return <path key={i} d={path} fill="none" pathLength="100"
               stroke={edge.kind === 'quote' ? palette.violet : palette.teal}
-              strokeWidth={edge.kind === 'quote' ? 1.7 : 1.4}
-              opacity={fade(frame, delay, delay + 22) * 0.30}
+              strokeWidth={connected ? 2.7 : edge.kind === 'quote' ? 1.7 : 1.4}
+              opacity={fade(frame, delay, delay + 22) * (connected ? 0.83 : 0.30)}
               strokeDasharray="100" strokeDashoffset={100 * (1 - easeOut((frame - delay) / 30))} />
           })}
           {data.nodes.map((node) => {
             const start = birth(node.order)
             if (frame < start) return null
             const reveal = easeOut((frame - start) / (node.order < 6 ? 24 : 14))
-            const radius = node.order === 0 ? 12 : Math.min(12, 4 + Math.log1p(node.likes) * 0.85)
+            const point = projected.get(node.id)!
+            const radius = (node.order === 0 ? 12 : Math.min(12, 4 + Math.log1p(node.likes) * 0.85)) * point.scale
             const color = nodeColor(node)
             return <g key={node.id} opacity={reveal}>
-              {node.order < 6 && <circle cx={node.x} cy={node.y} r={radius * (3.2 + Math.sin(frame * .07 + node.order) * .13)} fill="url(#nodeGlow)" />}
-              <circle cx={node.x} cy={node.y} r={radius * (0.55 + reveal * 0.45)} fill={color} stroke="#07131c" strokeWidth="1.6" />
-              {node.order === 0 && <circle cx={node.x} cy={node.y} r={radius + 6} fill="none" stroke="#d4f5ff" opacity=".65" strokeWidth="1.6" />}
+              {node.order < 6 && <circle cx={point.x} cy={point.y} r={radius * (3.2 + Math.sin(frame * .07 + node.order) * .13)} fill="url(#nodeGlow)" />}
+              <circle cx={point.x} cy={point.y} r={radius * (0.55 + reveal * 0.45)} fill={color} stroke="#07131c" strokeWidth="1.6" />
+              {node.order === 0 && <circle cx={point.x} cy={point.y} r={radius + 6} fill="none" stroke="#d4f5ff" opacity=".65" strokeWidth="1.6" />}
+              {activeId === node.id && <circle cx={point.x} cy={point.y} r={radius + 12 + Math.sin(frame * .18) * 2} fill="none" stroke={color} strokeWidth="2.2" opacity={hoverOpacity * 0.94} />}
             </g>
           })}
         </g>
@@ -186,7 +299,14 @@ export const GraphScene = () => {
         opacity: uiIn,
       }}><span style={{ color: palette.violet }}>━━━━</span> QUOTE&nbsp;&nbsp;&nbsp;&nbsp;<span style={{ color: palette.teal }}>━━━━</span> REPLY</div>
       <TimeChart frame={frame} />
-      <Sidebar frame={frame} visibleCount={visibleCount} />
+      <Sidebar frame={frame} visibleCount={visibleCount} activeId={activeId} />
+      {beat && <HoverPreview node={beat.node} point={screenPoint(beat.node)} opacity={hoverOpacity} />}
+      <svg width="34" height="40" viewBox="0 0 34 40" style={{
+        position: 'absolute', left: cursor.x + 7, top: cursor.y + 5,
+        zIndex: 13, opacity: cursorOpacity, filter: 'drop-shadow(0 3px 5px #000b)',
+      }}>
+        <path d="M3 2v29l7-7 7 12 6-3-7-12h11Z" fill="#effaff" stroke="#0b1a24" strokeWidth="2.6" strokeLinejoin="round" />
+      </svg>
       <AbsoluteFill style={{ background: '#000', opacity: 1 - fade(frame, 0, 19), pointerEvents: 'none' }} />
     </AbsoluteFill>
   )

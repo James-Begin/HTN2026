@@ -1,5 +1,5 @@
 import { AbsoluteFill, Img, staticFile, useCurrentFrame } from 'remotion'
-import { clamp01, fade } from '../motion'
+import { clamp01, easeInOut, fade } from '../motion'
 
 type Card = { author: string; handle: string; text: string; year: string; accent: string }
 // The same recognizable examples used by Sequitor's live search animation.
@@ -109,6 +109,7 @@ export const FlybyScene = () => {
         })}
       </div>
       <AbsoluteFill style={{ background: '#000', opacity: fade(frame, 230, 239) }} />
+      <AbsoluteFill style={{ background: '#000', opacity: 1 - easeInOut((frame - 2) / 34) }} />
     </AbsoluteFill>
   )
 }

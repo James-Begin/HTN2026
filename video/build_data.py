@@ -110,7 +110,9 @@ def main() -> None:
             "publishedAt": post["publishedAt"], "likes": post.get("likes") or 0,
             "parentId": post.get("parentId"), "quotedPostId": post.get("quotedPostId"),
             "branch": post.get("branch") or "", "cosine": round(float(feature["cosine"]), 4),
-            "x": round(x, 2), "y": round(y, 2), "depth": round(float(feature["z"]), 4),
+            "x": round(x, 2), "y": round(y, 2),
+            "depth": round(float(feature["z"]), 4),
+            "semanticY": round(float(feature["y"]), 4),
             "order": order,
         })
     ids = {post["id"] for post in selected}

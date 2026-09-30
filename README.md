@@ -8,7 +8,7 @@ Sequitor is a Hack the North 2026 project for exploring how a piece of informati
 
 [![Sequitor conversation space — play the demo](docs/assets/sequitor-poster.jpg)](docs/assets/sequitor-demo.mp4)
 
-The [42-second video](docs/assets/sequitor-demo.mp4) is fully animated from the saved Dario investigation—not a screen recording. Its [storyboard and reproducible Remotion source](video/README.md) are included.
+The [46-second video](docs/assets/sequitor-demo.mp4) is fully animated from the saved Dario investigation—not a screen recording. Its [storyboard and reproducible Remotion source](video/README.md) are included.
 
 ## Why this exists
 
