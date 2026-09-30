@@ -1,5 +1,5 @@
-import { AbsoluteFill, Img, interpolate, staticFile, useCurrentFrame } from 'remotion'
-import { clamp01, easeOut, fade, palette } from '../motion'
+import { AbsoluteFill, Img, staticFile, useCurrentFrame } from 'remotion'
+import { clamp01, fade } from '../motion'
 
 type Card = { author: string; handle: string; text: string; year: string; accent: string }
 // The same recognizable examples used by Sequitor's live search animation.
@@ -75,46 +75,35 @@ const CardFace = ({ card }: { card: Card }) => (
 
 export const FlybyScene = () => {
   const frame = useCurrentFrame()
-  const rush = easeOut((frame - 100) / 135)
-  const exit = 1 - fade(frame, 230, 239)
   const distance = travel(frame)
   return (
     <AbsoluteFill style={{
       background: 'radial-gradient(ellipse 1000px 720px at 50% 50%, #07121b, #000 78%)',
       overflow: 'hidden',
     }}>
-      <svg width="1920" height="1080" style={{ position: 'absolute', inset: 0, opacity: 0.3 * rush * exit }}>
-        {Array.from({ length: 45 }, (_, i) => {
-          const angle = i * 2.3999632
-          const r = 150 + ((i * 173) % 400)
-          const x = 960 + Math.cos(angle) * r
-          const y = 540 + Math.sin(angle) * r
-          const length = 30 + 220 * rush
-          return <line key={i} x1={x} y1={y} x2={x + Math.cos(angle) * length} y2={y + Math.sin(angle) * length}
-            stroke={i % 4 === 0 ? palette.violet : palette.cyan} strokeWidth={i % 5 === 0 ? 2.4 : 1.2} />
-        })}
-      </svg>
       <div style={{ position: 'absolute', inset: 0, perspective: 1100, perspectiveOrigin: '50% 50%' }}>
         {field.map(({ card, i }) => {
           const z = 85 - i * 52 + distance
+          // By this depth the card is completely outside the viewport. Cull it
+          // only after it has flown past an edge, never while still on screen.
+          if (z >= 390) return null
           const scale = Math.min(2.3, 1000 / Math.max(400, 1000 - z))
-          const visible = clamp01((z + 2450) / 450) * clamp01((390 - z) / 50)
-          const opacity = visible * fade(frame, 2, 16) * exit
+          const opacity = clamp01((z + 2450) / 450) * fade(frame, 2, 16)
           const sway = Math.sin((frame + i * 21) * 0.021) * 10
           const { x, y } = position(i)
+          const rayLength = Math.hypot(x / 960, y / 540) || 1
+          const pass = Math.max(0, (z - 80) / 310)
+          const outward = 2500 * pass * pass
           return <div key={i} style={{
-            position: 'absolute', left: 960 + x * scale, top: 540 + (y + sway) * scale,
+            position: 'absolute',
+            left: 960 + x * scale + (x / 960 / rayLength) * outward,
+            top: 540 + (y + sway) * scale + (y / 540 / rayLength) * outward,
             opacity, zIndex: Math.round(z + 2000),
             transform: `translate(-50%, -50%) rotateX(${(i % 3 - 1) * 5 + Math.sin(frame * .012 + i) * 2}deg) rotateY(${(i % 4 - 1.5) * 7 + Math.sin(frame * .008 + i) * 3}deg) scale(${scale})`,
             filter: `blur(${Math.max(0, -z - 1100) / 500}px)`,
           }}><CardFace card={card} /></div>
         })}
       </div>
-      <div style={{
-        position: 'absolute', left: 1640, top: 195, width: 20, height: 20,
-        borderRadius: '50%', background: palette.cyan, boxShadow: '0 0 55px #90e8ff',
-        opacity: 1 - fade(frame, 0, 20), transform: `scale(${interpolate(frame, [0, 20], [1, 0.2], { extrapolateRight: 'clamp' })})`,
-      }} />
       <AbsoluteFill style={{ background: '#000', opacity: fade(frame, 230, 239) }} />
     </AbsoluteFill>
   )
