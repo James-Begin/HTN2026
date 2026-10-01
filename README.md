@@ -2,13 +2,15 @@
 
 **Follow a post back to the conversation it came from—and watch that conversation unfold.**
 
-[Live app](https://sequitor-live-production.up.railway.app) · [Recorded demo (no API keys)](https://james-begin.github.io/HTN2026/) · [Watch the walkthrough](docs/assets/sequitor-demo.mp4)
+[Live app](https://sequitor-live-production.up.railway.app) · [Recorded demo (no API keys)](https://james-begin.github.io/HTN2026/) · [Watch the film](#watch-the-film)
 
 Sequitor is a Hack the North 2026 project for exploring how a piece of information moves through X. Paste a post URL or enter a topic: it looks for a useful reference post, searches outward for related posts, and builds an interactive conversation space as the results arrive. Announcements, reactions, jokes, and paraphrases can all appear in the same investigation. The goal is to make the surrounding conversation legible, **not** to declare which post is true or prove that one author influenced another.
 
-[![Sequitor conversation space — play the demo](docs/assets/sequitor-poster.jpg)](docs/assets/sequitor-demo.mp4)
+## Watch the film
 
-The [46-second video](docs/assets/sequitor-demo.mp4) is fully animated from the saved Dario investigation—not a screen recording. Its [storyboard and reproducible Remotion source](video/README.md) are included.
+https://github.com/user-attachments/assets/422bfae5-16eb-4b33-a314-2191ff0bc85e
+
+The 46-second film is fully animated from the saved Dario investigation—not a screen recording. [Download the full-resolution MP4](docs/assets/sequitor-demo.mp4) or explore its [storyboard and reproducible Remotion source](video/README.md).
 
 ## Why this exists
 
